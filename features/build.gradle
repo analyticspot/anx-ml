@@ -1,0 +1,6 @@
+apply plugin: 'anx-kotlin'
+
+dependencies {
+   compile Deps.ktStdlib
+
+}

@@ -1,0 +1,7 @@
+// This is just a map from a name to a dependency. We then have all subproject use something like
+// "Deps.ktStdlib" in their dependencies blocks instead of "'org.jetbrains.kotlin:kotlin-stdlib:1.0.4".
+// This allows us to ensure that all projects are using the same dependencies, dependency resolution,
+// etc. so that we can easily upgrade all projects to new versions, fix conflicts, etc.
+ext.Deps = [
+   ktStdlib: 'org.jetbrains.kotlin:kotlin-stdlib:1.0.4'
+]

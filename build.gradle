@@ -1,0 +1,10 @@
+// Allows you to print the DAG for any task by running `gradle <task 1>...<task N> taskTree`.
+// See https://github.com/dorongold/gradle-task-tree for details.
+plugins {
+    id "com.dorongold.task-tree" version "1.2.2"
+}
+
+// Add definitions for all dependencies so subprojects can be sure to use consistent
+// versions for everything.
+apply from: 'javaDependencies.gradle'
+
