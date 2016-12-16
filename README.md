@@ -42,34 +42,42 @@ compute the number of times words in this list has appeared.
 This task would look something like the following in Java given this framework:
 
 ```java
-// The DataGraph represents the complete pipeline described above. It is of type Double as it's final output will be
-// a dobule - the predicted rating.
+// The DataGraph represents the complete pipeline described above. It is of
+// type Double as it's final output will be a dobule - the predicted rating.
 DataGraph<Double> dg = new DataGraph();
-// This enum allows us to do a kind of injection so that, for example, we can use flat files to train
-// but data obtained via REST endpoint for predictions. 
+// This enum allows us to do a kind of injection so that, for example, we can
+// use flat files to train but data obtained via REST endpoint for predictions. 
 enum Injectables {
   REVIEW_SOURCE
 };
 
-// A DataToken refers to a specifc source or data generator so we can declare that other generators depend on it.
-DataToken<String> inputSource = dg.addSource(new FlatFileGenerator("path/to/reviews"), Injectables.REVIEW_SOURCE);
+// A DataToken refers to a specifc source or data generator so we can declare
+// that other generators depend on it.
+DataToken<String> inputSource = dg.addSource(
+    new FlatFileGenerator("path/to/reviews"), Injectables.REVIEW_SOURCE);
 
-// The bag of words generator depends on the input source so it uses that token to declare the dependency. This computes
-// an array of doubles for each input so it's type is Array<Double>.
-DataToken<Array<Double>> bagOfWords = dg.addGenerator(new BagOfWordsGenerator(), inputSource);
+// The bag of words generator depends on the input source so it uses that
+// token to declare the dependency. This computes an array of doubles for
+// each input so it's type is Array<Double>.
+DataToken<Array<Double>> bagOfWords = dg.addGenerator(
+    new BagOfWordsGenerator(), inputSource);
 
 DataToken<Array<Double>> lsa = dg.addGenerator(new Lsa(), bagOfWords);
 
-DataToken<Array<Double>> reviewCentroids = db.addGenerator(new CentroidComputer(), lsa);
+DataToken<Array<Double>> reviewCentroids = db.addGenerator(
+    new CentroidComputer(), lsa);
 
-DataToken<Array<Double>> distanceFromCentroid = db.addGenerator(new DistFromVector(), reviewCentroids);
+DataToken<Array<Double>> distanceFromCentroid = db.addGenerator(
+    new DistFromVector(), reviewCentroids);
 
-DataToken<Integer> numPositiveWords = db.addGenerator(new WordCount(positiveWordList), bagOfWords);
+DataToken<Integer> numPositiveWords = db.addGenerator(
+    new WordCount(positiveWordList), bagOfWords);
 
-DataToken<Integer> numNegativeWords = db.addGenerator(new WordCount(negativeWordList), bagOfWords);
+DataToken<Integer> numNegativeWords = db.addGenerator(
+    new WordCount(negativeWordList), bagOfWords);
 
-// Finally we add our classifier. It wants a vector of doubles for each row so we have to take all the algorithm
-// inputs and change their representation.
+// Finally we add our classifier. It wants a vector of doubles for each row
+// so we have to take all the algorithm inputs and change their representation.
 DataToken<Array<Double>> vectorOfFeatures = db.addGenerator(new DoubleRepr(),
     distanceFromCentroid, numPositiveWords, numNegativeWords);
 
@@ -94,8 +102,8 @@ above allows us to specify factory functions for each enum value. Thus we can do
 ```java
 DataGraph<Double> dg = DataGraph.fromFile("path/to/trained");
 
-// Now we can make predictions. Here we bind enums that weren't bound in the fromFile call above, including the
-// actual input data.
+// Now we can make predictions. Here we bind enums that weren't bound in the
+// fromFile call above, including the actual input data.
 double prediction = dg.preparePredict()
     .withBinding(REVIEW_SOURCE, new SimpleString(dataRecievedFromTheApi))
     .predict();
