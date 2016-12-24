@@ -1,6 +1,5 @@
 package com.analyticspot.ml.framework.description
 
-import com.analyticspot.ml.framework.datatransform.DataTransform
 import java.util.SortedMap
 
 /**
