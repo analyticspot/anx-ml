@@ -8,7 +8,31 @@ package com.analyticspot.ml.framework.description
  * By convention groups of related values are named with a prefix, a separator of `-` and a suffix. Thus, if you are
  * naming just a single feature/data item refrain from using the `-` character.
  */
-interface ValueToken<DataT> : Comparable<ValueToken<*>> {
-    val name: String
-    val clazz: Class<DataT>
+open class ValueToken<DataT>(val name: String, val clazz: Class<DataT>) : Comparable<ValueToken<*>> {
+    final override fun compareTo(other: ValueToken<*>): Int {
+        if (name == other.name) {
+            check(clazz == other.clazz) {
+                "Somehow there's two ValueToken instances named $name with different types: " +
+                    "[$clazz] and [${other.clazz}]"
+            }
+            return 0
+        } else {
+            return name.compareTo(other.name)
+        }
+    }
+
+    final override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+
+        if (other is ValueToken<*>) {
+            return compareTo(other) == 0
+        } else {
+            return false
+        }
+    }
+
+    final override fun hashCode(): Int {
+        return name.hashCode()
+    }
+
 }
