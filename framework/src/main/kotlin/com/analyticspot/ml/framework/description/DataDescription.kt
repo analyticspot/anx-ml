@@ -1,5 +1,6 @@
 package com.analyticspot.ml.framework.description
 
+import org.slf4j.LoggerFactory
 import java.util.SortedMap
 
 /**
@@ -21,10 +22,13 @@ open class DataDescription(builder: Builder) {
     private val tokenGroupMap: SortedMap<String, TokenGroup<*>> = sortedMapOf()
 
     init {
+        log.debug("DataDescription being constructed with {} tokens and {} token groups",
+                builder.tokens.size, builder.tokenGroups.size)
         tokens = builder.tokens
         trainOnlyTokens = builder.trainOnlyTokens
         tokenGroups = builder.tokenGroups
         tokens.asSequence().plus(trainOnlyTokens).forEach {
+            log.debug("Adding token named {} to the token map", it.name)
             check(!tokenMap.containsKey(it.name)) {
                 "A token with name ${it.name} is already present in this data set."
             }
@@ -32,12 +36,17 @@ open class DataDescription(builder: Builder) {
         }
 
         tokenGroups.forEach {
+            log.debug("Adding token group with prefix {} to the map", it.prefix)
             check(!tokenGroupMap.containsKey(it.prefix)) {
                 "A token group with prefix ${it.prefix} is already present in this data set."
             }
             tokenGroupMap.put(it.prefix, it)
         }
 
+    }
+
+    companion object {
+        private val log = LoggerFactory.getLogger(DataDescription::class.java)
     }
 
     fun <T> token(name: String, clazz: Class<T>): ValueToken<T> {

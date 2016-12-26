@@ -8,5 +8,5 @@ import com.analyticspot.ml.framework.observation.Observation
 interface DataTransform {
     val description: TransformDescription
 
-    fun transform(observations: Observation): Observation
+    fun transform(observation: Observation): Observation
 }

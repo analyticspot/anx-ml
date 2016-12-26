@@ -66,6 +66,8 @@ class DataGraph(builder: GraphBuilder) {
 
         fun setSource(init: SourceGraphNode.Builder.() -> Unit): GraphNode {
             source = SourceGraphNode.build(nextId++, init)
+            assert(nodesById.size == source.id)
+            nodesById.add(source)
             return source
         }
 
@@ -75,7 +77,8 @@ class DataGraph(builder: GraphBuilder) {
                 this.transform = transform
                 sources += src
             }
-            nodesById.set(node.id, node)
+            assert(nodesById.size == node.id)
+            nodesById.add(node)
             return node
         }
 

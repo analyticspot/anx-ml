@@ -7,10 +7,15 @@ import com.analyticspot.ml.framework.description.ValueToken
 import com.analyticspot.ml.framework.observation.Observation
 import com.analyticspot.ml.framework.observation.SingleValueObservation
 import org.assertj.core.api.Assertions.assertThat
+import org.slf4j.LoggerFactory
 import org.testng.annotations.Test
 import java.util.concurrent.Executors
 
 class GraphExecutionTest {
+    companion object {
+        private val log = LoggerFactory.getLogger(GraphExecutionTest::class.java)
+    }
+
     @Test
     fun testSingleTransformExecution() {
         val dg = DataGraph.build {

@@ -22,8 +22,8 @@ class SourceGraphNode private constructor(builder: GraphNode.Builder) : GraphNod
 
         fun build(): SourceGraphNode {
             val gnb = GraphNode.Builder(id).apply {
-                tokens.addAll(tokens)
-                trainOnlyTokens.addAll(trainOnlyTokens)
+                tokens.addAll(this@Builder.tokens)
+                trainOnlyTokens.addAll(this@Builder.trainOnlyTokens)
             }
             return SourceGraphNode(gnb)
         }
