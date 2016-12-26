@@ -1,6 +1,7 @@
 package com.analyticspot.ml.framework.datagraph
 
 import com.analyticspot.ml.framework.description.IndexValueToken
+import com.analyticspot.ml.framework.observation.Observation
 
 /**
  *
@@ -29,8 +30,18 @@ class SourceGraphNode private constructor(builder: GraphNode.Builder) : GraphNod
         }
     }
 
-    override fun getExecutionManager(parent: GraphExecution): NodeExecutionManager {
-        throw IllegalStateException("This is a SourceGraphNode and it therefore does not participate in the normal " +
-            "GraphExecution protocol.")
+    override fun getExecutionManager(parent: GraphExecution): NodeExecutionManager = ExecutionManager(this)
+
+    private class ExecutionManager(override val graphNode: GraphNode) : NodeExecutionManager {
+        override fun onDataAvailable(observation: Observation) {
+            throw IllegalStateException("This is a SourceGraphNode and it therefore does not participate in the " +
+                    "normal GraphExecution protocol.")
+        }
+
+        override fun run() {
+            throw IllegalStateException("This is a SourceGraphNode and it therefore does not participate in the " +
+                    "normal GraphExecution protocol.")
+        }
+
     }
 }

@@ -77,6 +77,7 @@ class DataGraph(builder: GraphBuilder) {
                 this.transform = transform
                 sources += src
             }
+            src.subscribers += node
             assert(nodesById.size == node.id)
             nodesById.add(node)
             return node
