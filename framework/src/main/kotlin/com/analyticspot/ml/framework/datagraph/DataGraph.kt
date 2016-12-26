@@ -2,7 +2,6 @@ package com.analyticspot.ml.framework.datagraph
 
 import com.analyticspot.ml.framework.datatransform.DataTransform
 import com.analyticspot.ml.framework.observation.Observation
-import java.util.ArrayList
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ExecutorService
 
@@ -13,20 +12,13 @@ class DataGraph(builder: GraphBuilder) {
     val source: GraphNode
     val result: GraphNode
     // An array of all the GraphNodes such that a node `x` can be found at `allNodes[x.id]`.
-    private val allNodes: Array<GraphNode>
+    internal val allNodes: Array<GraphNode>
 
     init {
-        source = builder.source
+        source = builder.source ?: throw IllegalStateException("All graphs must have a source specifieid")
         result = builder.result
 
-        fun recursiveFillNodes(nodes: ArrayList<GraphNode>, node: GraphNode) {
-            nodes[node.id] = node
-            node.subscribers.forEach { recursiveFillNodes(nodes, it) }
-            node.trainOnlySubscribers.forEach { recursiveFillNodes(nodes, it) }
-        }
-        val nodes = ArrayList<GraphNode>(builder.nextId)
-        recursiveFillNodes(nodes, source)
-        allNodes = nodes.toTypedArray()
+        allNodes = builder.nodesById.toTypedArray()
     }
 
     companion object {
@@ -46,25 +38,32 @@ class DataGraph(builder: GraphBuilder) {
      * might contain an asynchronous [DataTransform] or it might contain an [OnDemandValue].
      */
     fun transform(observation: Observation, exec: ExecutorService): CompletableFuture<Observation> {
-        return result.transformWithSource(observation, exec)
+        val graphExec = GraphExecution(this, exec)
+        return graphExec.transform(observation)
     }
 
     class GraphBuilder {
-        lateinit var source: SourceGraphNode
+        internal lateinit var source: SourceGraphNode
 
         lateinit var result: GraphNode
 
+        // An array of GraphNode such that nodesById[idx] returns the GraphNode whose id is idx.
+        internal val nodesById: MutableList<GraphNode> = mutableListOf()
+
         internal var nextId = 0
 
-        fun setSource() {
-
+        fun setSource(init: SourceGraphNode.Builder.() -> Unit) {
+            source = SourceGraphNode.build(nextId++, init)
         }
 
+
         fun addTransform(src: GraphNode, transform: DataTransform): GraphNode {
-            return TransformGraphNode.build(nextId++) {
+            val node = TransformGraphNode.build(nextId++) {
                 this.transform = transform
                 sources += src
             }
+            nodesById.set(node.id, node)
+            return node
         }
 
         fun build(): DataGraph {

@@ -2,9 +2,6 @@ package com.analyticspot.ml.framework.datagraph
 
 import com.analyticspot.ml.framework.description.DataDescription
 import com.analyticspot.ml.framework.description.ValueToken
-import com.analyticspot.ml.framework.observation.Observation
-import java.util.concurrent.CompletableFuture
-import java.util.concurrent.ExecutorService
 
 /**
  * This is the base class for all [GraphNode]s. Each such node represents a single node in the graph. It holds the
@@ -29,8 +26,7 @@ abstract class GraphNode internal constructor(builder: Builder) : DataDescriptio
         trainOnlySubscribers += subscriber
     }
 
-    abstract internal fun transformWithSource(graphSource: Observation, exec: ExecutorService):
-            CompletableFuture<Observation>
+    abstract fun getExecutionManager(parent: GraphExecution): NodeExecutionManager
 
     open class Builder(internal val id: Int) : DataDescription.Builder() {
         val sources: MutableList<GraphNode> = mutableListOf()

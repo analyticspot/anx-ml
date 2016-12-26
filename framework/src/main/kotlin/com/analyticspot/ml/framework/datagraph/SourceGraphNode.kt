@@ -1,22 +1,19 @@
 package com.analyticspot.ml.framework.datagraph
 
 import com.analyticspot.ml.framework.description.ValueToken
-import com.analyticspot.ml.framework.observation.Observation
-import org.slf4j.LoggerFactory
-import java.util.concurrent.CompletableFuture
-import java.util.concurrent.ExecutorService
 
 /**
  *
  */
 class SourceGraphNode private constructor(builder: GraphNode.Builder) : GraphNode(builder) {
-    companion object {
-        private val log = LoggerFactory.getLogger(SourceGraphNode::class.java)
-    }
 
-    override fun transformWithSource(graphSource: Observation, exec: ExecutorService): CompletableFuture<Observation> {
-        log.debug("transformWithSource called on source node. Returning the source.")
-        return CompletableFuture.completedFuture(graphSource)
+    companion object {
+        fun build(id: Int, init: Builder.() -> Unit): SourceGraphNode {
+            return with(Builder(id)) {
+                init()
+                build()
+            }
+        }
     }
 
     class Builder(private val id: Int) {
@@ -30,5 +27,10 @@ class SourceGraphNode private constructor(builder: GraphNode.Builder) : GraphNod
             }
             return SourceGraphNode(gnb)
         }
+    }
+
+    override fun getExecutionManager(parent: GraphExecution): NodeExecutionManager {
+        throw IllegalStateException("This is a SourceGraphNode and it therefore does not participate in the normal " +
+            "GraphExecution protocol.")
     }
 }

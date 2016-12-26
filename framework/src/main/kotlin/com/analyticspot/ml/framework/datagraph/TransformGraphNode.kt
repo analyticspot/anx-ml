@@ -3,8 +3,6 @@ package com.analyticspot.ml.framework.datagraph
 import com.analyticspot.ml.framework.datatransform.DataTransform
 import com.analyticspot.ml.framework.observation.Observation
 import org.slf4j.LoggerFactory
-import java.util.concurrent.CompletableFuture
-import java.util.concurrent.ExecutorService
 
 /**
  *
@@ -22,23 +20,6 @@ internal open class TransformGraphNode protected constructor(builder: Builder) :
         }
     }
 
-    override fun transformWithSource(graphSource: Observation, exec: ExecutorService): CompletableFuture<Observation> {
-        log.info("transformWithSource called on a TransformGraphNode. Computing source.")
-        check(sources.size == 1)
-        // Note: we should be able to just do "thenApplyAsync({transform.transform(it)}, exec) but that fails. It
-        // appears to be a bug in Kotlin. See https://youtrack.jetbrains.com/issue/KT-15432.
-        val result = CompletableFuture<Observation>()
-        sources[0].transformWithSource(graphSource, exec).thenApply {
-            log.debug("Source computation complete. Scheduling computation of this value.")
-            exec.submit {
-                val resultObs = transform.transform(it)
-                log.debug("Done computing my own value. Completing the future.")
-                result.complete(resultObs)
-            }
-        }
-        return result
-    }
-
     open class Builder(id: Int) : GraphNode.Builder(id) {
         var transform: DataTransform? = null
             set(value) {
@@ -48,6 +29,27 @@ internal open class TransformGraphNode protected constructor(builder: Builder) :
             }
 
         override fun build(): TransformGraphNode = TransformGraphNode(this)
+    }
+
+    override fun getExecutionManager(parent: GraphExecution): NodeExecutionManager = ExecutionManager(this, parent)
+
+    private class ExecutionManager(override val graphNode: TransformGraphNode, private val parent: GraphExecution)
+        : NodeExecutionManager {
+        @Volatile
+        private var observation: Observation? = null
+
+        override fun onDataAvailable(observation: Observation) {
+            this.observation = observation
+            parent.onReadyToRun(this)
+
+        }
+
+        override fun run() {
+            val result = graphNode.transform.transform(observation!!)
+            // Get rid of our reference to the observaton so it can be GC'd if nothing else is using it.
+            observation = null
+            parent.onDataComputed(this, result)
+        }
     }
 }
 
