@@ -2,7 +2,7 @@ package com.analyticspot.ml.framework.datagraph
 
 import com.analyticspot.ml.framework.datatransform.DataTransform
 import com.analyticspot.ml.framework.datatransform.TransformDescription
-import com.analyticspot.ml.framework.description.IndexValueToken
+import com.analyticspot.ml.framework.description.ValueId
 import com.analyticspot.ml.framework.description.ValueToken
 import com.analyticspot.ml.framework.observation.Observation
 import com.analyticspot.ml.framework.observation.SingleValueObservation
@@ -18,14 +18,16 @@ class GraphExecutionTest {
 
     @Test
     fun testSingleTransformExecution() {
+        val notUsedInput = ValueId.create<String>("notUsed")
+        val usedInput = ValueId.create<Int>("used")
+        val resultId = ValueId.create<Int>("finalResult")
+
         val dg = DataGraph.build {
             val src = setSource {
-                tokens += listOf(
-                        IndexValueToken.create<String>(0, "notUsed"),
-                        IndexValueToken.create<Integer>(1, "used"))
+                valueIds += listOf(notUsedInput, usedInput)
             }
 
-            val trans = addTransform(src, AddFiveTransform(src.token("used"), "finalResult"))
+            val trans = addTransform(src, AddFiveTransform(src.token(usedInput), resultId))
             result = trans
         }
 
@@ -34,16 +36,16 @@ class GraphExecutionTest {
         val transformF = dg.transform(srcObs, Executors.newSingleThreadExecutor())
         val resultObs = transformF.get()
         assertThat(resultObs.size).isEqualTo(1)
-        assertThat(resultObs.value(dg.result.token<Integer>("finalResult"))).isEqualTo(88 + 5)
+        assertThat(resultObs.value(dg.result.token(resultId))).isEqualTo(88 + 5)
     }
 
-    class AddFiveTransform(private val srcToken: ValueToken<Integer>, resultName: String) : DataTransform {
-        private val resultToken = ValueToken.create<Integer>(resultName)
+    class AddFiveTransform(private val srcToken: ValueToken<Int>, resultId: ValueId<Int>) : DataTransform {
+        private val resultToken = ValueToken(resultId)
         override val description = TransformDescription(listOf(resultToken))
 
         override fun transform(observation: Observation): Observation {
-            val srcVal: Integer = observation.value(srcToken)
-            return SingleValueObservation.create(Integer.valueOf(srcVal.toInt() + 5))
+            val srcVal: Int = observation.value(srcToken)
+            return SingleValueObservation.create(srcVal + 5)
         }
     }
 }

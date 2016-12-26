@@ -1,6 +1,7 @@
 package com.analyticspot.ml.framework.datagraph
 
 import com.analyticspot.ml.framework.description.IndexValueToken
+import com.analyticspot.ml.framework.description.ValueId
 import com.analyticspot.ml.framework.observation.Observation
 
 /**
@@ -18,13 +19,18 @@ class SourceGraphNode private constructor(builder: GraphNode.Builder) : GraphNod
     }
 
     class Builder(private val id: Int) {
-        val tokens = mutableListOf<IndexValueToken<*>>()
-        val trainOnlyTokens = mutableListOf<IndexValueToken<*>>()
+        val valueIds = mutableListOf<ValueId<*>>()
+        val trainOnlyValueIds = mutableListOf<ValueId<*>>()
 
         fun build(): SourceGraphNode {
+            var arrayIdx = 0
             val gnb = GraphNode.Builder(id).apply {
-                tokens.addAll(this@Builder.tokens)
-                trainOnlyTokens.addAll(this@Builder.trainOnlyTokens)
+                tokens.addAll(valueIds.map {
+                    IndexValueToken.create(arrayIdx++, it)
+                })
+                trainOnlyTokens.addAll(trainOnlyValueIds.map {
+                    IndexValueToken.create(arrayIdx++, it)
+                })
             }
             return SourceGraphNode(gnb)
         }

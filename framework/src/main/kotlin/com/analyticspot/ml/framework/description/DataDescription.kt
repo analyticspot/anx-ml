@@ -11,15 +11,14 @@ import java.util.SortedMap
  * @param tokens indicates which values are available in this data set during transformation.
  * @param trainOnlyTokens tokens that are only available in train or trainTransform mode. Once trained these tokens are
  *    no longer available. A good example of such tokens would be a token for the target value.
- * @param tokenGroups tokens which have been grouped. See [TokenGroup] for more information.
+ * @param tokenGroups tokens which have been grouped. See [ValueIdGroup] for more information.
  */
 open class DataDescription(builder: Builder) {
     val tokens: List<ValueToken<*>>
     val trainOnlyTokens: List<ValueToken<*>>
-    val tokenGroups: List<TokenGroup<*>>
+    val tokenGroups: List<ValueIdGroup<*>>
 
-    private val tokenMap: SortedMap<String, ValueToken<*>> = sortedMapOf()
-    private val tokenGroupMap: SortedMap<String, TokenGroup<*>> = sortedMapOf()
+    private val tokenMap: SortedMap<ValueId<*>, ValueToken<*>> = sortedMapOf()
 
     init {
         log.debug("DataDescription being constructed with {} tokens and {} token groups",
@@ -29,59 +28,31 @@ open class DataDescription(builder: Builder) {
         tokenGroups = builder.tokenGroups
         tokens.asSequence().plus(trainOnlyTokens).forEach {
             log.debug("Adding token named {} to the token map", it.name)
-            check(!tokenMap.containsKey(it.name)) {
+            check(!tokenMap.containsKey(it.id)) {
                 "A token with name ${it.name} is already present in this data set."
             }
-            tokenMap.put(it.name, it)
+            tokenMap.put(it.id, it)
         }
-
-        tokenGroups.forEach {
-            log.debug("Adding token group with prefix {} to the map", it.prefix)
-            check(!tokenGroupMap.containsKey(it.prefix)) {
-                "A token group with prefix ${it.prefix} is already present in this data set."
-            }
-            tokenGroupMap.put(it.prefix, it)
-        }
-
     }
 
     companion object {
         private val log = LoggerFactory.getLogger(DataDescription::class.java)
     }
 
-    fun <T> token(name: String, clazz: Class<T>): ValueToken<T> {
-        val token = tokenMap[name] ?: throw IllegalArgumentException("Token $name not found")
-        if (token.clazz == clazz) {
+    fun <T> token(valId: ValueId<T>): ValueToken<T> {
+        val tok = tokenMap[valId] ?: throw IllegalArgumentException("Token ${valId.name} not found")
+        if (tok.clazz == valId.clazz) {
             @Suppress("UNCHECKED_CAST")
-            return token as ValueToken<T>
+            return tok as ValueToken<T>
         } else {
-            throw IllegalArgumentException("Token $name is not of type $clazz")
+            throw IllegalArgumentException("Token ${valId.name} is not of type ${valId.clazz}")
         }
-    }
-
-    inline fun <reified T : Any> token(name: String): ValueToken<T> {
-        return token(name, T::class.java)
-    }
-
-    fun <T> tokenGroup(prefix: String, clazz: Class<T>): TokenGroup<T> {
-        val tokenGroup = tokenGroupMap[prefix]
-                ?: throw IllegalArgumentException("TokenGroup with prefix $prefix not found")
-        if (tokenGroup.clazz == clazz) {
-            @Suppress("UNCHECKED_CAST")
-            return tokenGroup as TokenGroup<T>
-        } else {
-            throw IllegalArgumentException("TokenGroup with prefix $prefix is not of type $clazz")
-        }
-    }
-
-    inline fun <reified T : Any> tokenGroup(name: String): TokenGroup<T> {
-        return tokenGroup(name, T::class.java)
     }
 
     open class Builder {
         val tokens: MutableList<ValueToken<*>> = mutableListOf()
         val trainOnlyTokens: MutableList<ValueToken<*>> = mutableListOf()
-        val tokenGroups: MutableList<TokenGroup<*>> = mutableListOf()
+        val tokenGroups: MutableList<ValueIdGroup<*>> = mutableListOf()
 
         open fun build(): DataDescription {
             return DataDescription(this)
