@@ -1,6 +1,6 @@
 package com.analyticspot.ml.framework.observation
 
-import com.analyticspot.ml.framework.description.IntegerValueToken
+import com.analyticspot.ml.framework.description.IndexValueToken
 import com.analyticspot.ml.framework.description.ValueToken
 
 /**
@@ -17,7 +17,7 @@ class ArrayObservation : Observation {
         get() = data.size
 
     override fun <T> value(token: ValueToken<T>): T {
-        if (token is IntegerValueToken<T>) {
+        if (token is IndexValueToken<T>) {
             val v = data[token.index]
             check(token.clazz.isAssignableFrom(v.javaClass)) {
                 "value was called with T = ${token.clazz} but the found value was of type ${v.javaClass}"

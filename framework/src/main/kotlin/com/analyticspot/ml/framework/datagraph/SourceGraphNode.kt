@@ -1,6 +1,6 @@
 package com.analyticspot.ml.framework.datagraph
 
-import com.analyticspot.ml.framework.description.ValueToken
+import com.analyticspot.ml.framework.description.IndexValueToken
 
 /**
  *
@@ -17,8 +17,8 @@ class SourceGraphNode private constructor(builder: GraphNode.Builder) : GraphNod
     }
 
     class Builder(private val id: Int) {
-        val tokens = mutableListOf<ValueToken<*>>()
-        val trainOnlyTokens = mutableListOf<ValueToken<*>>()
+        val tokens = mutableListOf<IndexValueToken<*>>()
+        val trainOnlyTokens = mutableListOf<IndexValueToken<*>>()
 
         fun build(): SourceGraphNode {
             val gnb = GraphNode.Builder(id).apply {

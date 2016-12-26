@@ -40,15 +40,6 @@ open class DataDescription(builder: Builder) {
 
     }
 
-    companion object {
-        fun build(init: Builder.() -> Unit): DataDescription {
-            return with(Builder()) {
-                init()
-                return build()
-            }
-        }
-    }
-
     fun <T> token(name: String, clazz: Class<T>): ValueToken<T> {
         val token = tokenMap[name] ?: throw IllegalArgumentException("Token $name not found")
         if (token.clazz == clazz) {

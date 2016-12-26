@@ -1,6 +1,7 @@
 package com.analyticspot.ml.framework.datagraph
 
 import com.analyticspot.ml.framework.datatransform.DataTransform
+import com.analyticspot.ml.framework.observation.ArrayObservation
 import com.analyticspot.ml.framework.observation.Observation
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ExecutorService
@@ -15,7 +16,7 @@ class DataGraph(builder: GraphBuilder) {
     internal val allNodes: Array<GraphNode>
 
     init {
-        source = builder.source ?: throw IllegalStateException("All graphs must have a source specifieid")
+        source = builder.source
         result = builder.result
 
         allNodes = builder.nodesById.toTypedArray()
@@ -31,6 +32,17 @@ class DataGraph(builder: GraphBuilder) {
                 return build()
             }
         }
+    }
+
+    /**
+     * Constructs an [Observation] that is compatible with the types/tokens specified for [source].
+     */
+    fun buildTransformSource(vararg values: Any): Observation {
+        val baseArray = Array<Any>(values.size) { idx ->
+            check(values[idx].javaClass == source.tokens[idx].clazz)
+            values[idx]
+        }
+        return ArrayObservation(baseArray)
     }
 
     /**
@@ -52,8 +64,9 @@ class DataGraph(builder: GraphBuilder) {
 
         internal var nextId = 0
 
-        fun setSource(init: SourceGraphNode.Builder.() -> Unit) {
+        fun setSource(init: SourceGraphNode.Builder.() -> Unit): GraphNode {
             source = SourceGraphNode.build(nextId++, init)
+            return source
         }
 
 
