@@ -7,7 +7,12 @@ import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ExecutorService
 
 /**
- *
+ * A [DataGraph] is a directed acyclic graph of [GraphNode] objects. Typically each [GraphNode] represents a
+ * [DataTransform]. Thus the graph edges are data sources and the nodes are transformations. The [source] [GraphNode]
+ * is the root of the [DataGraph] and it where the original source data that is used for learning or prediciton comes
+ * from. The [result] [GraphNode] is the final node; the value it produces is the final output of the entire graph. For
+ * classification or regression problems the output of the [result] contain the prediction (and, perhaps, some
+ * metadata).
  */
 class DataGraph(builder: GraphBuilder) {
     val source: GraphNode

@@ -1,9 +1,9 @@
 package com.analyticspot.ml.framework.description
 
 /**
- * A value id allows the user to obtain data from a [DataSet], or [Observation] in a type safe * way. Typically
+ * A value id allows the user to obtain data from a [DataSet], or [Observation] in a type safe way. Typically
  * [DataTransform] or [DataSet] generates it's own [ValueToken]s from [ValueId]. [ValueToken] is like [ValueId] except
- * that it also incudes information about how to access the data efficiently. This allows each transform/data set to
+ * that it also includes information about how to access the data efficiently. This allows each transform/data set to
  * create tokens that allow them to efficiently access their underlying data structure.
  *
  * By convention groups of related values are named with a prefix, a separator of `-` and a suffix. Thus, if you are

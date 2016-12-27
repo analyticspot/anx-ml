@@ -5,13 +5,17 @@ import com.analyticspot.ml.framework.observation.Observation
 import org.slf4j.LoggerFactory
 
 /**
- *
+ * A [GraphNode] that takes a single input, runs it through a [DataTransform] and produces a single output.
  */
 internal open class TransformGraphNode protected constructor(builder: Builder) : GraphNode(builder) {
     val transform: DataTransform = builder.transform ?: throw IllegalArgumentException("Transform can not be null")
 
     companion object {
         private val log = LoggerFactory.getLogger(Companion::class.java)
+
+        /**
+         * Construct a [TransformGraphNode] by using the Kotlin builder pattern.
+         */
         fun build(id: Int, init: Builder.() -> Unit): TransformGraphNode {
             return with(Builder(id)) {
                 init()
@@ -33,6 +37,8 @@ internal open class TransformGraphNode protected constructor(builder: Builder) :
 
     override fun getExecutionManager(parent: GraphExecution): NodeExecutionManager = ExecutionManager(this, parent)
 
+    // The execution manager for this node. Since this expects only a single input it signals onReadyToRun as soon as
+    // onDataAvailable is called.
     private class ExecutionManager(override val graphNode: TransformGraphNode, private val parent: GraphExecution)
         : NodeExecutionManager {
         @Volatile
