@@ -1,0 +1,9 @@
+apply plugin: 'anx-kotlin'
+
+dependencies {
+   compile Deps.ktStdlib
+   compile Deps.slf4j
+
+   testCompile Deps.standardTest
+   testCompile Deps.logback
+}

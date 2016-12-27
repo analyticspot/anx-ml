@@ -3,5 +3,11 @@
 // This allows us to ensure that all projects are using the same dependencies, dependency resolution,
 // etc. so that we can easily upgrade all projects to new versions, fix conflicts, etc.
 ext.Deps = [
-   ktStdlib: 'org.jetbrains.kotlin:kotlin-stdlib:1.0.4'
+   ktStdlib: 'org.jetbrains.kotlin:kotlin-stdlib:1.0.4',
+   'slf4j': 'org.slf4j:slf4j-api:1.7.20',
+   'logback': 'ch.qos.logback:logback-classic:1.1.7',
+   'standardTest': [
+           'org.testng:testng:6.1.1',
+           'org.assertj:assertj-core:3.3.0'
+   ]
 ]
