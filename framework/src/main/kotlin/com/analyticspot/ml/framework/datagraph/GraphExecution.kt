@@ -95,3 +95,27 @@ interface NodeExecutionManager : Runnable {
     val graphNode: GraphNode
     fun onDataAvailable(data: DataSet)
 }
+
+/**
+ * Convenience base class for [NodeExecutionManager]s that are ready when a single [DataSet] is available. Subclasses
+ * need only override [doRun] to perform the actual computation.
+ */
+abstract class SingleInputExecutionManager(protected val parent: GraphExecution) : NodeExecutionManager {
+    @Volatile
+    private var data: DataSet? = null
+
+    override fun onDataAvailable(data: DataSet) {
+        this.data = data
+        parent.onReadyToRun(this)
+    }
+
+    final override fun run() {
+        val result = doRun(data!!)
+        // Get rid of our reference to the observaton so it can be GC'd if nothing else is using it.
+        data = null
+        parent.onDataComputed(this, result)
+    }
+
+    abstract fun doRun(dataSet: DataSet): DataSet
+
+}

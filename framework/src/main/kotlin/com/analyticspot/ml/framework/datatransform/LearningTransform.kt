@@ -3,9 +3,8 @@ package com.analyticspot.ml.framework.datatransform
 import com.analyticspot.ml.framework.dataset.DataSet
 
 /**
- * A [DataTransform] that learns from the data. To use it one should call `train` or `trainTransform` before calling
- * `execute`. The `train` and `trainTransform` methods allow the algorithm to learn from the data. The `execute`
- * method that applies the trained transformation.
+ * A [DataTransform] that learns from the data. To use it one should call `trainTransform` to both train the algorithm
+ * and apply it to the input data. Once trained you can call [transform] to apply it to new, previously unseen data.
  */
 interface LearningTransform : DataTransform {
     /**

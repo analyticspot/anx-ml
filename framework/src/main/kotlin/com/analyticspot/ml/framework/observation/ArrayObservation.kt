@@ -13,6 +13,8 @@ class ArrayObservation : Observation {
         this.data = data
     }
 
+    constructor(data: Collection<Any>) : this(data.toTypedArray())
+
     companion object {
         fun create(vararg data: Any): ArrayObservation {
             @Suppress("UNCHECKED_CAST")
