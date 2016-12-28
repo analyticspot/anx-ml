@@ -6,6 +6,7 @@ import com.analyticspot.ml.framework.datatransform.DataTransform
 import com.analyticspot.ml.framework.datatransform.LearningTransform
 import com.analyticspot.ml.framework.observation.ArrayObservation
 import com.analyticspot.ml.framework.observation.Observation
+import org.slf4j.LoggerFactory
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ExecutorService
 
@@ -31,6 +32,7 @@ class DataGraph(builder: GraphBuilder) {
     }
 
     companion object {
+        private val log = LoggerFactory.getLogger(Companion::class.java)
         /**
          * Kotlin-style builder for a [DataGraph].
          */
@@ -98,18 +100,29 @@ class DataGraph(builder: GraphBuilder) {
         }
 
         fun addTransform(src: GraphNode, transform: DataTransform): GraphNode {
+            log.debug("Adding an untrained transform to the graph.")
             val node = TransformGraphNode.build(nextId++) {
                 this.transform = transform
                 sources += src
             }
-            src.subscribers += node
-            assert(nodesById.size == node.id)
-            nodesById.add(node)
+            addNodeToGraph(src, node)
             return node
         }
 
-        fun addTransform(src: GraphNode, transform: LearningTransform) {
+        fun addTransform(src: GraphNode, transform: LearningTransform): GraphNode {
+            log.debug("Adding an unsupervised learning transform to the graph.")
+            val node = LearningGraphNode.build(nextId++) {
+                this.transform = transform
+                sources += src
+            }
+            addNodeToGraph(src, node)
+            return node
+        }
 
+        private fun addNodeToGraph(src: GraphNode, nodeToAdd: GraphNode) {
+            src.subscribers += nodeToAdd
+            assert(nodesById.size == nodeToAdd.id)
+            nodesById.add(nodeToAdd)
         }
 
         fun build(): DataGraph {

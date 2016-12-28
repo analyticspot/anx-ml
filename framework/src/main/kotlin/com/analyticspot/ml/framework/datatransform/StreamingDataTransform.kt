@@ -1,9 +1,10 @@
 package com.analyticspot.ml.framework.datatransform
 
 import com.analyticspot.ml.framework.dataset.DataSet
-import com.analyticspot.ml.framework.dataset.StreamDataSet
+import com.analyticspot.ml.framework.dataset.IterableDataSet
 import com.analyticspot.ml.framework.observation.Observation
 import kotlinx.support.jdk8.collections.spliterator
+import kotlinx.support.jdk8.streams.toList
 import java.util.stream.StreamSupport
 
 /**
@@ -12,8 +13,8 @@ import java.util.stream.StreamSupport
  */
 abstract class StreamingDataTransform : DataTransform {
     final override fun transform(dataSet: DataSet): DataSet {
-        val obsStream = StreamSupport.stream(dataSet.spliterator(), false).map { transform(it) }
-        return StreamDataSet(obsStream)
+        val obsList = StreamSupport.stream(dataSet.spliterator(), false).map { transform(it) }.toList()
+        return IterableDataSet(obsList)
     }
 
     abstract fun transform(observation: Observation): Observation
