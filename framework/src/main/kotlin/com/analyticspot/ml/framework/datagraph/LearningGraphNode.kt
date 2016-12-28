@@ -2,7 +2,6 @@ package com.analyticspot.ml.framework.datagraph
 
 import com.analyticspot.ml.framework.dataset.DataSet
 import com.analyticspot.ml.framework.datatransform.LearningTransform
-import org.slf4j.LoggerFactory
 
 /**
  * A [GraphNode] which takes a single input [DataSet] and applies a [LearningTransform] to it.
@@ -40,10 +39,6 @@ class LearningGraphNode(builder: Builder) : GraphNode(builder) {
             override val graphNode: LearningGraphNode,
             private val execType: ExecutionType,
             parent: GraphExecution) : SingleInputExecutionManager(parent) {
-
-        companion object {
-            private val log = LoggerFactory.getLogger(ExecutionManager::class.java)
-        }
 
         override fun doRun(dataSet: DataSet): DataSet {
             if (execType == ExecutionType.TRANSFORM) {

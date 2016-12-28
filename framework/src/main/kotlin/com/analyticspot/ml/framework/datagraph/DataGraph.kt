@@ -17,6 +17,8 @@ import java.util.concurrent.ExecutorService
  * from. The [result] [GraphNode] is the final node; the value it produces is the final output of the entire graph. For
  * classification or regression problems the output of the [result] contain the prediction (and, perhaps, some
  * metadata).
+ *
+ * Note: Unit tests for this are in `GraphExecutionTest`.
  */
 class DataGraph(builder: GraphBuilder) {
     val source: GraphNode
