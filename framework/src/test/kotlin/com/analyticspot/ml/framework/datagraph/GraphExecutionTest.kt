@@ -1,6 +1,6 @@
 package com.analyticspot.ml.framework.datagraph
 
-import com.analyticspot.ml.framework.datatransform.DataTransform
+import com.analyticspot.ml.framework.datatransform.StreamingDataTransform
 import com.analyticspot.ml.framework.datatransform.TransformDescription
 import com.analyticspot.ml.framework.description.ValueId
 import com.analyticspot.ml.framework.description.ValueToken
@@ -39,7 +39,7 @@ class GraphExecutionTest {
         assertThat(resultObs.value(dg.result.token(resultId))).isEqualTo(88 + 5)
     }
 
-    class AddFiveTransform(private val srcToken: ValueToken<Int>, resultId: ValueId<Int>) : DataTransform {
+    class AddFiveTransform(private val srcToken: ValueToken<Int>, resultId: ValueId<Int>) : StreamingDataTransform() {
         private val resultToken = ValueToken(resultId)
         override val description = TransformDescription(listOf(resultToken))
 

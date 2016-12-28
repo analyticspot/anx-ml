@@ -1,7 +1,7 @@
 package com.analyticspot.ml.framework.datagraph
 
+import com.analyticspot.ml.framework.dataset.DataSet
 import com.analyticspot.ml.framework.datatransform.DataTransform
-import com.analyticspot.ml.framework.observation.Observation
 import org.slf4j.LoggerFactory
 
 /**
@@ -35,25 +35,26 @@ internal open class TransformGraphNode protected constructor(builder: Builder) :
         override fun build(): TransformGraphNode = TransformGraphNode(this)
     }
 
-    override fun getExecutionManager(parent: GraphExecution): NodeExecutionManager = ExecutionManager(this, parent)
+    override fun getExecutionManager(parent: GraphExecution, execType: ExecutionType): NodeExecutionManager =
+        ExecutionManager(this, parent)
 
     // The execution manager for this node. Since this expects only a single input it signals onReadyToRun as soon as
     // onDataAvailable is called.
     private class ExecutionManager(override val graphNode: TransformGraphNode, private val parent: GraphExecution)
         : NodeExecutionManager {
         @Volatile
-        private var observation: Observation? = null
+        private var data: DataSet? = null
 
-        override fun onDataAvailable(observation: Observation) {
-            this.observation = observation
+        override fun onDataAvailable(data: DataSet) {
+            this.data = data
             parent.onReadyToRun(this)
 
         }
 
         override fun run() {
-            val result = graphNode.transform.transform(observation!!)
+            val result = graphNode.transform.transform(data!!)
             // Get rid of our reference to the observaton so it can be GC'd if nothing else is using it.
-            observation = null
+            data = null
             parent.onDataComputed(this, result)
         }
     }

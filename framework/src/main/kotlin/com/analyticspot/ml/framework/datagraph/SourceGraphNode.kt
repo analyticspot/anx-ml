@@ -1,8 +1,8 @@
 package com.analyticspot.ml.framework.datagraph
 
+import com.analyticspot.ml.framework.dataset.DataSet
 import com.analyticspot.ml.framework.description.IndexValueToken
 import com.analyticspot.ml.framework.description.ValueId
-import com.analyticspot.ml.framework.observation.Observation
 
 /**
  * A special [GraphNode] for the one node that is the source for the entire graph. While most nodes know how to compute
@@ -13,6 +13,7 @@ import com.analyticspot.ml.framework.observation.Observation
  * something like [DataGraph.buildTransformSource].
  */
 class SourceGraphNode private constructor(builder: GraphNode.Builder) : GraphNode(builder) {
+
     companion object {
         /**
          * Construct a [SourceGraphNode].
@@ -55,12 +56,14 @@ class SourceGraphNode private constructor(builder: GraphNode.Builder) : GraphNod
         }
     }
 
-    override fun getExecutionManager(parent: GraphExecution): NodeExecutionManager = ExecutionManager(this)
+    override fun getExecutionManager(parent: GraphExecution, execType: ExecutionType): NodeExecutionManager {
+        return ExecutionManager(this)
+    }
 
     // Note that source data nodes are specicial and don't really participate in the GraphExecution protocol. Thus all
     // methods here just throw exceptions.
     private class ExecutionManager(override val graphNode: GraphNode) : NodeExecutionManager {
-        override fun onDataAvailable(observation: Observation) {
+        override fun onDataAvailable(data: DataSet) {
             throw IllegalStateException("This is a SourceGraphNode and it therefore does not participate in the " +
                     "normal GraphExecution protocol.")
         }
@@ -69,6 +72,5 @@ class SourceGraphNode private constructor(builder: GraphNode.Builder) : GraphNod
             throw IllegalStateException("This is a SourceGraphNode and it therefore does not participate in the " +
                     "normal GraphExecution protocol.")
         }
-
     }
 }
