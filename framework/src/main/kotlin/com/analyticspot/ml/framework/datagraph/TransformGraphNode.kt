@@ -24,39 +24,29 @@ internal open class TransformGraphNode protected constructor(builder: Builder) :
         }
     }
 
+    override fun getExecutionManager(parent: GraphExecution, execType: ExecutionType): NodeExecutionManager =
+            ExecutionManager(this, parent)
+
     open class Builder(id: Int) : GraphNode.Builder(id) {
         var transform: DataTransform? = null
             set(value) {
                 field = value ?: throw IllegalArgumentException("Transform can not be null")
                 tokens.addAll(value.description.tokens)
                 tokenGroups.addAll(value.description.tokenGroups)
+                check(value.description.trainOnlyTokens.size == 0) {
+                    "Non-trained DataTranform should not declare any train-only tokens"
+                }
             }
 
         override fun build(): TransformGraphNode = TransformGraphNode(this)
     }
 
-    override fun getExecutionManager(parent: GraphExecution, execType: ExecutionType): NodeExecutionManager =
-        ExecutionManager(this, parent)
-
     // The execution manager for this node. Since this expects only a single input it signals onReadyToRun as soon as
     // onDataAvailable is called.
-    private class ExecutionManager(override val graphNode: TransformGraphNode, private val parent: GraphExecution)
-        : NodeExecutionManager {
-        @Volatile
-        private var data: DataSet? = null
+    private class ExecutionManager(override val graphNode: TransformGraphNode, parent: GraphExecution)
+        : SingleInputExecutionManager(parent) {
 
-        override fun onDataAvailable(data: DataSet) {
-            this.data = data
-            parent.onReadyToRun(this)
-
-        }
-
-        override fun run() {
-            val result = graphNode.transform.transform(data!!)
-            // Get rid of our reference to the observaton so it can be GC'd if nothing else is using it.
-            data = null
-            parent.onDataComputed(this, result)
-        }
+        override fun doRun(dataSet: DataSet) = graphNode.transform.transform(dataSet)
     }
 }
 

@@ -3,6 +3,7 @@ package com.analyticspot.ml.framework.datagraph
 import com.analyticspot.ml.framework.dataset.DataSet
 import com.analyticspot.ml.framework.dataset.SingleObservationDataSet
 import com.analyticspot.ml.framework.datatransform.DataTransform
+import com.analyticspot.ml.framework.datatransform.LearningTransform
 import com.analyticspot.ml.framework.observation.ArrayObservation
 import com.analyticspot.ml.framework.observation.Observation
 import java.util.concurrent.CompletableFuture
@@ -70,6 +71,15 @@ class DataGraph(builder: GraphBuilder) {
         }
     }
 
+    /**
+     * Train the graph on the given inputs and return the result of transforming the source data set via the trained
+     * transformers.
+     */
+    fun trainTransform(dataSet: DataSet, exec: ExecutorService): CompletableFuture<DataSet> {
+        val graphExec = GraphExecution(this, ExecutionType.TRAIN_TRANSFORM, exec)
+        return graphExec.execute(dataSet)
+    }
+
     class GraphBuilder {
         internal lateinit var source: SourceGraphNode
 
@@ -96,6 +106,10 @@ class DataGraph(builder: GraphBuilder) {
             assert(nodesById.size == node.id)
             nodesById.add(node)
             return node
+        }
+
+        fun addTransform(src: GraphNode, transform: LearningTransform) {
+
         }
 
         fun build(): DataGraph {
