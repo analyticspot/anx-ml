@@ -1,6 +1,6 @@
 package com.analyticspot.ml.framework.datagraph
 
-import com.analyticspot.ml.framework.observation.Observation
+import com.analyticspot.ml.framework.dataset.DataSet
 import org.slf4j.LoggerFactory
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ExecutorService
@@ -27,14 +27,15 @@ import java.util.concurrent.ExecutorService
  *   the [NodeExecutionManager] will call [onDataComputed] on this instance which will cause the entire process to
  *   repeat.
  */
-class GraphExecution (private val dataGraph: DataGraph, private val exec: ExecutorService) {
+class GraphExecution (
+        private val dataGraph: DataGraph, private val execType: ExecutionType, private val exec: ExecutorService) {
     private val executionManagers: Array<NodeExecutionManager>
-    private val executionResult: CompletableFuture<Observation> = CompletableFuture()
+    private val executionResult: CompletableFuture<DataSet> = CompletableFuture()
 
     init {
         val graphNodes = dataGraph.allNodes
         executionManagers = Array<NodeExecutionManager>(graphNodes.size) { idx ->
-            graphNodes[idx].getExecutionManager(this)
+            graphNodes[idx].getExecutionManager(this, execType)
         }
     }
 
@@ -42,26 +43,35 @@ class GraphExecution (private val dataGraph: DataGraph, private val exec: Execut
         private val log = LoggerFactory.getLogger(GraphExecution::class.java)
     }
 
-    fun transform(observation: Observation): CompletableFuture<Observation> {
+    fun execute(data: DataSet): CompletableFuture<DataSet> {
         log.debug("Starting execution of DataGraph")
-        for (sub in dataGraph.source.subscribers) {
-            log.debug("Notifying node {} that the source is available", sub.id)
-            executionManagers[sub.id].onDataAvailable(observation)
-        }
+        onDataComputed(executionManagers[dataGraph.source.id], data)
         return executionResult
     }
 
-    fun onDataComputed(manager: NodeExecutionManager, observation: Observation) {
+    fun onDataComputed(manager: NodeExecutionManager, data: DataSet) {
         log.debug("Node {} has finished computing its Observation.", manager.graphNode.id)
         if (manager.graphNode.id == dataGraph.result.id) {
             log.debug("Result node has called onDataComputed so execution is complete.")
-            executionResult.complete(observation)
+            executionResult.complete(data)
         } else {
-            for (sub in manager.graphNode.subscribers) {
-                log.debug("Notifying {} that the data from {} is available", sub.id, manager.graphNode.id)
-                executionManagers[sub.id].onDataAvailable(observation)
+            log.debug("Notifying subscribers of {}", manager.graphNode.id)
+            notifySubscribers(data, manager.graphNode.subscribers)
+            if (execType == ExecutionType.TRAIN_TRANSFORM) {
+                log.debug("Notifying train only subscribers of {}", manager.graphNode.id)
+                notifySubscribers(data, manager.graphNode.trainOnlySubscribers)
+            } else {
+                check(execType == ExecutionType.TRANSFORM)
             }
         }
+    }
+
+    private fun notifySubscribers(data: DataSet, subscribers: List<GraphNode>) {
+        for (sub in subscribers) {
+            log.debug("Notifying {} that data is available", sub.id)
+            executionManagers[sub.id].onDataAvailable(data)
+        }
+
     }
 
     fun onReadyToRun(manager: NodeExecutionManager) {
@@ -69,8 +79,12 @@ class GraphExecution (private val dataGraph: DataGraph, private val exec: Execut
     }
 }
 
+enum class ExecutionType {
+    TRAIN_TRANSFORM, TRANSFORM
+}
+
 /**
- * Manages the execution of a single node in a graph for a single run on `transform`, `fit`, or `fitTransform`. See
+ * Manages the execution of a single node in a graph for a single run on `execute`, `fit`, or `fitTransform`. See
  * the comments on [GraphExecution] for details.
  *
  * Note that when [onDataAvailable] is called the execution manager is in charge of maintaining a reference to the data
@@ -79,5 +93,5 @@ class GraphExecution (private val dataGraph: DataGraph, private val exec: Execut
  */
 interface NodeExecutionManager : Runnable {
     val graphNode: GraphNode
-    fun onDataAvailable(observation: Observation)
+    fun onDataAvailable(data: DataSet)
 }

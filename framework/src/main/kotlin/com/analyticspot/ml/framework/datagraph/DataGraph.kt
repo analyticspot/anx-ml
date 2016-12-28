@@ -1,5 +1,7 @@
 package com.analyticspot.ml.framework.datagraph
 
+import com.analyticspot.ml.framework.dataset.DataSet
+import com.analyticspot.ml.framework.dataset.SingleObservationDataSet
 import com.analyticspot.ml.framework.datatransform.DataTransform
 import com.analyticspot.ml.framework.observation.ArrayObservation
 import com.analyticspot.ml.framework.observation.Observation
@@ -51,12 +53,21 @@ class DataGraph(builder: GraphBuilder) {
     }
 
     /**
-     * Run the observation through the entire graph. The result type is a future of `Observation` because the graph
+     * Run the data through the entire graph. The result type is a future of `DataSet` because the graph
      * might contain an asynchronous [DataTransform] or it might contain an [OnDemandValue].
      */
+    fun transform(dataSet: DataSet, exec: ExecutorService): CompletableFuture<DataSet> {
+        val graphExec = GraphExecution(this, ExecutionType.TRANSFORM, exec)
+        return graphExec.execute(dataSet)
+    }
+
+    /**
+     * Convenience overload that transforms a single [Observation].
+     */
     fun transform(observation: Observation, exec: ExecutorService): CompletableFuture<Observation> {
-        val graphExec = GraphExecution(this, exec)
-        return graphExec.transform(observation)
+        return transform(SingleObservationDataSet(observation), exec).thenApply {
+            it.first()
+        }
     }
 
     class GraphBuilder {

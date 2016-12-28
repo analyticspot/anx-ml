@@ -2,6 +2,7 @@ apply plugin: 'anx-kotlin'
 
 dependencies {
    compile Deps.ktStdlib
+   compile Deps.ktJava8
    compile Deps.slf4j
 
    testCompile Deps.standardTest

@@ -1,11 +1,11 @@
 package com.analyticspot.ml.framework.datatransform
 
-import com.analyticspot.ml.framework.observation.Observation
+import com.analyticspot.ml.framework.dataset.DataSet
 
 /**
- * A class for transformations that take a single input and produce a single output. These transforms do no learn from
- * training data; they simply make a transformation. See [LearningTransform] or similar for transformation that need to
- * be trained before they can be used.
+ * A class for transformations that take one input DataSet and produce one output DataSet. These transforms do no learn
+ * from training data; they simply make a transformation. See [LearningTransform] or similar for transformation that
+ * need to be trained before they can be used.
  */
 interface DataTransform {
     /**
@@ -13,5 +13,6 @@ interface DataTransform {
      */
     val description: TransformDescription
 
-    fun transform(observation: Observation): Observation
+    fun transform(dataSet: DataSet): DataSet
 }
+
