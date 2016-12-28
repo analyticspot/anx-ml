@@ -1,7 +1,6 @@
 package com.analyticspot.ml.framework.datatransform
 
 import com.analyticspot.ml.framework.dataset.DataSet
-import com.analyticspot.ml.framework.observation.Observation
 
 /**
  * A class for transformations that take one input DataSet and produce one output DataSet. These transforms do no learn
