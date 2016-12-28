@@ -24,7 +24,7 @@ The feature framework here is intended to solve these issues.
 
 Consider the following training task: Our input is unstructured test: a movie review. Our target is a value in the
 range 0 - 4 representing the number of stars the reviewer gave. We want to learn to predict the number of stars from
-the full text of the review. In order to do this we want to generate several features and execute the inputs.
+the full text of the review. In order to do this we want to generate several features and transform the inputs.
 Specifically, we want to:
 
 1. Convert the input review into a "bag of words" representation: one row for each review, one column for each
