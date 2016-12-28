@@ -13,6 +13,13 @@ class ArrayObservation : Observation {
         this.data = data
     }
 
+    companion object {
+        fun create(vararg data: Any): ArrayObservation {
+            @Suppress("UNCHECKED_CAST")
+            return ArrayObservation(data as Array<Any>)
+        }
+    }
+
     override val size: Int
         get() = data.size
 
