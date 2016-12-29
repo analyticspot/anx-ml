@@ -1,6 +1,7 @@
 package com.analyticspot.ml.framework.datatransform
 
 import com.analyticspot.ml.framework.dataset.DataSet
+import java.util.concurrent.CompletableFuture
 
 /**
  * Like [LearningTransform] but for supervised learning algorithms. The [trainTransform] method, in addition to a
@@ -14,5 +15,5 @@ interface SupervisedLearningTransform : DataTransform {
      * Has the same effect as calling [train] and then calling [transform]. However, for some algorithms it can be more
      * efficient to combine these steps.
      */
-    fun trainTransform(dataSet: DataSet, trainDs: DataSet): DataSet
+    fun trainTransform(dataSet: DataSet, trainDs: DataSet): CompletableFuture<DataSet>
 }
