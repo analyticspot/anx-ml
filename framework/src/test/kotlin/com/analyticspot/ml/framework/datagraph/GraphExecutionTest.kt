@@ -12,6 +12,7 @@ import com.analyticspot.ml.framework.observation.SingleValueObservation
 import org.assertj.core.api.Assertions.assertThat
 import org.slf4j.LoggerFactory
 import org.testng.annotations.Test
+import java.util.concurrent.CompletableFuture
 import java.util.concurrent.Executors
 
 class GraphExecutionTest {
@@ -92,18 +93,18 @@ class GraphExecutionTest {
         override val description: TransformDescription
             get() = TransformDescription(listOf(resultToken))
 
-        override fun trainTransform(dataSet: DataSet): DataSet {
+        override fun trainTransform(dataSet: DataSet): CompletableFuture<DataSet> {
             log.debug("Training.")
             val dsMin = dataSet.asSequence().map { it.value(srcToken) }.min()
             minValue = dsMin ?: minValue
             return transform(dataSet)
         }
 
-        override fun transform(dataSet: DataSet): DataSet {
+        override fun transform(dataSet: DataSet): CompletableFuture<DataSet> {
             val resultData = dataSet.asSequence().map {
                 SingleValueObservation.create(minValue)
             }.toList()
-            return IterableDataSet(resultData)
+            return CompletableFuture.completedFuture(IterableDataSet(resultData))
         }
     }
 }

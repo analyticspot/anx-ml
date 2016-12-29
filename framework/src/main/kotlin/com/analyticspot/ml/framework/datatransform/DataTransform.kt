@@ -1,6 +1,7 @@
 package com.analyticspot.ml.framework.datatransform
 
 import com.analyticspot.ml.framework.dataset.DataSet
+import java.util.concurrent.CompletableFuture
 
 /**
  * A class for transformations that take one input DataSet and produce one output DataSet. These transforms do no learn
@@ -13,6 +14,6 @@ interface DataTransform {
      */
     val description: TransformDescription
 
-    fun transform(dataSet: DataSet): DataSet
+    fun transform(dataSet: DataSet): CompletableFuture<DataSet>
 }
 

@@ -2,6 +2,7 @@ package com.analyticspot.ml.framework.datagraph
 
 import com.analyticspot.ml.framework.dataset.DataSet
 import com.analyticspot.ml.framework.datatransform.LearningTransform
+import java.util.concurrent.CompletableFuture
 
 /**
  * A [GraphNode] which takes a single input [DataSet] and applies a [LearningTransform] to it.
@@ -40,7 +41,7 @@ class LearningGraphNode(builder: Builder) : GraphNode(builder) {
             private val execType: ExecutionType,
             parent: GraphExecution) : SingleInputExecutionManager(parent) {
 
-        override fun doRun(dataSet: DataSet): DataSet {
+        override fun doRun(dataSet: DataSet): CompletableFuture<DataSet> {
             if (execType == ExecutionType.TRANSFORM) {
                 return graphNode.transform.transform(dataSet)
             } else {

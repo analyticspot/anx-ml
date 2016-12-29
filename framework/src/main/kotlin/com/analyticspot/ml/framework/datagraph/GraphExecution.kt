@@ -111,11 +111,13 @@ abstract class SingleInputExecutionManager(protected val parent: GraphExecution)
 
     final override fun run() {
         val result = doRun(data!!)
-        // Get rid of our reference to the observaton so it can be GC'd if nothing else is using it.
-        data = null
-        parent.onDataComputed(this, result)
+        result.thenAccept {
+            // Get rid of our reference to the observaton so it can be GC'd if nothing else is using it.
+            data = null
+            parent.onDataComputed(this, it)
+        }
     }
 
-    abstract fun doRun(dataSet: DataSet): DataSet
+    abstract fun doRun(dataSet: DataSet): CompletableFuture<DataSet>
 
 }
