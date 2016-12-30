@@ -25,6 +25,7 @@ object JsonMapper {
     }
 }
 
+// TODO(NOW) Remove if I don't find an actual use for this.
 class AnxMlSerializationModule : SimpleModule(NAME) {
     companion object {
         private val NAME = AnxMlSerializationModule::class.java.name
@@ -34,12 +35,4 @@ class AnxMlSerializationModule : SimpleModule(NAME) {
 
     }
 }
-
-// class ValueTokenDeserializer : JsonDeserializer<ValueToken<*>>() {
-//     override fun deserialize(parser: JsonParser, ctxt: DeserializationContext): ValueToken<*> {
-//         val valueId = parser.readValueAs(ValueId::class.java)
-//         val source = ctxt.findInjectableValue()
-//     }
-//
-// }
 
