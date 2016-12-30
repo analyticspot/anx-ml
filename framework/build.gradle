@@ -4,6 +4,7 @@ dependencies {
    compile Deps.ktStdlib
    compile Deps.ktJava8
    compile Deps.slf4j
+   compile Deps.jackson
 
    testCompile Deps.standardTest
    testCompile Deps.logback
