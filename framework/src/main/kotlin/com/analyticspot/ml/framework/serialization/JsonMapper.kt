@@ -1,7 +1,6 @@
 package com.analyticspot.ml.framework.serialization
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.databind.module.SimpleModule
 import com.fasterxml.jackson.databind.ser.impl.SimpleBeanPropertyFilter
 import com.fasterxml.jackson.databind.ser.impl.SimpleFilterProvider
 import com.fasterxml.jackson.module.kotlin.registerKotlinModule
@@ -19,20 +18,7 @@ object JsonMapper {
     init {
         val tokenFilter = SimpleBeanPropertyFilter.filterOutAllExcept("id")
         val filterProvider = SimpleFilterProvider().addFilter(VALUE_TOKEN_FILTER_ID, tokenFilter)
-        mapper = ObjectMapper().registerKotlinModule().registerModule(AnxMlSerializationModule())
-                .setFilterProvider(filterProvider)
-
-    }
-}
-
-// TODO(NOW) Remove if I don't find an actual use for this.
-class AnxMlSerializationModule : SimpleModule(NAME) {
-    companion object {
-        private val NAME = AnxMlSerializationModule::class.java.name
-    }
-
-    override fun setupModule(context: SetupContext) {
-
+        mapper = ObjectMapper().registerKotlinModule().setFilterProvider(filterProvider)
     }
 }
 

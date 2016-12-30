@@ -7,11 +7,8 @@ import com.analyticspot.ml.framework.description.ValueToken
 import com.analyticspot.ml.framework.observation.Observation
 import com.analyticspot.ml.framework.observation.SingleValueObservation
 import com.fasterxml.jackson.annotation.JacksonInject
-import com.fasterxml.jackson.annotation.JsonProperty
-import com.fasterxml.jackson.annotation.JsonProperty.Access.READ_ONLY
 
-class AddConstantTransform(@JsonProperty(access = READ_ONLY) private val toAdd: Int,
-        private val srcToken: ValueToken<Int>, resultId: ValueId<Int>)
+class AddConstantTransform(val toAdd: Int, val srcToken: ValueToken<Int>, val resultId: ValueId<Int>)
     : StreamingDataTransform() {
     private val resultToken = ValueToken(resultId)
     override val description = TransformDescription(listOf(resultToken))

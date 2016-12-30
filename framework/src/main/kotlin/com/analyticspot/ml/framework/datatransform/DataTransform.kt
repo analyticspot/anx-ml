@@ -1,6 +1,7 @@
 package com.analyticspot.ml.framework.datatransform
 
 import com.analyticspot.ml.framework.dataset.DataSet
+import com.fasterxml.jackson.annotation.JsonIgnore
 import java.util.concurrent.CompletableFuture
 
 /**
@@ -12,6 +13,7 @@ interface DataTransform {
     /**
      * Describes the outputs produced by this transformation.
      */
+    @get:JsonIgnore
     val description: TransformDescription
 
     fun transform(dataSet: DataSet): CompletableFuture<DataSet>
