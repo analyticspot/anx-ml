@@ -1,0 +1,7 @@
+main:
+  only:
+    - master
+  tags:
+    - linux
+  script: "./gradlew check"
+
