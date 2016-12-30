@@ -80,10 +80,6 @@ Node 2 is a (theoretical) wrapper class that wraps any Weka classifier as a `Dat
 to deserialize we'd have to look at the file named "2" in the zip file and the `Weka` `FormatModule` (see below) would
 know how to deserialize that properly.
 
-
-Make all transformers async API-wise. No speed benefit to sync so might as well simplify. Then have SyncTransformer
-base class for those that want it.
-
 # Deserialization
 
 In order to support interoperability with other machine learning libraries we do not specify a single serialization
