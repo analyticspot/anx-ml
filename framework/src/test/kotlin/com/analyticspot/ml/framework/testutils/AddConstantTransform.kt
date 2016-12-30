@@ -6,10 +6,12 @@ import com.analyticspot.ml.framework.description.ValueId
 import com.analyticspot.ml.framework.description.ValueToken
 import com.analyticspot.ml.framework.observation.Observation
 import com.analyticspot.ml.framework.observation.SingleValueObservation
+import com.fasterxml.jackson.annotation.JacksonInject
 import com.fasterxml.jackson.annotation.JsonProperty
-import com.fasterxml.jackson.annotation.JsonProperty.Access.READ_WRITE
+import com.fasterxml.jackson.annotation.JsonProperty.Access.READ_ONLY
 
-class AddConstantTransform(@JsonProperty(access = READ_WRITE) private val toAdd: Int, private val srcToken: ValueToken<Int>, resultId: ValueId<Int>)
+class AddConstantTransform(@JsonProperty(access = READ_ONLY) private val toAdd: Int,
+        private val srcToken: ValueToken<Int>, resultId: ValueId<Int>)
     : StreamingDataTransform() {
     private val resultToken = ValueToken(resultId)
     override val description = TransformDescription(listOf(resultToken))
@@ -17,5 +19,9 @@ class AddConstantTransform(@JsonProperty(access = READ_WRITE) private val toAdd:
     override fun transform(observation: Observation): Observation {
         val srcVal: Int = observation.value(srcToken)
         return SingleValueObservation.create(srcVal + toAdd)
+    }
+
+    class DeserBuilder(@JacksonInject private val sources: List<GraphNode>) {
+
     }
 }
