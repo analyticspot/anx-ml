@@ -3,12 +3,32 @@
 // This allows us to ensure that all projects are using the same dependencies, dependency resolution,
 // etc. so that we can easily upgrade all projects to new versions, fix conflicts, etc.
 ext.Deps = [
-   'ktStdlib': 'org.jetbrains.kotlin:kotlin-stdlib:1.0.4',
-   'ktJava8': 'org.jetbrains.kotlinx:kotlinx-support-jdk8:0.3',
-   'slf4j': 'org.slf4j:slf4j-api:1.7.20',
-   'logback': 'ch.qos.logback:logback-classic:1.1.7',
-   'standardTest': [
-           'org.testng:testng:6.1.1',
-           'org.assertj:assertj-core:3.3.0'
-   ]
+        ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        // Kotlin Stuff
+        ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        'ktStdlib': 'org.jetbrains.kotlin:kotlin-stdlib:1.0.4',
+        'ktJava8': 'org.jetbrains.kotlinx:kotlinx-support-jdk8:0.3',
+
+        ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        // Logging
+        ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        'slf4j': 'org.slf4j:slf4j-api:1.7.20',
+        'logback': 'ch.qos.logback:logback-classic:1.1.7',
+
+        ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        // Serialiation and JSON
+        ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        'jackson': [
+                'com.fasterxml.jackson.core:jackson-databind:2.7.0',
+                'com.fasterxml.jackson.core:jackson-annotations:2.7.0',
+                'com.fasterxml.jackson.module:jackson-module-kotlin:2.7.8'
+        ],
+
+        ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        // Testing
+        ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        'standardTest': [
+                'org.testng:testng:6.1.1',
+                'org.assertj:assertj-core:3.3.0'
+        ]
 ]
