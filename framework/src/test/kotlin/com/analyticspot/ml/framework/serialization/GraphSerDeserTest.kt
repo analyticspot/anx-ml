@@ -10,10 +10,12 @@ import org.testng.annotations.Test
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 
-class StandardJsonFormatModuleTest {
+/**
 
+ */
+class GraphSerDeserTest {
     companion object {
-        private val log = LoggerFactory.getLogger(StandardJsonFormatModuleTest::class.java)
+        private val log = LoggerFactory.getLogger(GraphSerDeserTest::class.java)
     }
 
     // Serialize a simple AddConstantTransform and then deserialize it with the factory. Changes the source Graphnode so
@@ -33,15 +35,14 @@ class StandardJsonFormatModuleTest {
         val resultId = ValueId.create<Int>("result")
         val trans = AddConstantTransform(amountToAdd, srcToken, resultId)
 
-        val module = StandardJsonFormatModule()
+        val serDeser = GraphSerDeser()
 
         // Serialize it to the output stream
         val output = ByteArrayOutputStream()
-        module.serialize(trans, output)
+        serDeser.serializeTransform(trans, output)
         log.debug("Transform serialized as: {}", output.toString())
 
         val input = ByteArrayInputStream(output.toByteArray())
-        val factory = module.getFactory(null)
 
         // Construct a new source with only 1 token. Note that the index of this token will be different than the one
         // from the original source.
@@ -49,7 +50,8 @@ class StandardJsonFormatModuleTest {
             valueIds += valIdToTransform
         }
         // Now deserialize relative to this new source
-        val deserialized = factory.deserialize(StandardJsonData(trans.javaClass), listOf(newSource), input)
+        val deserialized = serDeser.deserializeTransform(
+                null, StandardJsonFormat.MetaData(trans), listOf(newSource), input)
 
         assertThat(deserialized).isInstanceOf(AddConstantTransform::class.java)
         val deserializedAddConstant = deserialized as AddConstantTransform
@@ -60,4 +62,3 @@ class StandardJsonFormatModuleTest {
         assertThat((deserializedAddConstant.srcToken as IndexValueToken<Int>).index).isEqualTo(0)
     }
 }
-

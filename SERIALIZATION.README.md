@@ -5,8 +5,8 @@ is probably to serialized a trained model for deployment. Our requirements for t
 
 * Simple: it should be easy to deserialize an entire `DataGraph` and start using it to make predictions.
 * Format independent: while most of our own code serialized to JSON we would like to be able to use existing code that
-  might serialize in a different format. For example, the Weka project contains a huge number of algorithms that we
-  might want to use but they serialize in a binary format (Java serialization format).
+  might serialize in a different formatClass. For example, the Weka project contains a huge number of algorithms that we
+  might want to use but they serialize in a binary formatClass (Java serialization formatClass).
 * Injectable: we'd like to be able to use one implementation for a node when training an a different implementation when
   running in production. For example, we might make an API call to obtain a zip code for an address in production, but
   when training we'd use values stored in database. In addition, this injection needs to be flexible:
@@ -46,7 +46,7 @@ For example, the `graph.json` file might look like this:
         "sources": [0],
         "subscribers": [2],
         "type": "com.analyticspot.ml.framework.datagraph.TransformGraphNode",
-        "format": {
+        "formatClass": {
             "type": "com.analyticspot.ml.serialization.StandardJson",
             "class": "com.analyticspot.ml.transform.PositiveWordCount"
         },
@@ -60,7 +60,7 @@ For example, the `graph.json` file might look like this:
     "2": {
         "sources": [1],
         "type": "com.analyticspot.ml.framework.datagraph.TransformGraphNode",
-        "format": {
+        "formatClass": {
             "type": "com.analyticspot.ml.serialization.Weka"
         },
         "tokens": [
@@ -83,13 +83,13 @@ know how to deserialize that properly.
 # Deserialization
 
 In order to support interoperability with other machine learning libraries we do not specify a single serialization
-format for the `DataTransform`s. For example, the Weka project has a huge number of classifiers and filters that we
-might want to use but they all serialize to a binary format. This is why the graph structure is serialized as JSON but
+formatClass for the `DataTransform`s. For example, the Weka project has a huge number of classifiers and filters that we
+might want to use but they all serialize to a binary formatClass. This is why the graph structure is serialized as JSON but
 the details for each node are in their own files in the same `.zip` file. This way each node can serialize itself it
 the way that it sees fit.
 
 However, to deserialize we need to know what is capable of deserializing each node. Thus, each node in the `graph.json`
-specifies a `format` which corresponds to a `FormatModule`. The `format` block is deserialized using polymorphic
+specifies a `formatClass` which corresponds to a `FormatModule`. The `formatClass` block is deserialized using polymorphic
 deserialization so that the correct subclass of `FormatModuleData` is returned.
 
 The API for a `FormatModule` is quite simple:
@@ -123,7 +123,7 @@ NOTE: This means we have to be sure to serialize (or all least construct things)
 # Injection
 
 Each `FormatModule` manages its own injection. That is because different formats must be deserialized and injected
-differently. All of the `anxml` nodes use the same format: `StandardJson`. 
+differently. All of the `anxml` nodes use the same formatClass: `StandardJson`. 
 
 ## StandardJson Injection
 

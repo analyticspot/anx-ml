@@ -7,6 +7,6 @@ import java.io.InputStream
 /**
  *
  */
-interface TransformFactory<T : FormatData> {
-    fun deserialize(formatData: T, sources: List<GraphNode>, input: InputStream): DataTransform
+interface TransformFactory<MetaDataT : FormatMetaData> {
+    fun deserialize(formatMetaData: MetaDataT, sources: List<GraphNode>, input: InputStream): DataTransform
 }
