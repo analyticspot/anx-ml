@@ -36,8 +36,12 @@ class StandardJsonFormat : Format<StandardJsonFormat.MetaData> {
         return JsonMapper.mapper.setInjectableValues(injectables).readValue(input, metaData.transformClass)
     }
 
-    class MetaData(tranform: DataTransform) : FormatMetaData {
-        val transformClass = tranform.javaClass
+    /**
+     * The [FormatMetaData] for [StandardJsonFormat].
+     */
+    class MetaData(val transformClass: Class<out DataTransform>) : FormatMetaData {
+        constructor(transform: DataTransform) : this(transform.javaClass)
+
         override val formatClass = StandardJsonFormat::class.java
     }
 }

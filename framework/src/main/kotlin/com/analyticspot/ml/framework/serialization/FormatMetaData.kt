@@ -5,7 +5,7 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo.As
 import com.fasterxml.jackson.annotation.JsonTypeInfo.Id
 
 /**
- *
+ * General meta data to help [Format] classes know how to deserialize [DataTransform] instances.
  */
 @JsonTypeInfo(use= Id.CLASS, include= As.PROPERTY, property="class")
 interface FormatMetaData {
