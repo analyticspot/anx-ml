@@ -19,6 +19,6 @@ object JsonMapper {
         val tokenFilter = SimpleBeanPropertyFilter.filterOutAllExcept("id")
         val filterProvider = SimpleFilterProvider().addFilter(VALUE_TOKEN_FILTER_ID, tokenFilter)
         mapper = ObjectMapper().registerKotlinModule().setFilterProvider(filterProvider)
-
     }
 }
+

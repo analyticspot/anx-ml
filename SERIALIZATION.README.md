@@ -5,8 +5,8 @@ is probably to serialized a trained model for deployment. Our requirements for t
 
 * Simple: it should be easy to deserialize an entire `DataGraph` and start using it to make predictions.
 * Format independent: while most of our own code serialized to JSON we would like to be able to use existing code that
-  might serialize in a different format. For example, the Weka project contains a huge number of algorithms that we
-  might want to use but they serialize in a binary format (Java serialization format).
+  might serialize in a different formatClass. For example, the Weka project contains a huge number of algorithms that we
+  might want to use but they serialize in a binary formatClass (Java serialization formatClass).
 * Injectable: we'd like to be able to use one implementation for a node when training an a different implementation when
   running in production. For example, we might make an API call to obtain a zip code for an address in production, but
   when training we'd use values stored in database. In addition, this injection needs to be flexible:
@@ -24,8 +24,8 @@ is probably to serialized a trained model for deployment. Our requirements for t
 # Format Summary and Example
 
 A `DataGraph` is serialized as a zip file. There is a file in the zip called `graph.json` that defines the graph. Each
-node in the graph has an id. However, the serialization of the node itself is in another file whose name is the id of
-the node whose data it contains. That allows us to easily mix binary and text serialization formats.
+node in the graph has an id. However, the serialization of the node itself is in another file in the zip whose name is
+the id of the node whose data it contains. That allows us to easily mix binary and text serialization formats.
 
 For example, the `graph.json` file might look like this:
 
@@ -46,30 +46,17 @@ For example, the `graph.json` file might look like this:
         "sources": [0],
         "subscribers": [2],
         "type": "com.analyticspot.ml.framework.datagraph.TransformGraphNode",
-        "format": {
-            "type": "com.analyticspot.ml.serialization.StandardJson",
+        "metaData": {
+            "type": "com.analyticspot.ml.serialization.StandardJsonFormat",
             "class": "com.analyticspot.ml.transform.PositiveWordCount"
-        },
-        "tokens": [
-            {
-                "name": "positiveWordCount",
-                "type": "java.lang.Integer"
-            }
-        ]
+        }
     },
     "2": {
         "sources": [1],
         "type": "com.analyticspot.ml.framework.datagraph.TransformGraphNode",
-        "format": {
+        "metaData": {
             "type": "com.analyticspot.ml.serialization.Weka"
-        },
-        "tokens": [
-            {
-                "name": "prediction",
-                "type": "java.lang.Double"
-            }
-        ]
-        
+        }
     },
     "source": 0,
     "result": 2
@@ -83,63 +70,45 @@ know how to deserialize that properly.
 # Deserialization
 
 In order to support interoperability with other machine learning libraries we do not specify a single serialization
-format for the `DataTransform`s. For example, the Weka project has a huge number of classifiers and filters that we
-might want to use but they all serialize to a binary format. This is why the graph structure is serialized as JSON but
-the details for each node are in their own files in the same `.zip` file. This way each node can serialize itself it
+formatClass for the `DataTransform`s. For example, the Weka project has a huge number of classifiers and filters that we
+might want to use but they all serialize to a binary formatClass. This is why the graph structure is serialized as JSON
+but the details for each node are in their own files in the same `.zip` file. This way each node can serialize itself it
 the way that it sees fit.
 
 However, to deserialize we need to know what is capable of deserializing each node. Thus, each node in the `graph.json`
-specifies a `format` which corresponds to a `FormatModule`. The `format` block is deserialized using polymorphic
-deserialization so that the correct subclass of `FormatModuleData` is returned.
+specifies some `metaData` which corresponds to a `Format`. The `metaData` block is deserialized using polymorphic
+deserialization so that the correct subclass of `FormatMetaData` is returned. The `FormatMetaData` then tells the
+`GraphSerDeser` what `Format` to use to deserialize the data.
 
-The API for a `FormatModule` is quite simple:
-
-```kotlin
-interface FormatModule<T : FormatModuleData> {
-    fun getFactory(formatData: T, tag: String?): TransformFactory
-}
-```
-
-Here `tag` is an arbitrary `String` that that has been attached to the node allowing us to inject different
-implementations for the same node type into the graph. It is optional and thus may be `null`.
-
-`TransformFactory` is:
-
-```kotlin
-interface TransformFactory {
-  fun createNode(transformData: InputStream, sources: List<GraphNode>): DataTransform
-}
-```
-
-where `transformData` is the data in the file for that node. The contents of that file need only make sense for the
-`TransformFactory`.
+## ValueToken
 
 Note that often a node contains the `ValueToken`s of the inputs it will process. However, it should not serialize the
 full token as that may not be valid if the producing node's implementation changes. Instead it should serialize just
 the `ValueId`. The `sources` array passed to `createNode` can be used to convert `ValueId`s into `ValueToken`s.
 
+Happily, the `GraphSerDeser` takes care of this for you. Specifically, upon serialization there is a filter that
+ensures that only the `ValueId` part of a `ValueToken` is saved. If the `DataTransform` has only a single input then,
+the `GraphSerDeser` is capabile of transparently converting the `ValueIds` in the file into `ValueToken`s. What this
+means in practice is the for most `DataTransform` classes you don't need to think about the `ValueToken` issue at all:
+simply serialize your `ValueToken` instances as you'd like and the corresponding `ValueId` will be saved. Similarly,
+your setters and `@JsonCreator` methods that expect a `ValueToken` will be given one that is created for you by calling
+`GraphNode.token(valueId)` on the data source for your node.
+
+This is one of the reasons we suggest that virtually all `DataTransform` should read from a single `DataSet`. If you
+need the data from multiple `DataSet`s use the `DataGraph.merge` functionality.
+
 NOTE: This means we have to be sure to serialize (or all least construct things) in topological order.
 
 # Injection
 
-Each `FormatModule` manages its own injection. That is because different formats must be deserialized and injected
-differently. All of the `anxml` nodes use the same format: `StandardJson`. 
+`GraphSerDeser` has a `registerFactoryForLabel` method that lets you register a custom `TransformFactory` to be used
+for nodes that were serialized with the label of your choice (labels are specified when you build the `DataGraph`).
+This allows you to deserialize any `DataTransform` into any arbitrary class that implements the `DataTransform` API.
+Since all `DataTransform` instances have an asynchronous API, even if they're synchronous, you can easily convert a
+synchronous `DataTransform` into an asynchronous one and vice versa. Furthermore, your `TransformFactory` can be
+constructed using the injection library of your choice so that things like database connections and API tokens can
+be injected into your deserialized `DataTransform` instances.
 
-## StandardJson Injection
-
-The `StandardJsonFormatModule` allows you to register `TransformFactory` implementations for tags or classes. When
-`getFactory` is called the module searches for `TransformFactory` implementations in the folowing order:
-
-1. By tag: if there is a `TransformFactory` for the specified tag it is returned.
-2. By class: If the class specified in the `StandardJsonFormatModuleData` has had a `TransformFactory` registered it is
-   returned. 
-3. The stadard `TransformFactory` is used. This does a little work to turn the `ValueId`s into `ValueToken`s and then
-   allows [Jackson](https://github.com/FasterXML/jackson) to handle the rest of the deserialization.
-   
-Note that this is compatible with other injection frameworks. For example, if using
-[Guice](https://github.com/google/guice) you might create an `@Provides` annotated `TransformFactory` that has things
-like database connections injected into it allowing it to access both injection components and the serialized
-representation.
 
 ## Injection Notes
  

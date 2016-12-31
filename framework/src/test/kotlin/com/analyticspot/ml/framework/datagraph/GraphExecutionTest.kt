@@ -1,18 +1,10 @@
 package com.analyticspot.ml.framework.datagraph
 
-import com.analyticspot.ml.framework.dataset.DataSet
 import com.analyticspot.ml.framework.dataset.IterableDataSet
-import com.analyticspot.ml.framework.datatransform.LearningTransform
-import com.analyticspot.ml.framework.datatransform.StreamingDataTransform
-import com.analyticspot.ml.framework.datatransform.TransformDescription
 import com.analyticspot.ml.framework.description.ValueId
-import com.analyticspot.ml.framework.description.ValueToken
-import com.analyticspot.ml.framework.observation.Observation
-import com.analyticspot.ml.framework.observation.SingleValueObservation
 import org.assertj.core.api.Assertions.assertThat
 import org.slf4j.LoggerFactory
 import org.testng.annotations.Test
-import java.util.concurrent.CompletableFuture
 import java.util.concurrent.Executors
 
 class GraphExecutionTest {
@@ -31,7 +23,7 @@ class GraphExecutionTest {
                 valueIds += listOf(notUsedInput, usedInput)
             }
 
-            val trans = addTransform(src, AddFiveTransform(src.token(usedInput), resultId))
+            val trans = addTransform(src, AddConstantTransform(5, src.token(usedInput), resultId))
             result = trans
         }
 
@@ -77,34 +69,4 @@ class GraphExecutionTest {
         assertThat(outValues.size).isEqualTo(srcMatrix.size)
     }
 
-    class AddFiveTransform(private val srcToken: ValueToken<Int>, resultId: ValueId<Int>) : StreamingDataTransform() {
-        private val resultToken = ValueToken(resultId)
-        override val description = TransformDescription(listOf(resultToken))
-
-        override fun transform(observation: Observation): Observation {
-            val srcVal: Int = observation.value(srcToken)
-            return SingleValueObservation.create(srcVal + 5)
-        }
-    }
-
-    class LearnMinTransform(private val srcToken: ValueToken<Int>, resultId: ValueId<Int>) : LearningTransform {
-        private var minValue: Int = Int.MAX_VALUE
-        private val resultToken = ValueToken(resultId)
-        override val description: TransformDescription
-            get() = TransformDescription(listOf(resultToken))
-
-        override fun trainTransform(dataSet: DataSet): CompletableFuture<DataSet> {
-            log.debug("Training.")
-            val dsMin = dataSet.asSequence().map { it.value(srcToken) }.min()
-            minValue = dsMin ?: minValue
-            return transform(dataSet)
-        }
-
-        override fun transform(dataSet: DataSet): CompletableFuture<DataSet> {
-            val resultData = dataSet.asSequence().map {
-                SingleValueObservation.create(minValue)
-            }.toList()
-            return CompletableFuture.completedFuture(IterableDataSet(resultData))
-        }
-    }
 }
