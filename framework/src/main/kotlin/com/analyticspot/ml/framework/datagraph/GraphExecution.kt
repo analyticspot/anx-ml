@@ -56,20 +56,23 @@ class GraphExecution (
             executionResult.complete(data)
         } else {
             log.debug("Notifying subscribers of {}", manager.graphNode.id)
-            notifySubscribers(data, manager.graphNode.subscribers)
+            notifySubscribers(manager, data, manager.graphNode.subscribers)
             if (execType == ExecutionType.TRAIN_TRANSFORM) {
                 log.debug("Notifying train only subscribers of {}", manager.graphNode.id)
-                notifySubscribers(data, manager.graphNode.trainOnlySubscribers)
+                notifySubscribers(manager, data, manager.graphNode.trainOnlySubscribers)
             } else {
                 check(execType == ExecutionType.TRANSFORM)
             }
         }
     }
 
-    private fun notifySubscribers(data: DataSet, subscribers: List<GraphNode>) {
+    private fun notifySubscribers(
+            producingManager: NodeExecutionManager, data: DataSet, subscribers: List<GraphNode>) {
         for (sub in subscribers) {
             log.debug("Notifying {} that data is available", sub.id)
-            executionManagers[sub.id].onDataAvailable(data)
+            // Find the index of this source in the subscribers list of sources
+            val sourceIdx = sub.sources.indexOfFirst { it.id == producingManager.graphNode.id }
+            executionManagers[sub.id].onDataAvailable(sourceIdx, data)
         }
 
     }
@@ -93,7 +96,13 @@ enum class ExecutionType {
  */
 interface NodeExecutionManager : Runnable {
     val graphNode: GraphNode
-    fun onDataAvailable(data: DataSet)
+    /**
+     * Called when data is available that this nodes requires.
+     *
+     * @param sourceIdx the index of the [GraphNode] that produced this data in the node's list of sources.
+     * @param data the data that was produced.
+     */
+    fun onDataAvailable(sourceIdx: Int, data: DataSet)
 }
 
 /**
@@ -104,7 +113,7 @@ abstract class SingleInputExecutionManager(protected val parent: GraphExecution)
     @Volatile
     private var data: DataSet? = null
 
-    override fun onDataAvailable(data: DataSet) {
+    override fun onDataAvailable(sourceIdx: Int, data: DataSet) {
         this.data = data
         parent.onReadyToRun(this)
     }

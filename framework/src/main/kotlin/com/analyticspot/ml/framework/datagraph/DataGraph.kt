@@ -4,6 +4,7 @@ import com.analyticspot.ml.framework.dataset.DataSet
 import com.analyticspot.ml.framework.dataset.SingleObservationDataSet
 import com.analyticspot.ml.framework.datatransform.DataTransform
 import com.analyticspot.ml.framework.datatransform.LearningTransform
+import com.analyticspot.ml.framework.datatransform.MergeTransform
 import com.analyticspot.ml.framework.observation.ArrayObservation
 import com.analyticspot.ml.framework.observation.Observation
 import org.slf4j.LoggerFactory
@@ -117,6 +118,19 @@ class DataGraph(builder: GraphBuilder) {
                 sources += src
             }
             addNodeToGraph(src, node)
+            return node
+        }
+
+        fun merge(vararg sources: GraphNode): GraphNode {
+            val node = MultiTransformGraphNode.build(nextId++) {
+                this.transform = MergeTransform.build {
+                    this.sources += sources
+                }
+            }
+
+            sources.forEach { it.subscribers += node }
+            assert(nodesById.size == node.id)
+            nodesById.add(node)
             return node
         }
 

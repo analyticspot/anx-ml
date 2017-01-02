@@ -4,6 +4,7 @@ import com.analyticspot.ml.framework.dataset.DataSet
 import com.analyticspot.ml.framework.serialization.Format
 import com.analyticspot.ml.framework.serialization.StandardJsonFormat
 import com.fasterxml.jackson.annotation.JsonIgnore
+import java.util.concurrent.CompletableFuture
 
 /**
  * A [MultiTransform] is like a [DataTransform] but it takes more than one [DataSet] as input. It is recommended to
@@ -28,5 +29,5 @@ interface MultiTransform {
     /**
      * Like [DataTransform.transform] but takes a list of [DataSet] as input.
      */
-    fun transform(dataSets: List<DataSet>): DataSet
+    fun transform(dataSets: List<DataSet>): CompletableFuture<DataSet>
 }

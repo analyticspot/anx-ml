@@ -40,10 +40,21 @@ class MergeTransform (builder: Builder) : MultiTransform {
         sources.map { it.id }
     }
 
+    companion object {
+        fun build(init: Builder.() -> Unit): MergeTransform {
+            return with(Builder()) {
+                init()
+                build()
+            }
+        }
+    }
+
     override fun transform(dataSets: List<DataSet>): DataSet = IndirectDataSet(dataSets)
 
     open class Builder {
         val sources = mutableListOf<GraphNode>()
+
+        fun build(): MergeTransform = MergeTransform(this)
     }
 
     /**
