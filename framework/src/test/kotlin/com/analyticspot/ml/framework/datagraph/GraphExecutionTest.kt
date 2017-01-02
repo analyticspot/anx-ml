@@ -27,7 +27,7 @@ class GraphExecutionTest {
             result = trans
         }
 
-        val srcObs = dg.buildTransformSource("Hello not used value", 88)
+        val srcObs = dg.buildSourceObservation("Hello not used value", 88)
 
         val transformF = dg.transform(srcObs, Executors.newSingleThreadExecutor())
         val resultObs = transformF.get()

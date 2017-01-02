@@ -18,7 +18,7 @@ class GraphSerDeserTest {
         private val log = LoggerFactory.getLogger(GraphSerDeserTest::class.java)
     }
 
-    // Serialize a simple AddConstantTransform and then deserialize it with the factory. Changes the source Graphnode so
+    // Serialize a simple AddConstantTransform and then deserialize it with the factory. Changes the source GraphNode so
     // that we can be sure that the source tokens are regenerated.
     @Test
     fun testCanSerializeAndDeserializeSimpleTransform() {

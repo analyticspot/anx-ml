@@ -49,12 +49,11 @@ class DataGraph(builder: GraphBuilder) {
     /**
      * Constructs an [Observation] that is compatible with the types/tokens specified for [source].
      */
-    fun buildTransformSource(vararg values: Any): Observation {
-        val baseArray = Array<Any>(values.size) { idx ->
-            check(values[idx].javaClass == source.tokens[idx].clazz)
-            values[idx]
+    fun buildSourceObservation(vararg values: Any): Observation {
+        values.forEachIndexed { idx, value ->
+            check(value.javaClass == source.tokens[idx].clazz)
         }
-        return ArrayObservation(baseArray)
+        return ArrayObservation(values)
     }
 
     /**
