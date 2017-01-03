@@ -1,6 +1,7 @@
 package com.analyticspot.ml.framework.datagraph
 
 import java.util.LinkedList
+import java.util.NoSuchElementException
 
 /**
  * Iterates over the [GraphNode] instances in a [DataGraph] in topological order so that the first item returned is the
@@ -25,6 +26,10 @@ class TopologicalIterator(private val graph: DataGraph) : Iterator<GraphNode> {
     }
 
     override fun next(): GraphNode {
+        if (readyNodes.size == 0) {
+            throw NoSuchElementException()
+        }
+
         val toReturn = readyNodes.pop()
         for (s in toReturn.subscribers) {
             missingSources[s.id] -= 1
