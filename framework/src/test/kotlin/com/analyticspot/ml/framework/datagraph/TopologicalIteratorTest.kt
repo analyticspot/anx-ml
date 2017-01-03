@@ -2,8 +2,10 @@ package com.analyticspot.ml.framework.datagraph
 
 import com.analyticspot.ml.framework.description.ValueId
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.slf4j.LoggerFactory
 import org.testng.annotations.Test
+import java.util.NoSuchElementException
 
 class TopologicalIteratorTest {
     companion object {
@@ -23,6 +25,24 @@ class TopologicalIteratorTest {
         val source = iter.next()
         assertThat(source).isInstanceOf(SourceGraphNode::class.java)
         assertThat(iter.hasNext()).isFalse()
+    }
+
+    @Test
+    fun testEmptyThrowsCorrectException() {
+        val iter = TopologicalIterator(DataGraph.build {
+            val source = setSource {
+                valueIds += ValueId.create<String>("foo")
+            }
+
+            result = source
+        })
+        assertThat(iter.hasNext()).isTrue()
+        val source = iter.next()
+        assertThat(source).isInstanceOf(SourceGraphNode::class.java)
+        assertThat(iter.hasNext()).isFalse()
+
+        // As per spec of Iterator, this is the exception type that must be thrown.
+        assertThatThrownBy { iter.next() }.isInstanceOf(NoSuchElementException::class.java)
     }
 
     @Test
