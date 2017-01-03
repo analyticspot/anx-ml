@@ -64,7 +64,9 @@ class MergeTransform (builder: Builder) : MultiTransform {
      * constructor. These nodes are used to generate [ValueToken] for the inputs.
      */
     @JsonPOJOBuilder(withPrefix = "set")
-    class DeserBuilder(@JacksonInject private val injectedSources: List<GraphNode>) : Builder() {
+    class DeserBuilder(
+            @JacksonInject(MultiTransform.JSON_SOURCE_INJECTION_ID) private val injectedSources: List<GraphNode>)
+        : Builder() {
         fun setSourceIds(ids: List<Int>) {
             // Called by Jackson with the list of source ids. We use this to double check that the Jackson injected list
             // of sources is in the correct order.

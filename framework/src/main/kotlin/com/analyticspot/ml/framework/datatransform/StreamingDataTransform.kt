@@ -12,7 +12,7 @@ import java.util.stream.StreamSupport
  * An abstract base class for [DataTransform] that allows users to override a method that takes a single [Observation]
  * and returns a single [Observation] instead of having to worry about entire [DataSet]s.
  */
-abstract class StreamingDataTransform : DataTransform {
+abstract class StreamingDataTransform : SingleDataTransform {
     final override fun transform(dataSet: DataSet): CompletableFuture<DataSet> {
         val obsList = StreamSupport.stream(dataSet.spliterator(), false).map { transform(it) }.toList()
         return CompletableFuture.completedFuture(IterableDataSet(obsList))

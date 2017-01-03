@@ -84,5 +84,15 @@ class GraphSerDeserTest {
         val output = ByteArrayOutputStream()
         serDeser.serializeTransform(merge, output)
 
+        log.debug("Merge transform serializaed as: {}", output.toString())
+
+        val input = ByteArrayInputStream(output.toByteArray())
+
+        val deserialized = serDeser.deserializeTransform(
+                null, StandardJsonFormat.MetaData(merge), listOf(s1, s2), input)
+
+        assertThat(deserialized).isInstanceOf(MergeTransform::class.java)
+        val deserMerge = deserialized as MergeTransform
+        assertThat(deserMerge.description.tokens.map { it.name }).isEqualTo(listOf("v1", "v2"))
     }
 }
