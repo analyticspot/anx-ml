@@ -48,6 +48,8 @@ class TopologicalIteratorTest {
         iterationIsOk(TopologicalIterator(dg), dg)
     }
 
+    // This tests a graph where the source feeds into 3 AddConstantTransforms, those are then merged into a single
+    // data set, and then then feeds into yet another AddConstantTransform which is also the final output.
     @Test
     fun testGraph1Works() {
         val dg = DataGraph.build {
@@ -60,7 +62,7 @@ class TopologicalIteratorTest {
             val addC1 = addTransform(source, AddConstantTransform(11, source.token(sourceIds[0]), c1ResId))
 
             val c2ResId = ValueId.create<Int>("c2")
-            val addC2 = addTransform(source, AddConstantTransform(12, source.token(sourceIds[0]), c2ResId))
+            val addC2 = addTransform(source, AddConstantTransform(12, source.token(sourceIds[1]), c2ResId))
 
             val c3ResId = ValueId.create<Int>("c3")
             val addC3 = addTransform(source, AddConstantTransform(12, source.token(sourceIds[0]), c3ResId))
@@ -71,6 +73,46 @@ class TopologicalIteratorTest {
             val addC4 = addTransform(merged, AddConstantTransform(88, addC3.token(c3ResId), c4ResId))
 
             result = addC4
+        }
+
+        iterationIsOk(TopologicalIterator(dg), dg)
+    }
+
+    // Tests a graph with "unequal legs". The source feeds into 3 transforms, C1, C2, and C3. C1 then goes through a
+    // pipeline of 2 more transforms: c11 and c12, c2 goes through one more transform c21. Then the outputs of
+    // c12, c21 and c3 are fed into a merge. The merge is the final result.
+    @Test
+    fun testGraph2Works() {
+        val dg = DataGraph.build {
+            val sourceIds = listOf(ValueId.create<Int>("v1"), ValueId.create<Int>("v2"))
+            val source = setSource {
+                valueIds += sourceIds
+            }
+
+            val c1ResId = ValueId.create<Int>("c1")
+            val addC1 = addTransform(source, AddConstantTransform(11, source.token(sourceIds[0]), c1ResId))
+
+            val c2ResId = ValueId.create<Int>("c2")
+            val addC2 = addTransform(source, AddConstantTransform(12, source.token(sourceIds[1]), c2ResId))
+
+            val c3ResId = ValueId.create<Int>("c3")
+            val addC3 = addTransform(source, AddConstantTransform(12, source.token(sourceIds[0]), c3ResId))
+
+            // Two transforms in a pipeline from the output of c1
+            val c11ResId = ValueId.create<Int>("c1.1")
+            val addC11 = addTransform(addC1, AddConstantTransform(19, addC1.token(c1ResId), c11ResId))
+
+            val c12ResId = ValueId.create<Int>("c1.2")
+            val addC12 = addTransform(addC11, AddConstantTransform(19, addC11.token(c11ResId), c12ResId))
+
+            // One transform from the output of c2
+            val c21ResId = ValueId.create<Int>("c2.1")
+            val addC21 = addTransform(addC2, AddConstantTransform(37, addC2.token(c2ResId), c21ResId))
+
+            // Now combine c3 and the results of the 2 other pipelines
+            val merged = merge(addC3, addC12, addC21)
+
+            result = merged
         }
 
         iterationIsOk(TopologicalIterator(dg), dg)
