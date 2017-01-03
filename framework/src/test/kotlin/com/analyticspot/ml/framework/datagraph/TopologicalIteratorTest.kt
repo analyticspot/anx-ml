@@ -26,6 +26,29 @@ class TopologicalIteratorTest {
     }
 
     @Test
+    fun testSimplePipelineWorks() {
+        val dg = DataGraph.build {
+            val sourceIds = listOf(ValueId.create<Int>("v1"), ValueId.create<Int>("v2"))
+            val source = setSource {
+                valueIds += sourceIds
+            }
+
+            val c1ResId = ValueId.create<Int>("c1")
+            val addC1 = addTransform(source, AddConstantTransform(11, source.token(sourceIds[0]), c1ResId))
+
+            val c2ResId = ValueId.create<Int>("c2")
+            val addC2 = addTransform(addC1, AddConstantTransform(12, addC1.token(c1ResId), c2ResId))
+
+            val c3ResId = ValueId.create<Int>("c3")
+            val addC3 = addTransform(addC2, AddConstantTransform(88, addC2.token(c2ResId), c3ResId))
+
+            result = addC3
+        }
+
+        iterationIsOk(TopologicalIterator(dg), dg)
+    }
+
+    @Test
     fun testGraph1Works() {
         val dg = DataGraph.build {
             val sourceIds = listOf(ValueId.create<Int>("v1"), ValueId.create<Int>("v2"))
