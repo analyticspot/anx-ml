@@ -1,8 +1,11 @@
 package com.analyticspot.ml.framework.serialization
 
+import com.analyticspot.ml.framework.datagraph.DataGraph
 import com.analyticspot.ml.framework.datagraph.GraphNode
 import com.analyticspot.ml.framework.datatransform.DataTransform
 import org.slf4j.LoggerFactory
+import java.io.File
+import java.io.FileOutputStream
 import java.io.InputStream
 import java.io.OutputStream
 
@@ -17,6 +20,30 @@ class GraphSerDeser {
 
     companion object {
         private val log = LoggerFactory.getLogger(GraphSerDeser::class.java)
+    }
+
+    /**
+     * Serializes `graph` to the given `output`. Note that **this** will convert `output` into a `ZipOutputStream` so
+     * callers should pass just a plain `FileOutputStream` or similar.
+     */
+    fun serialize(graph: DataGraph, output: OutputStream) {
+
+    }
+
+    /**
+     * Convenience overload that creates `file`, writes to it, and closes it.
+     */
+    fun serialize(graph: DataGraph, file: File) {
+        val fileOut = FileOutputStream(file)
+        serialize(graph, fileOut)
+    }
+
+    /**
+     * Convenience overload which creates a file with the given path and then serializes the [DataGraph] to it.
+     */
+    fun serialize(graph: DataGraph, filePath: String) {
+        val f = File(filePath)
+        serialize(graph, f)
     }
 
     /**
