@@ -2,6 +2,7 @@ package com.analyticspot.ml.framework.serialization
 
 import com.analyticspot.ml.framework.datagraph.GraphNode
 import com.analyticspot.ml.framework.datatransform.DataTransform
+import com.analyticspot.ml.framework.datatransform.MultiTransform
 import com.fasterxml.jackson.databind.InjectableValues
 import org.slf4j.LoggerFactory
 import java.io.InputStream
@@ -31,7 +32,8 @@ class StandardJsonFormat : Format<StandardJsonFormat.MetaData> {
         if (sources.size == 1) {
             injectables.addValue(GraphNode::class.java, sources[0])
         } else {
-            log.info("Transform had {} sources so not automatically injecting the source.", sources.size)
+            injectables.addValue(MultiTransform.JSON_SOURCE_INJECTION_ID, sources)
+            log.debug("Transform had {} sources so not automatically injecting a single source.", sources.size)
         }
         return JsonMapper.mapper.setInjectableValues(injectables).readValue(input, metaData.transformClass)
     }

@@ -2,9 +2,9 @@ package com.analyticspot.ml.framework.datagraph
 
 import com.analyticspot.ml.framework.dataset.DataSet
 import com.analyticspot.ml.framework.dataset.SingleObservationDataSet
-import com.analyticspot.ml.framework.datatransform.DataTransform
 import com.analyticspot.ml.framework.datatransform.LearningTransform
 import com.analyticspot.ml.framework.datatransform.MergeTransform
+import com.analyticspot.ml.framework.datatransform.SingleDataTransform
 import com.analyticspot.ml.framework.observation.ArrayObservation
 import com.analyticspot.ml.framework.observation.Observation
 import org.slf4j.LoggerFactory
@@ -101,7 +101,7 @@ class DataGraph(builder: GraphBuilder) {
             return source
         }
 
-        fun addTransform(src: GraphNode, transform: DataTransform): GraphNode {
+        fun addTransform(src: GraphNode, transform: SingleDataTransform): GraphNode {
             log.debug("Adding an untrained transform to the graph.")
             val node = TransformGraphNode.build(nextId++) {
                 this.transform = transform

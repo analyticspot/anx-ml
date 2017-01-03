@@ -1,14 +1,14 @@
 package com.analyticspot.ml.framework.datagraph
 
 import com.analyticspot.ml.framework.dataset.DataSet
-import com.analyticspot.ml.framework.datatransform.DataTransform
+import com.analyticspot.ml.framework.datatransform.SingleDataTransform
 import org.slf4j.LoggerFactory
 
 /**
  * A [GraphNode] that takes a single input, runs it through a [DataTransform] and produces a single output.
  */
 internal open class TransformGraphNode protected constructor(builder: Builder) : GraphNode(builder) {
-    val transform: DataTransform = builder.transform ?: throw IllegalArgumentException("Transform can not be null")
+    val transform: SingleDataTransform = builder.transform ?: throw IllegalArgumentException("Transform can not be null")
 
     companion object {
         private val log = LoggerFactory.getLogger(Companion::class.java)
@@ -28,7 +28,7 @@ internal open class TransformGraphNode protected constructor(builder: Builder) :
             ExecutionManager(this, parent)
 
     open class Builder(id: Int) : GraphNode.Builder(id) {
-        var transform: DataTransform? = null
+        var transform: SingleDataTransform? = null
             set(value) {
                 field = value ?: throw IllegalArgumentException("Transform can not be null")
                 tokens.addAll(value.description.tokens)

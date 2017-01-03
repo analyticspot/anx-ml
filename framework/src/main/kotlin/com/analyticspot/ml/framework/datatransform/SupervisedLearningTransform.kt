@@ -10,7 +10,7 @@ import java.util.concurrent.CompletableFuture
  * to know which parts of the graph are required only for training so we don't generate that data when calling
  * [transform] to get predictions.
  */
-interface SupervisedLearningTransform : DataTransform {
+interface SupervisedLearningTransform : SingleDataTransform {
     /**
      * Has the same effect as calling [train] and then calling [transform]. However, for some algorithms it can be more
      * efficient to combine these steps.

@@ -9,7 +9,7 @@ import java.io.InputStream
  */
 interface TransformFactory<MetaDataT : FormatMetaData> {
     /**
-     * Reads the data from `input` and deserialized it into a [DataTransform]. The `sources` indicate where the data
+     * Reads the data from `input` and deserializes it into a [DataTransform]. The `sources` indicate where the data
      * consumed by the [DataTransform] is produced and can be used to convert [ValueId] data into [ValueToken]
      * instances. The `metaData` describes what is found in the `input` and may help with deserialization.
      */
