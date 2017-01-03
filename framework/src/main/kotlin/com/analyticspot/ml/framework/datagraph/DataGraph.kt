@@ -126,6 +126,7 @@ class DataGraph(builder: GraphBuilder) {
                 this.transform = MergeTransform.build {
                     this.sources += sources
                 }
+                this.sources += sources
             }
 
             sources.forEach { it.subscribers += node }

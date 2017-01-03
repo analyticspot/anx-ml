@@ -11,6 +11,7 @@ import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.annotation.JsonProperty.Access
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize
 import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder
+import java.util.concurrent.CompletableFuture
 
 /**
  * A [MultiTransform] that takes in multiple [DataSet] instances and concatenates them into a single output.
@@ -49,7 +50,8 @@ class MergeTransform (builder: Builder) : MultiTransform {
         }
     }
 
-    override fun transform(dataSets: List<DataSet>): DataSet = IndirectDataSet(dataSets)
+    override fun transform(dataSets: List<DataSet>): CompletableFuture<DataSet> =
+            CompletableFuture.completedFuture(IndirectDataSet(dataSets))
 
     open class Builder {
         val sources = mutableListOf<GraphNode>()

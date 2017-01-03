@@ -72,6 +72,9 @@ class GraphExecution (
             log.debug("Notifying {} that data is available", sub.id)
             // Find the index of this source in the subscribers list of sources
             val sourceIdx = sub.sources.indexOfFirst { it.id == producingManager.graphNode.id }
+            check(sourceIdx >= 0) {
+                "Subscriber node ${sub.id} does not list ${producingManager.graphNode.id} as a source."
+            }
             executionManagers[sub.id].onDataAvailable(sourceIdx, data)
         }
 

@@ -13,7 +13,7 @@ class ArrayObservation : Observation {
         this.data = data
     }
 
-    constructor(data: Collection<out Any>) : this(data.toTypedArray())
+    constructor(data: Collection<Any>) : this(data.toTypedArray())
 
     companion object {
         fun create(vararg data: Any): ArrayObservation {
