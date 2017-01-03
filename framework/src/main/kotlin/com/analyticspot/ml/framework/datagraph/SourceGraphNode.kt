@@ -10,7 +10,7 @@ import com.analyticspot.ml.framework.description.ValueId
  * how to compute its own outputs it would be hard to do one run on data read from a file, the next run on data in RAM,
  * and the next run on data from a database. Instead the source node is really nothing more than a description of the
  * data that is required by the rest of teh graph. To generate a concrete instance of this backed by data one would use
- * something like [DataGraph.buildTransformSource].
+ * something like [DataGraph.buildSourceObservation].
  */
 class SourceGraphNode private constructor(builder: GraphNode.Builder) : GraphNode(builder) {
 
@@ -18,7 +18,7 @@ class SourceGraphNode private constructor(builder: GraphNode.Builder) : GraphNod
         /**
          * Construct a [SourceGraphNode].
          *
-         * @param id the unique id of this node in the [DataGraph]. The [DataGraph.Builder] is gnerally responsible for
+         * @param id the unique id of this node in the [DataGraph]. The [DataGraph.Builder] is generally responsible for
          * generating suitable ids.
          * @param init a lambda to be executed with a [DataGraph.Builder] as the receiver This configures the source.
          */
@@ -28,6 +28,10 @@ class SourceGraphNode private constructor(builder: GraphNode.Builder) : GraphNod
                 build()
             }
         }
+    }
+
+    override fun getExecutionManager(parent: GraphExecution, execType: ExecutionType): NodeExecutionManager {
+        return ExecutionManager(this)
     }
 
     class Builder(private val id: Int) {
@@ -56,14 +60,10 @@ class SourceGraphNode private constructor(builder: GraphNode.Builder) : GraphNod
         }
     }
 
-    override fun getExecutionManager(parent: GraphExecution, execType: ExecutionType): NodeExecutionManager {
-        return ExecutionManager(this)
-    }
-
     // Note that source data nodes are specicial and don't really participate in the GraphExecution protocol. Thus all
     // methods here just throw exceptions.
     private class ExecutionManager(override val graphNode: GraphNode) : NodeExecutionManager {
-        override fun onDataAvailable(data: DataSet) {
+        override fun onDataAvailable(sourceIdx: Int, data: DataSet) {
             throw IllegalStateException("This is a SourceGraphNode and it therefore does not participate in the " +
                     "normal GraphExecution protocol.")
         }

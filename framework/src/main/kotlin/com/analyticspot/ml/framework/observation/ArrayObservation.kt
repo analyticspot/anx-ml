@@ -7,9 +7,9 @@ import com.analyticspot.ml.framework.description.ValueToken
  * An [Observation] backed by a simple Array.
  */
 class ArrayObservation : Observation {
-    val data: Array<Any>
+    val data: Array<out Any>
 
-    constructor(data: Array<Any>) {
+    constructor(data: Array<out Any>) {
         this.data = data
     }
 
@@ -17,8 +17,7 @@ class ArrayObservation : Observation {
 
     companion object {
         fun create(vararg data: Any): ArrayObservation {
-            @Suppress("UNCHECKED_CAST")
-            return ArrayObservation(data as Array<Any>)
+            return ArrayObservation(data)
         }
     }
 

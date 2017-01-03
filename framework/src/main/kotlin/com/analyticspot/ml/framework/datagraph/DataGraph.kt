@@ -4,6 +4,7 @@ import com.analyticspot.ml.framework.dataset.DataSet
 import com.analyticspot.ml.framework.dataset.SingleObservationDataSet
 import com.analyticspot.ml.framework.datatransform.DataTransform
 import com.analyticspot.ml.framework.datatransform.LearningTransform
+import com.analyticspot.ml.framework.datatransform.MergeTransform
 import com.analyticspot.ml.framework.observation.ArrayObservation
 import com.analyticspot.ml.framework.observation.Observation
 import org.slf4j.LoggerFactory
@@ -49,12 +50,11 @@ class DataGraph(builder: GraphBuilder) {
     /**
      * Constructs an [Observation] that is compatible with the types/tokens specified for [source].
      */
-    fun buildTransformSource(vararg values: Any): Observation {
-        val baseArray = Array<Any>(values.size) { idx ->
-            check(values[idx].javaClass == source.tokens[idx].clazz)
-            values[idx]
+    fun buildSourceObservation(vararg values: Any): Observation {
+        values.forEachIndexed { idx, value ->
+            check(value.javaClass == source.tokens[idx].clazz)
         }
-        return ArrayObservation(baseArray)
+        return ArrayObservation(values)
     }
 
     /**
@@ -118,6 +118,20 @@ class DataGraph(builder: GraphBuilder) {
                 sources += src
             }
             addNodeToGraph(src, node)
+            return node
+        }
+
+        fun merge(vararg sources: GraphNode): GraphNode {
+            val node = MultiTransformGraphNode.build(nextId++) {
+                this.transform = MergeTransform.build {
+                    this.sources += sources
+                }
+                this.sources += sources
+            }
+
+            sources.forEach { it.subscribers += node }
+            assert(nodesById.size == node.id)
+            nodesById.add(node)
             return node
         }
 
