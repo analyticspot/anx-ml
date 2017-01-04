@@ -113,7 +113,6 @@ class GraphSerDeserTest {
         val serDeser = GraphSerDeser()
         val outStream = ByteArrayOutputStream(0)
         serDeser.serialize(dg, outStream)
-        serDeser.serialize(dg, "/Users/oliver/Desktop/temp/foo.zip")
 
         // Now deserialize the thing....
         val inStream = ByteArrayInputStream(outStream.toByteArray())
