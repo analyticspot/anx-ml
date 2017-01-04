@@ -9,6 +9,8 @@ import com.analyticspot.ml.framework.datatransform.DataTransform
 import com.analyticspot.ml.framework.datatransform.MultiTransform
 import com.analyticspot.ml.framework.datatransform.SingleDataTransform
 import com.analyticspot.ml.framework.description.ValueId
+import com.fasterxml.jackson.annotation.JsonInclude
+import com.fasterxml.jackson.annotation.JsonInclude.Include
 import com.fasterxml.jackson.annotation.JsonTypeInfo
 import com.fasterxml.jackson.annotation.JsonTypeInfo.As
 import com.fasterxml.jackson.annotation.JsonTypeInfo.Id
@@ -261,8 +263,11 @@ class GraphSerDeser {
     // return the properties we want to serialize and in the way we want them serialized.
     @JsonTypeInfo(use=Id.CLASS, include=As.PROPERTY, property="class")
     open class SerGraphNode(builder: Builder) {
+        @JsonInclude(Include.NON_NULL)
         val label: String?
+        @JsonInclude(Include.NON_EMPTY)
         val subscribers: List<Int>
+        @JsonInclude(Include.NON_EMPTY)
         val sources: List<Int>
 
         init {
@@ -287,6 +292,7 @@ class GraphSerDeser {
     @JsonDeserialize(builder = SourceSerGraphNode.Builder::class)
     class SourceSerGraphNode(builder: Builder) : SerGraphNode(builder) {
         val valueIds: List<ValueId<*>>
+        @JsonInclude(Include.NON_EMPTY)
         val trainOnlyValueIds: List<ValueId<*>>
 
         init {
