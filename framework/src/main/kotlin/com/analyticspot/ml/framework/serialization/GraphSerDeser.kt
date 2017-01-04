@@ -5,11 +5,11 @@ import com.analyticspot.ml.framework.datatransform.DataTransform
 import com.analyticspot.ml.framework.datatransform.MultiTransform
 import com.analyticspot.ml.framework.datatransform.SingleDataTransform
 import com.analyticspot.ml.framework.description.ValueId
-import com.fasterxml.jackson.annotation.JsonIgnore
-import com.fasterxml.jackson.annotation.JsonInclude
 import com.fasterxml.jackson.annotation.JsonTypeInfo
 import com.fasterxml.jackson.annotation.JsonTypeInfo.As
 import com.fasterxml.jackson.annotation.JsonTypeInfo.Id
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize
+import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder
 import org.slf4j.LoggerFactory
 import java.io.File
 import java.io.FileOutputStream
@@ -55,9 +55,11 @@ class GraphSerDeser {
         iter.forEach {
             val serNode: SerGraphNode
             if (it is SourceGraphNode) {
-                serNode = SourceSerGraphNode(it)
+                serNode = SourceSerGraphNode.create(it)
             } else if (it is TransformGraphNode){
-                serNode = TransformSerGraphNode(it)
+                val format = formatMap[it.transform.formatClass] ?:
+                        throw IllegalStateException("Unknown format: ${it.transform.formatClass}")
+                serNode = TransformSerGraphNode.create(it, format.getMetaData(it.transform))
             } else {
                 throw IllegalStateException("Unknown GraphNode type:  ${it.javaClass.canonicalName}")
             }
@@ -120,11 +122,11 @@ class GraphSerDeser {
         zipIn.closeEntry()
 
         val sourceNode: SourceGraphNode
-        val sourceNodeData = graphData.graph[graphData.source]
+        val sourceNodeData = graphData.graph[graphData.sourceId]
         if (sourceNodeData is SourceSerGraphNode) {
-            sourceNode = SourceGraphNode.build(graphData.source) {
+            sourceNode = SourceGraphNode.build(graphData.sourceId) {
                 valueIds += sourceNodeData.valueIds
-                trainOnlyValueIds += sourceNodeData.trainOnlyVaueIds
+                trainOnlyValueIds += sourceNodeData.trainOnlyValueIds
             }
         } else {
             throw IllegalStateException("Corrupt graph.json file. Source is not a SourceSerGraphNode")
@@ -141,29 +143,32 @@ class GraphSerDeser {
                     log.debug("End of Zip file. Graph should be complete.")
                     break
                 }
-                check(graphData.graph.contains(zipEntry!!.name.toInt())) {
-                    "Unexpected graph node: ${zipEntry!!.name}"
+                val nodeId = zipEntry!!.name.toInt()
+                log.debug("Deserializing node {}", nodeId)
+                check(graphData.graph.contains(nodeId)) {
+                    "Unexpected graph node: $nodeId"
                 }
 
-                val graphDataNode = graphData.graph[zipEntry!!.name.toInt()]
+                val graphDataNode = graphData.graph[nodeId]
 
                 if (graphDataNode is TransformSerGraphNode) {
                     val nodeSources = graphDataNode.sources.map {
                         deserializedNodeMap[it] ?: throw IllegalStateException("Unable to find node source $it")
                     }
 
-                    val transform = deserializeTransform(graphDataNode.tag, graphDataNode.metaData, nodeSources, zipIn)
+                    val transform = deserializeTransform(
+                            graphDataNode.label, graphDataNode.metaData, nodeSources, zipIn)
 
                     val newNode = when (transform) {
                         is SingleDataTransform -> {
                             check(nodeSources.size == 1) {
                                 "Found a SingleDataTransform but ${nodeSources.size} inputs"
                             }
-                            addTransform(nodeSources[0], transform)
+                            addTransform(nodeSources[0], transform, nodeId)
                         }
 
                         is MultiTransform -> {
-                            addTransform(nodeSources, transform)
+                            addTransform(nodeSources, transform, nodeId)
                         }
 
                         else -> throw IllegalStateException("Unknown tranform type: ${transform.javaClass}")
@@ -176,7 +181,7 @@ class GraphSerDeser {
                 }
                 zipIn.closeEntry()
             }
-            result = deserializedNodeMap[graphData.result] ?: throw IllegalStateException("Result node not found.")
+            result = deserializedNodeMap[graphData.resultId] ?: throw IllegalStateException("Result node not found.")
         }
 
         return resultGraph
@@ -244,7 +249,7 @@ class GraphSerDeser {
     //
     // Also, we want to serialize the source and result node id's and you can't do that in just a Map 'cause the
     // value type is different. So we use a tiny wrapper class here to make everything work.
-    private class GraphStucture(val source: Int, val result: Int) {
+    private class GraphStucture(val sourceId: Int, val resultId: Int) {
         val graph = TreeMap<Int, SerGraphNode>()
     }
 
@@ -252,36 +257,93 @@ class GraphSerDeser {
     // GraphNode's themselves so we simply create new classes with the appropriate getters and setters which
     // return the properties we want to serialize and in the way we want them serialized.
     @JsonTypeInfo(use=Id.CLASS, include=As.PROPERTY, property="class")
-    private inner abstract class SerGraphNode() {
-        @get:JsonIgnore
-        abstract protected val node: GraphNode
-
-        @get:JsonInclude(JsonInclude.Include.NON_NULL)
-        val tag: String?
-            get() = null
-
-        @get:JsonInclude(JsonInclude.Include.NON_EMPTY)
+    open class SerGraphNode(builder: Builder) {
+        val label: String?
         val subscribers: List<Int>
-            get() = node.subscribers.map { it.id }
-
-        @get:JsonInclude(JsonInclude.Include.NON_EMPTY)
         val sources: List<Int>
-            get() = node.sources.map { it.id }
-    }
 
-    private inner class SourceSerGraphNode(override val node: SourceGraphNode) : SerGraphNode() {
-        val valueIds: List<ValueId<*>>
-            get() = node.tokens.map { it.id }
-        val trainOnlyVaueIds: List<ValueId<*>>
-            get() = node.trainOnlyTokens.map { it.id }
-    }
+        init {
+            label = builder.label
+            subscribers = builder.subscribers
+            sources = builder.sources
 
-    private inner class TransformSerGraphNode(override val node: TransformGraphNode) : SerGraphNode() {
-        val metaData: FormatMetaData
-            get() {
-                val format = formatMap[node.transform.formatClass]
-                return format?.getMetaData(node.transform) ?:
-                        throw IllegalStateException("Format ${node.transform.formatClass} not found.")
+        }
+
+        open class Builder {
+            var sources: List<Int> = listOf()
+            var subscribers: List<Int> = listOf()
+            var label: String? = null
+
+            fun fromNode(node: GraphNode) {
+                subscribers = node.subscribers.map { it.id }
+                sources = node.sources.map { it.id }
             }
+        }
+    }
+
+    @JsonDeserialize(builder = SourceSerGraphNode.Builder::class)
+    class SourceSerGraphNode(builder: Builder) : SerGraphNode(builder) {
+        val valueIds: List<ValueId<*>>
+        val trainOnlyValueIds: List<ValueId<*>>
+
+        init {
+            valueIds = builder.valueIds
+            trainOnlyValueIds = builder.trainOnlyValueIds
+        }
+
+        companion object {
+            fun create(node: SourceGraphNode): SourceSerGraphNode {
+                return with(Builder()) {
+                    fromNode(node)
+                    build()
+                }
+            }
+        }
+
+        @JsonPOJOBuilder(withPrefix = "set")
+        class Builder : SerGraphNode.Builder() {
+            var valueIds: List<ValueId<*>> = listOf()
+            var trainOnlyValueIds: List<ValueId<*>> = listOf()
+
+            fun fromNode(node: SourceGraphNode) {
+                valueIds = node.tokens.map { it.id }
+                trainOnlyValueIds = node.trainOnlyTokens.map { it.id }
+                super.fromNode(node)
+            }
+
+            fun build(): SourceSerGraphNode {
+                return SourceSerGraphNode(this)
+            }
+        }
+    }
+
+    @JsonDeserialize(builder = TransformSerGraphNode.Builder::class)
+    class TransformSerGraphNode(builder: Builder) : SerGraphNode(builder) {
+        val metaData: FormatMetaData
+
+        companion object {
+            internal fun create(node: TransformGraphNode, metaData: FormatMetaData): TransformSerGraphNode {
+                return with(Builder()) {
+                    fromNode(node)
+                    this.metaData = metaData
+                    build()
+                }
+
+            }
+        }
+
+        init {
+            metaData = builder.metaData ?: throw IllegalArgumentException("Missing FormatMetaData")
+        }
+
+        @JsonPOJOBuilder(withPrefix = "set")
+        class Builder : SerGraphNode.Builder() {
+            var metaData: FormatMetaData? = null
+
+            fun build(): TransformSerGraphNode {
+                return TransformSerGraphNode(this)
+            }
+        }
+
     }
 }

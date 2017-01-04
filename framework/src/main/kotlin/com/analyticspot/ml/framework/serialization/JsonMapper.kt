@@ -1,6 +1,7 @@
 package com.analyticspot.ml.framework.serialization
 
 import com.fasterxml.jackson.core.JsonGenerator
+import com.fasterxml.jackson.core.JsonParser
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.ser.impl.SimpleBeanPropertyFilter
 import com.fasterxml.jackson.databind.ser.impl.SimpleFilterProvider
@@ -25,6 +26,7 @@ object JsonMapper {
         val filterProvider = SimpleFilterProvider().addFilter(VALUE_TOKEN_FILTER_ID, tokenFilter)
         mapper = ObjectMapper().registerKotlinModule().setFilterProvider(filterProvider)
                 .disable(JsonGenerator.Feature.AUTO_CLOSE_TARGET)
+                .disable(JsonParser.Feature.AUTO_CLOSE_SOURCE)
     }
 }
 

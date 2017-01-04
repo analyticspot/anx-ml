@@ -2,10 +2,7 @@ package com.analyticspot.ml.framework.datagraph
 
 import com.analyticspot.ml.framework.dataset.DataSet
 import com.analyticspot.ml.framework.dataset.SingleObservationDataSet
-import com.analyticspot.ml.framework.datatransform.LearningTransform
-import com.analyticspot.ml.framework.datatransform.MergeTransform
-import com.analyticspot.ml.framework.datatransform.MultiTransform
-import com.analyticspot.ml.framework.datatransform.SingleDataTransform
+import com.analyticspot.ml.framework.datatransform.*
 import com.analyticspot.ml.framework.observation.ArrayObservation
 import com.analyticspot.ml.framework.observation.Observation
 import org.slf4j.LoggerFactory
@@ -32,7 +29,9 @@ class DataGraph(builder: GraphBuilder) {
         source = builder.source
         result = builder.result
 
-        allNodes = builder.nodesById.toTypedArray()
+        allNodes = Array<GraphNode>(builder.nodesById.size) {
+            builder.nodesById[it] ?: throw IllegalStateException("No node in builder with id $it")
+        }
     }
 
     companion object {
@@ -91,30 +90,33 @@ class DataGraph(builder: GraphBuilder) {
         lateinit var result: GraphNode
 
         // An array of GraphNode such that nodesById[idx] returns the GraphNode whose id is idx.
-        internal val nodesById: MutableList<GraphNode> = mutableListOf()
+        internal val nodesById: MutableMap<Int, GraphNode> = mutableMapOf()
 
         internal var nextId = 0
 
         fun setSource(init: SourceGraphNode.Builder.() -> Unit): GraphNode {
-            source = SourceGraphNode.build(nextId++, init)
-            assert(nodesById.size == source.id)
-            nodesById.add(source)
-            return source
+            val sourceNode = SourceGraphNode.build(nextId++, init)
+            return setSource(sourceNode)
         }
 
-        fun setSource(node: SourceGraphNode): GraphNode {
-            assert(nodesById.size == node.id)
-            nodesById.add(node)
+        internal fun setSource(node: SourceGraphNode): GraphNode {
+            source = node
+            check(!nodesById.containsKey(node.id))
+            nodesById[node.id] = node
             return node
         }
 
         fun addTransform(src: GraphNode, transform: SingleDataTransform): GraphNode {
+            return addTransform(src, transform, nextId++)
+        }
+
+        internal fun addTransform(src: GraphNode, transform: SingleDataTransform, nodeId: Int): GraphNode {
             log.debug("Adding an untrained transform to the graph.")
-            val node = TransformGraphNode.build(nextId++) {
+            val node = TransformGraphNode.build(nodeId) {
                 this.transform = transform
                 sources += src
             }
-            addNodeToGraph(src, node)
+            addNodeToGraph(listOf(src), node)
             return node
         }
 
@@ -124,7 +126,7 @@ class DataGraph(builder: GraphBuilder) {
                 this.transform = transform
                 sources += src
             }
-            addNodeToGraph(src, node)
+            addNodeToGraph(listOf(src), node)
             return node
         }
 
@@ -136,21 +138,23 @@ class DataGraph(builder: GraphBuilder) {
         }
 
         fun addTransform(sources: List<GraphNode>, transform: MultiTransform): GraphNode {
-            val node = MultiTransformGraphNode.build(nextId++) {
+            return addTransform(sources, transform, nextId++)
+        }
+
+        internal fun addTransform(sources: List<GraphNode>, transform: MultiTransform, nodeId: Int): GraphNode {
+            val node = MultiTransformGraphNode.build(nodeId) {
                 this.transform = transform
                 this.sources += sources
             }
 
-            sources.forEach { it.subscribers += node }
-            assert(nodesById.size == node.id)
-            nodesById.add(node)
+            addNodeToGraph(sources, node)
             return node
         }
 
-        private fun addNodeToGraph(src: GraphNode, nodeToAdd: GraphNode) {
-            src.subscribers += nodeToAdd
-            assert(nodesById.size == nodeToAdd.id)
-            nodesById.add(nodeToAdd)
+        internal fun addNodeToGraph(sources: List<GraphNode>, nodeToAdd: GraphNode) {
+            sources.forEach { it.subscribers += nodeToAdd }
+            check(!nodesById.containsKey(nodeToAdd.id))
+            nodesById[nodeToAdd.id] = nodeToAdd
         }
 
         fun build(): DataGraph {
