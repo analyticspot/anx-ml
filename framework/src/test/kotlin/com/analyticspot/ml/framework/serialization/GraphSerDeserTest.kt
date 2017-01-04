@@ -1,6 +1,7 @@
 package com.analyticspot.ml.framework.serialization
 
 import com.analyticspot.ml.framework.datagraph.AddConstantTransform
+import com.analyticspot.ml.framework.datagraph.DataGraph
 import com.analyticspot.ml.framework.datagraph.SourceGraphNode
 import com.analyticspot.ml.framework.datatransform.MergeTransform
 import com.analyticspot.ml.framework.description.IndexValueToken
@@ -94,5 +95,32 @@ class GraphSerDeserTest {
         assertThat(deserialized).isInstanceOf(MergeTransform::class.java)
         val deserMerge = deserialized as MergeTransform
         assertThat(deserMerge.description.tokens.map { it.name }).isEqualTo(listOf("v1", "v2"))
+    }
+
+    @Test
+    fun testCanSerializeAndDeserializeSimpleGraph() {
+        val sourceValId = ValueId.create<Int>("src")
+        val transformValId = ValueId.create<Int>("resultVal")
+        val amountToAdd = 1232
+        val dg = DataGraph.build {
+            val source = setSource {
+                valueIds += sourceValId
+            }
+
+            val trans = addTransform(
+                    source, AddConstantTransform(amountToAdd, source.token(sourceValId), transformValId))
+            result = trans
+        }
+
+        val serDeser = GraphSerDeser()
+        val outStream = ByteArrayOutputStream(0)
+        serDeser.serialize(dg, outStream)
+
+        // Now deserialize the thing....
+        val inStream = ByteArrayInputStream(outStream.toByteArray())
+        val deserGraph = serDeser.deserialize(inStream)
+
+        assertThat(deserGraph.source.tokens).hasSize(1)
+        assertThat(deserGraph.source.tokens[0].id).isEqualTo(sourceValId)
     }
 }
