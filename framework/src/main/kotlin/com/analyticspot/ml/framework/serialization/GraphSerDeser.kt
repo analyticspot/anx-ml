@@ -1,6 +1,10 @@
 package com.analyticspot.ml.framework.serialization
 
-import com.analyticspot.ml.framework.datagraph.*
+import com.analyticspot.ml.framework.datagraph.DataGraph
+import com.analyticspot.ml.framework.datagraph.GraphNode
+import com.analyticspot.ml.framework.datagraph.SourceGraphNode
+import com.analyticspot.ml.framework.datagraph.TopologicalIterator
+import com.analyticspot.ml.framework.datagraph.TransformGraphNode
 import com.analyticspot.ml.framework.datatransform.DataTransform
 import com.analyticspot.ml.framework.datatransform.MultiTransform
 import com.analyticspot.ml.framework.datatransform.SingleDataTransform
@@ -56,7 +60,7 @@ class GraphSerDeser {
             val serNode: SerGraphNode
             if (it is SourceGraphNode) {
                 serNode = SourceSerGraphNode.create(it)
-            } else if (it is TransformGraphNode){
+            } else if (it is TransformGraphNode) {
                 val format = formatMap[it.transform.formatClass] ?:
                         throw IllegalStateException("Unknown format: ${it.transform.formatClass}")
                 serNode = TransformSerGraphNode.create(it, format.getMetaData(it.transform))
@@ -131,7 +135,6 @@ class GraphSerDeser {
         } else {
             throw IllegalStateException("Corrupt graph.json file. Source is not a SourceSerGraphNode")
         }
-
 
         val resultGraph = DataGraph.build {
             val src = setSource(sourceNode)
