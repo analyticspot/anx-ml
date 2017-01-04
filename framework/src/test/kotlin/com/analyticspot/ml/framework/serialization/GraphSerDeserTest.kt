@@ -13,9 +13,6 @@ import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import java.util.concurrent.Executors
 
-/**
-
- */
 class GraphSerDeserTest {
     companion object {
         private val log = LoggerFactory.getLogger(GraphSerDeserTest::class.java)
