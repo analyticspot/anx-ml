@@ -31,35 +31,39 @@ For example, the `graph.json` file might look like this:
 
 ```json
 {
+  "sourceId": 0,
+  "resultId": 2,
+  "graph": {
     "0": {
-        "subscribers": [1],
-        "type": "com.analyticspot.ml.framework.datagraph.SourceGraphNode",
-        "tokens": [
-             {
-                 "name": "sourceText",
-                 "type": "java.lang.String"
-             }
-        ]
+      "class": "com.analyticspot.ml.framework.serialization.GraphSerDeser$SourceSerGraphNode",
+      "subscribers": [1],
+      "valueIds": [
+        {
+          "name": "src",
+          "clazz": "java.lang.Integer"
+        }
+      ]
     },
     "1": {
-        "tag": "foo",
-        "sources": [0],
-        "subscribers": [2],
-        "type": "com.analyticspot.ml.framework.datagraph.TransformGraphNode",
-        "metaData": {
-            "type": "com.analyticspot.ml.serialization.StandardJsonFormat",
-            "class": "com.analyticspot.ml.transform.PositiveWordCount"
-        }
+      "class": "com.analyticspot.ml.framework.serialization.GraphSerDeser$TransformSerGraphNode",
+      "sources": [0],
+      "subscribers": [2],
+      "metaData": {
+        "class": "com.analyticspot.ml.framework.serialization.StandardJsonFormat$MetaData",
+        "transformClass": "com.analyticspot.ml.framework.datagraph.AddConstantTransform",
+        "formatClass": "com.analyticspot.ml.framework.serialization.StandardJsonFormat"
+      }
     },
     "2": {
-        "sources": [1],
-        "type": "com.analyticspot.ml.framework.datagraph.TransformGraphNode",
-        "metaData": {
-            "type": "com.analyticspot.ml.serialization.Weka"
-        }
-    },
-    "source": 0,
-    "result": 2
+      "class": "com.analyticspot.ml.framework.serialization.GraphSerDeser$TransformSerGraphNode",
+      "sources": [1],
+      "metaData": {
+        "class": "com.analyticspot.ml.framework.serialization.WekaFormatMetaData",
+        "transformClass": "com.analyticspot.ml.wrappers.WekaWrapper",
+        "formatClass": "com.analyticspot.ml.framework.serialization.WekaFormat"
+      }
+    }
+  }
 }
 ```
 
