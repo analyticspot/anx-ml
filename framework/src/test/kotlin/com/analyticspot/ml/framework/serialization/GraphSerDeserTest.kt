@@ -11,6 +11,7 @@ import org.slf4j.LoggerFactory
 import org.testng.annotations.Test
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
+import java.util.concurrent.Executors
 
 /**
 
@@ -123,5 +124,12 @@ class GraphSerDeserTest {
 
         assertThat(deserGraph.source.tokens).hasSize(1)
         assertThat(deserGraph.source.tokens[0].id).isEqualTo(sourceValId)
+
+        val sourceValue = 18
+        val sourceObs = deserGraph.buildSourceObservation(sourceValue)
+        val result = deserGraph.transform(sourceObs, Executors.newSingleThreadExecutor()).get()
+
+        val resultToken = deserGraph.result.token(transformValId)
+        assertThat(result.value(resultToken)).isEqualTo(sourceValue + amountToAdd)
     }
 }
