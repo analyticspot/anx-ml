@@ -23,9 +23,8 @@ import java.util.concurrent.ExecutorService
  *   instance. This will then schedule the node to be run (often on another thread).
  * * Once scheduled the [NodeExecutionManager.run] method wil be called. The [NodeExecutionManager] will then call its
  *   underlying [DataTransform] to generate the data.
- * * Once the run is complete and the data is available (e.g. after any `CompletableFuture` instances have completed)
- *   the [NodeExecutionManager] will call [onDataComputed] on this instance which will cause the entire process to
- *   repeat.
+ * * Once the run is complete and the data is available the future returned by [NodeExecutionManager.run] will complete
+ *   causing any subscribing nodes to be notified.
  */
 class GraphExecution (
         private val dataGraph: DataGraph, private val execType: ExecutionType, private val exec: ExecutorService) {
@@ -66,6 +65,11 @@ class GraphExecution (
         }
     }
 
+    fun onNodeFailed(manager: NodeExecutionManager, error: Throwable) {
+        log.error("Execution of node {} failed:", manager.graphNode.id, error)
+        executionResult.completeExceptionally(error)
+    }
+
     private fun notifySubscribers(
             producingManager: NodeExecutionManager, data: DataSet, subscribers: List<GraphNode>) {
         for (sub in subscribers) {
@@ -75,23 +79,33 @@ class GraphExecution (
             check(sourceIdx >= 0) {
                 "Subscriber node ${sub.id} does not list ${producingManager.graphNode.id} as a source."
             }
+            log.debug("Output of node {} is input {} for node {}",
+                    producingManager.graphNode.id, sourceIdx, sub.id)
             executionManagers[sub.id].onDataAvailable(sourceIdx, data)
         }
 
     }
 
     fun onReadyToRun(manager: NodeExecutionManager) {
+        log.debug("Node {} reports that is is ready to run.", manager.graphNode.id)
         // By default ExecutorService will "swallow" an exceptions thrown and not log them or anything making debugging
         // very difficult. So we wrap the call to the manager with our own Runnable so we can catch exceptions and log.
         exec.submit {
+            log.debug("Starting execution of node {}", manager.graphNode.id)
             try {
-                manager.run()
+                manager.run().whenComplete { dataSet, throwable ->
+                    if (throwable == null) {
+                        onDataComputed(manager, dataSet)
+                    } else {
+                        log.error("Execution of node {} failed with:", manager.graphNode.id, throwable)
+                        executionResult.completeExceptionally(throwable)
+                    }
+                }
             } catch (t: Throwable) {
                 log.error("Execution of node {} failed:", manager.graphNode.id, t)
                 executionResult.completeExceptionally(t)
             }
         }
-        exec.submit(manager)
     }
 }
 
@@ -107,7 +121,7 @@ enum class ExecutionType {
  * it will need in order to [run]. Once the run is complete that data is no longer needed by this node so it is a best
  * practice to remove the reference to the data so it can be GC'd.
  */
-interface NodeExecutionManager : Runnable {
+interface NodeExecutionManager {
     val graphNode: GraphNode
     /**
      * Called when data is available that this nodes requires.
@@ -116,6 +130,14 @@ interface NodeExecutionManager : Runnable {
      * @param data the data that was produced.
      */
     fun onDataAvailable(sourceIdx: Int, data: DataSet)
+
+    /**
+     * When called the node should compute it's result. When the result has been computed the returned future should
+     * complete with its value.
+     *
+     * Note that any exceptions thrown by this method will be handled by the framework.
+     */
+    fun run(): CompletableFuture<DataSet>
 }
 
 /**
@@ -126,17 +148,19 @@ abstract class SingleInputExecutionManager(protected val parent: GraphExecution)
     @Volatile
     private var data: DataSet? = null
 
+    companion object {
+        private val log = LoggerFactory.getLogger(SingleInputExecutionManager::class.java)
+    }
+
     override fun onDataAvailable(sourceIdx: Int, data: DataSet) {
         this.data = data
         parent.onReadyToRun(this)
     }
 
-    final override fun run() {
-        val result = doRun(data!!)
-        result.thenAccept {
+    final override fun run(): CompletableFuture<DataSet> {
+        return doRun(data!!).whenComplete { dataSet, throwable ->
             // Get rid of our reference to the observaton so it can be GC'd if nothing else is using it.
             data = null
-            parent.onDataComputed(this, it)
         }
     }
 
