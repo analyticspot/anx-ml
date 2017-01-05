@@ -68,7 +68,7 @@ class WordCounts(private val sourceToken: ValueToken<List<String>>, resultId: Va
 
         // Now that we know all the tokens, set them into the ValueTokenGroup
         val tokens = wordMap.map {
-            val tokenName = "${tokenGroupAndSetter.tokenGroup.prefix}${ValueId.GROUP_SEPARATOR}${it.value}"
+            val tokenName = "${tokenGroupAndSetter.tokenGroup.prefix}${ValueId.GROUP_SEPARATOR}${it.key}"
             IndexValueToken(it.value, ValueId.create<Int>(tokenName))
         }
 

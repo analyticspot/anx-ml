@@ -81,6 +81,16 @@ class GraphExecution (
     }
 
     fun onReadyToRun(manager: NodeExecutionManager) {
+        // By default ExecutorService will "swallow" an exceptions thrown and not log them or anything making debugging
+        // very difficult. So we wrap the call to the manager with our own Runnable so we can catch exceptions and log.
+        exec.submit {
+            try {
+                manager.run()
+            } catch (t: Throwable) {
+                log.error("Execution of node {} failed:", manager.graphNode.id, t)
+                executionResult.completeExceptionally(t)
+            }
+        }
         exec.submit(manager)
     }
 }

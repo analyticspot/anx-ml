@@ -11,18 +11,12 @@ package com.analyticspot.ml.framework.description
  */
 open class ValueId<DataT>(val name: String, val clazz: Class<DataT>) : Comparable<ValueId<*>> {
 
-    init {
-        check(!name.contains(GROUP_SEPARATOR)) {
-            "ValueId names should not contain $GROUP_SEPARATOR"
-        }
-    }
-
     companion object {
         inline fun <reified T : Any> create(name: String) = ValueId<T>(name, T::class.java)
         /**
          * The character used to separate the prefix and the tokens in a [ValueTokenGroup].
          */
-        const val GROUP_SEPARATOR = '-'
+        const val GROUP_SEPARATOR = "-"
     }
 
     final override fun compareTo(other: ValueId<*>): Int {
