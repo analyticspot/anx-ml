@@ -1,7 +1,6 @@
 package com.analyticspot.ml.framework.description
 
 import org.slf4j.LoggerFactory
-import java.util.SortedMap
 
 /**
  * A description of a [DataSet]. This doesn't contain any data but it does know how to generate data of the given type,
@@ -16,9 +15,10 @@ import java.util.SortedMap
 open class DataDescription(builder: Builder) {
     val tokens: List<ValueToken<*>>
     val trainOnlyTokens: List<ValueToken<*>>
-    val tokenGroups: List<ValueIdGroup<*>>
+    val tokenGroups: List<ValueTokenGroup<*>>
 
-    private val tokenMap: SortedMap<ValueId<*>, ValueToken<*>> = sortedMapOf()
+    private val tokenMap: MutableMap<ValueId<*>, ValueToken<*>> = mutableMapOf()
+    private val tokenGroupMap: MutableMap<ValueIdGroup<*>, ValueTokenGroup<*>> = mutableMapOf()
 
     init {
         log.debug("DataDescription being constructed with {} tokens and {} token groups",
@@ -31,7 +31,11 @@ open class DataDescription(builder: Builder) {
             check(!tokenMap.containsKey(it.id)) {
                 "A token with name ${it.name} is already present in this data set."
             }
-            tokenMap.put(it.id, it)
+            tokenMap[it.id] = it
+        }
+
+        tokenGroups.forEach {
+            tokenGroupMap[it.id] = it
         }
     }
 
@@ -49,10 +53,22 @@ open class DataDescription(builder: Builder) {
         }
     }
 
+    fun <T> tokenGroup(groupId: ValueIdGroup<T>): ValueTokenGroup<T> {
+        val tokGroup = tokenGroupMap[groupId] ?: throw IllegalArgumentException("No token group found with id $groupId")
+        if (tokGroup.clazz == groupId.clazz) {
+            @Suppress("UNCHECKED_CAST")
+            return tokGroup as ValueTokenGroup<T>
+        } else {
+            throw IllegalArgumentException(
+                    "TokenGroup $groupId has type ${tokGroup.clazz} but ${groupId.clazz} was passed wiht the id"
+            )
+        }
+    }
+
     open class Builder {
         val tokens: MutableList<ValueToken<*>> = mutableListOf()
         val trainOnlyTokens: MutableList<ValueToken<*>> = mutableListOf()
-        val tokenGroups: MutableList<ValueIdGroup<*>> = mutableListOf()
+        val tokenGroups: MutableList<ValueTokenGroup<*>> = mutableListOf()
 
         open fun build(): DataDescription {
             return DataDescription(this)
