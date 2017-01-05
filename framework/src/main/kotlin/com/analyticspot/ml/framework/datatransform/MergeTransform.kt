@@ -4,7 +4,9 @@ import com.analyticspot.ml.framework.datagraph.GraphNode
 import com.analyticspot.ml.framework.dataset.DataSet
 import com.analyticspot.ml.framework.dataset.IndirectDataSet
 import com.analyticspot.ml.framework.description.IndirectValueToken
+import com.analyticspot.ml.framework.description.IndirectValueTokenGroup
 import com.analyticspot.ml.framework.description.ValueToken
+import com.analyticspot.ml.framework.description.ValueTokenGroup
 import com.fasterxml.jackson.annotation.JacksonInject
 import com.fasterxml.jackson.annotation.JsonIgnore
 import com.fasterxml.jackson.annotation.JsonProperty
@@ -31,9 +33,16 @@ class MergeTransform (builder: Builder) : MultiTransform {
             node.tokens.forEach { newTokens += IndirectValueToken(idx, it) }
         }
 
+        val newGroups = mutableListOf<ValueTokenGroup<*>>()
+        sources.forEachIndexed { idx, graphNode ->
+            graphNode.tokenGroups.forEach {
+                newGroups.add(IndirectValueTokenGroup(idx, it))
+            }
+        }
+
         description = TransformDescription(
                 tokens = newTokens,
-                tokenGroups = sources.flatMap { it.tokenGroups }.toList())
+                tokenGroups = newGroups)
     }
 
     @get:JsonProperty(access = Access.READ_ONLY)
