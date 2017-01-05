@@ -144,6 +144,26 @@ class GraphExecutionTest {
         assertThatThrownBy { transformF.get() }.hasMessageContaining(ThrowsExceptionTransform.ERROR_MESSAGE)
     }
 
+    @Test
+    fun testTransformCompletingWithExceptionCausesGraphExecutionToThrow() {
+        val input = ValueId.create<Int>("input")
+        val resultId = ValueId.create<String>("finalResult")
+
+        val dg = DataGraph.build {
+            val src = setSource {
+                valueIds += input
+            }
+
+            val trans = addTransform(src, CompletesWithExceptionTransform(resultId))
+            result = trans
+        }
+
+        val srcObs = dg.buildSourceObservation(88)
+
+        val transformF = dg.transform(srcObs, Executors.newSingleThreadExecutor())
+        assertThatThrownBy { transformF.get() }.hasMessageContaining(CompletesWithExceptionTransform.ERROR_MESSAGE)
+    }
+
     class ThrowsExceptionTransform(private val resultId: ValueId<String>) : SingleDataTransform {
         companion object {
             const val ERROR_MESSAGE = "Pretending bad things happened."
@@ -156,4 +176,17 @@ class GraphExecutionTest {
         }
     }
 
+    class CompletesWithExceptionTransform(private val resultId: ValueId<String>) : SingleDataTransform {
+        companion object {
+            const val ERROR_MESSAGE = "Pretending bad things happened."
+        }
+        override val description: TransformDescription
+            get() = TransformDescription(listOf(ValueToken(resultId)))
+
+        override fun transform(dataSet: DataSet): CompletableFuture<DataSet> {
+            val result = CompletableFuture<DataSet>()
+            result.completeExceptionally(RuntimeException(ERROR_MESSAGE))
+            return result
+        }
+    }
 }

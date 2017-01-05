@@ -3,6 +3,7 @@ package com.analyticspot.ml.framework.datagraph
 import com.analyticspot.ml.framework.dataset.DataSet
 import com.analyticspot.ml.framework.description.IndexValueToken
 import com.analyticspot.ml.framework.description.ValueId
+import java.util.concurrent.CompletableFuture
 
 /**
  * A special [GraphNode] for the one node that is the source for the entire graph. While most nodes know how to compute
@@ -68,7 +69,7 @@ class SourceGraphNode private constructor(builder: GraphNode.Builder) : GraphNod
                     "normal GraphExecution protocol.")
         }
 
-        override fun run() {
+        override fun run(): CompletableFuture<DataSet> {
             throw IllegalStateException("This is a SourceGraphNode and it therefore does not participate in the " +
                     "normal GraphExecution protocol.")
         }
