@@ -59,7 +59,7 @@ class GraphSerDeser {
         var iter = TopologicalIterator(graph)
         val outObj = GraphStucture(graph.source.id, graph.result.id)
         iter.forEach {
-            val serNode: SerGraphNode = when(it) {
+            val serNode: SerGraphNode = when (it) {
                 is SourceGraphNode -> SourceSerGraphNode.create(it)
                 // Note that we only serialize what's necessary to apply a model, not train one so we can treat
                 // learning and non-learning transforms the same way.

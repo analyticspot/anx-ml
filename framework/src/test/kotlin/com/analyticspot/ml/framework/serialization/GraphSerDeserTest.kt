@@ -172,7 +172,6 @@ class GraphSerDeserTest {
 
         val resultDs = deserDg.transform(toTransform, Executors.newSingleThreadExecutor()).get().toList()
 
-
         assertThat(resultDs).hasSize(1)
         val firstRow = resultDs[0]
         // Note that in the following I'm relying on the fact that the words are assigned indices in the order that they
