@@ -19,9 +19,9 @@ ext.Deps = [
         // Serialiation and JSON
         ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
         'jackson': [
-                'com.fasterxml.jackson.core:jackson-databind:2.7.0',
-                'com.fasterxml.jackson.core:jackson-annotations:2.7.0',
-                'com.fasterxml.jackson.module:jackson-module-kotlin:2.7.8'
+                'com.fasterxml.jackson.core:jackson-databind:2.8.4',
+                'com.fasterxml.jackson.core:jackson-annotations:2.8.4',
+                'com.fasterxml.jackson.module:jackson-module-kotlin:2.8.4'
         ],
 
         ///////////////////////////////////////////////////////////////////////////////////////////////////////////////

@@ -11,9 +11,10 @@ import com.analyticspot.ml.framework.description.ValueToken
 import com.analyticspot.ml.framework.description.ValueTokenGroupFromList
 import com.analyticspot.ml.framework.observation.ArrayObservation
 import com.analyticspot.ml.framework.observation.Observation
-import com.fasterxml.jackson.annotation.JsonCreator
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.annotation.JsonProperty.Access
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize
+import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder
 import org.slf4j.LoggerFactory
 import java.util.concurrent.CompletableFuture
 
@@ -29,6 +30,7 @@ import java.util.concurrent.CompletableFuture
  * then the count for the word "foo" will be at index 7 in the ArrayObservation that this produces when [transform] is
  * called. This is a constructor parameter so it can be deserialized. For training call the secondary constructor.
  */
+@JsonDeserialize(builder = WordCounts.Builder::class)
 class WordCounts private constructor(
         val sourceToken: ValueToken<List<String>>,
         resultId: ValueIdGroup<Int>,
@@ -47,8 +49,6 @@ class WordCounts private constructor(
     companion object {
         private val log = LoggerFactory.getLogger(WordCounts::class.java)
 
-        @JvmStatic
-        @JsonCreator
         fun createFromSerialized(
                 @JsonProperty("sourceToken") sourceToken: ValueToken<List<String>>,
                 @JsonProperty("resultId") resultId: ValueIdGroup<Int>,
@@ -97,5 +97,19 @@ class WordCounts private constructor(
 
         tokenGroupAndSetter.setter(tokens)
         return transform(dataSet)
+    }
+
+    // This should be unnecessary but is a workaround for this bug:
+    //
+    // https://github.com/FasterXML/jackson-databind/issues/1489
+    //
+    // We should be able to remove this when that gets fixed.
+    @JsonPOJOBuilder(withPrefix = "set")
+    class Builder() {
+        lateinit var sourceToken: ValueToken<List<String>>
+        lateinit var resultId: ValueIdGroup<Int>
+        lateinit var wordMap: MutableMap<String, Int>
+
+        fun build(): WordCounts = WordCounts(sourceToken, resultId, wordMap)
     }
 }
