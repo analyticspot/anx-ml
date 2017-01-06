@@ -2,9 +2,9 @@ package com.analyticspot.ml.framework.serialization
 
 import com.analyticspot.ml.framework.datagraph.DataGraph
 import com.analyticspot.ml.framework.datagraph.GraphNode
+import com.analyticspot.ml.framework.datagraph.HasTransformGraphNode
 import com.analyticspot.ml.framework.datagraph.SourceGraphNode
 import com.analyticspot.ml.framework.datagraph.TopologicalIterator
-import com.analyticspot.ml.framework.datagraph.TransformGraphNode
 import com.analyticspot.ml.framework.datatransform.DataTransform
 import com.analyticspot.ml.framework.datatransform.MultiTransform
 import com.analyticspot.ml.framework.datatransform.SingleDataTransform
@@ -59,15 +59,16 @@ class GraphSerDeser {
         var iter = TopologicalIterator(graph)
         val outObj = GraphStucture(graph.source.id, graph.result.id)
         iter.forEach {
-            val serNode: SerGraphNode
-            if (it is SourceGraphNode) {
-                serNode = SourceSerGraphNode.create(it)
-            } else if (it is TransformGraphNode) {
-                val format = formatMap[it.transform.formatClass] ?:
-                        throw IllegalStateException("Unknown format: ${it.transform.formatClass}")
-                serNode = TransformSerGraphNode.create(it, format.getMetaData(it.transform))
-            } else {
-                throw IllegalStateException("Unknown GraphNode type:  ${it.javaClass.canonicalName}")
+            val serNode: SerGraphNode = when (it) {
+                is SourceGraphNode -> SourceSerGraphNode.create(it)
+                // Note that we only serialize what's necessary to apply a model, not train one so we can treat
+                // learning and non-learning transforms the same way.
+                is HasTransformGraphNode<*> -> {
+                    val format = formatMap[it.transform.formatClass] ?:
+                            throw IllegalStateException("Unknown format: ${it.transform.formatClass}")
+                    TransformSerGraphNode.create(it, format.getMetaData(it.transform))
+                }
+                else -> throw IllegalStateException("Unknown GraphNode type:  ${it.javaClass.canonicalName}")
             }
             outObj.graph.put(it.id, serNode)
         }
@@ -80,7 +81,7 @@ class GraphSerDeser {
         // Now write one more file for each node in the graph that's a TransformGraphNode
         iter = TopologicalIterator(graph)
         iter.forEach {
-            if (it is TransformGraphNode) {
+            if (it is HasTransformGraphNode<*>) {
                 val nodeEntry = ZipEntry(it.id.toString())
                 zipOut.putNextEntry(nodeEntry)
                 serializeTransform(it.transform, zipOut)
@@ -331,7 +332,7 @@ class GraphSerDeser {
         val metaData: FormatMetaData
 
         companion object {
-            internal fun create(node: TransformGraphNode, metaData: FormatMetaData): TransformSerGraphNode {
+            internal fun create(node: HasTransformGraphNode<*>, metaData: FormatMetaData): TransformSerGraphNode {
                 return with(Builder()) {
                     fromNode(node)
                     this.metaData = metaData

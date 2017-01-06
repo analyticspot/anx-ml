@@ -20,4 +20,3 @@ data class ValueIdGroup<T>(val prefix: String, val clazz: Class<T>) {
         }
     }
 }
-

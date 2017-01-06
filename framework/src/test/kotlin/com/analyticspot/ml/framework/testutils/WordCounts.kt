@@ -11,6 +11,10 @@ import com.analyticspot.ml.framework.description.ValueToken
 import com.analyticspot.ml.framework.description.ValueTokenGroupFromList
 import com.analyticspot.ml.framework.observation.ArrayObservation
 import com.analyticspot.ml.framework.observation.Observation
+import com.fasterxml.jackson.annotation.JsonProperty
+import com.fasterxml.jackson.annotation.JsonProperty.Access
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize
+import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder
 import org.slf4j.LoggerFactory
 import java.util.concurrent.CompletableFuture
 
@@ -22,16 +26,35 @@ import java.util.concurrent.CompletableFuture
  * @param sourceToken a [ValueToken] to retrieve the list of words from the input.
  * @param resultPrefix the prefix for the [ValueIdGroup]/[ValueTokenGroup] that this will produce. The resulting tokens
  * will be `prefix-X` where `X` is one of the words in the list.
+ * @param wordMap map the word to the position of that word in the Observation array. (e.g. if wordMap["foo"]  = 7
+ * then the count for the word "foo" will be at index 7 in the ArrayObservation that this produces when [transform] is
+ * called. This is a constructor parameter so it can be deserialized. For training call the secondary constructor.
  */
-class WordCounts(private val sourceToken: ValueToken<List<String>>, resultId: ValueIdGroup<Int>) : LearningTransform {
-    // Tells you the index for each word.
-    private val wordMap = mutableMapOf<String, Int>()
+@JsonDeserialize(builder = WordCounts.Builder::class)
+class WordCounts private constructor(
+        val sourceToken: ValueToken<List<String>>,
+        resultId: ValueIdGroup<Int>,
+        val wordMap: MutableMap<String, Int>) : LearningTransform {
     private val tokenGroupAndSetter = ValueTokenGroupFromList.create(resultId)
+
+    @get:JsonProperty("resultId", access = Access.READ_ONLY)
+    private val resultId: ValueIdGroup<Int>
+        get() = tokenGroupAndSetter.tokenGroup.id
 
     override val description = TransformDescription(listOf(), tokenGroups = listOf(tokenGroupAndSetter.tokenGroup))
 
+    constructor(sourceToken: ValueToken<List<String>>, resultId: ValueIdGroup<Int>)
+            : this(sourceToken, resultId, mutableMapOf())
+
     companion object {
         private val log = LoggerFactory.getLogger(WordCounts::class.java)
+
+        fun createFromSerialized(
+                @JsonProperty("sourceToken") sourceToken: ValueToken<List<String>>,
+                @JsonProperty("resultId") resultId: ValueIdGroup<Int>,
+                @JsonProperty("wordMap") wordMap: MutableMap<String, Int>): WordCounts {
+            return WordCounts(sourceToken, resultId, wordMap)
+        }
     }
 
     override fun transform(dataSet: DataSet): CompletableFuture<DataSet> {
@@ -74,5 +97,19 @@ class WordCounts(private val sourceToken: ValueToken<List<String>>, resultId: Va
 
         tokenGroupAndSetter.setter(tokens)
         return transform(dataSet)
+    }
+
+    // This should be unnecessary but is a workaround for this bug:
+    //
+    // https://github.com/FasterXML/jackson-databind/issues/1489
+    //
+    // We should be able to remove this when that gets fixed.
+    @JsonPOJOBuilder(withPrefix = "set")
+    class Builder() {
+        lateinit var sourceToken: ValueToken<List<String>>
+        lateinit var resultId: ValueIdGroup<Int>
+        lateinit var wordMap: MutableMap<String, Int>
+
+        fun build(): WordCounts = WordCounts(sourceToken, resultId, wordMap)
     }
 }

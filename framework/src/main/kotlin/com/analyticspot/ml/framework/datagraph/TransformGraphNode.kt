@@ -7,8 +7,10 @@ import org.slf4j.LoggerFactory
 /**
  * A [GraphNode] that takes a single input, runs it through a [DataTransform] and produces a single output.
  */
-internal open class TransformGraphNode protected constructor(builder: Builder) : GraphNode(builder) {
-    val transform: SingleDataTransform = builder.transform ?: throw IllegalArgumentException("Transform can not be null")
+internal open class TransformGraphNode protected constructor(builder: Builder)
+    : HasTransformGraphNode<SingleDataTransform>(builder) {
+    override val transform: SingleDataTransform = builder.transform ?:
+            throw IllegalArgumentException("Transform can not be null")
 
     companion object {
         private val log = LoggerFactory.getLogger(Companion::class.java)
