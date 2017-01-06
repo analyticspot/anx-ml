@@ -2,9 +2,6 @@ package com.analyticspot.ml.framework.description
 
 import com.analyticspot.ml.framework.datagraph.DataGraph
 import com.analyticspot.ml.framework.dataset.IterableDataSet
-import com.analyticspot.ml.framework.datatransform.StreamingDataTransform
-import com.analyticspot.ml.framework.datatransform.TransformDescription
-import com.analyticspot.ml.framework.observation.Observation
 import com.analyticspot.ml.framework.observation.SingleValueObservation
 import com.analyticspot.ml.framework.testutils.WordCounts
 import org.assertj.core.api.Assertions.assertThat
@@ -56,22 +53,5 @@ class ValueTokenGroupFromListTest {
         val secondRow = resultDs[1]
         assertThat(secondRow.value(dg.result.token(wordListId))).isEqualTo("foo bar baz")
         assertThat(secondRow.values(dg.result.tokenGroup(wordGroupId))).isEqualTo(listOf(0, 2, 1))
-    }
-
-    // Silly transform that just returns a list of all the tokens in a group (with the prefix removed). Helpful just for
-    // testing. Mainly this tests two things: (1) that we can get the list of tokens from the group after the transform
-    // is complete and (2) that the transform itself is producing the right list.
-    class TokenNamesTrans(val srcGroup: ValueTokenGroup<*>, val resultId: ValueId<String>) : StreamingDataTransform() {
-        override val description: TransformDescription
-            get() = TransformDescription(listOf(ValueToken(resultId)))
-
-        override fun transform(observation: Observation): Observation {
-            val prefix = srcGroup.prefix
-            val tokenNames = mutableListOf<String>()
-            srcGroup.tokens().forEach {
-                tokenNames.add(it.name.removePrefix(prefix).removePrefix(ValueId.GROUP_SEPARATOR))
-            }
-            return SingleValueObservation(tokenNames.joinToString(" "), String::class.java)
-        }
     }
 }

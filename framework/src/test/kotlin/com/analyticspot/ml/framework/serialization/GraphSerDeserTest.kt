@@ -3,9 +3,14 @@ package com.analyticspot.ml.framework.serialization
 import com.analyticspot.ml.framework.datagraph.AddConstantTransform
 import com.analyticspot.ml.framework.datagraph.DataGraph
 import com.analyticspot.ml.framework.datagraph.SourceGraphNode
+import com.analyticspot.ml.framework.dataset.IterableDataSet
+import com.analyticspot.ml.framework.dataset.SingleObservationDataSet
 import com.analyticspot.ml.framework.datatransform.MergeTransform
 import com.analyticspot.ml.framework.description.IndexValueToken
 import com.analyticspot.ml.framework.description.ValueId
+import com.analyticspot.ml.framework.description.ValueIdGroup
+import com.analyticspot.ml.framework.observation.SingleValueObservation
+import com.analyticspot.ml.framework.testutils.WordCounts
 import org.assertj.core.api.Assertions.assertThat
 import org.slf4j.LoggerFactory
 import org.testng.annotations.Test
@@ -127,5 +132,52 @@ class GraphSerDeserTest {
 
         val resultToken = deserGraph.result.token(transformValId)
         assertThat(result.value(resultToken)).isEqualTo(sourceValue + amountToAdd)
+    }
+
+    @Test
+    fun testTokenGroupsSerialize() {
+        val srcId = ValueId.create<List<String>>("words")
+        val wordGroupId = ValueIdGroup.create<Int>("wordCounts")
+        val dg = DataGraph.build {
+            val src = setSource {
+                valueIds += srcId
+            }
+
+            // This is the transform that uses a ValueIdGroup/ValueTokenGroup.
+            val wordCount = addTransform(src, WordCounts(src.token(srcId), wordGroupId))
+
+            result = wordCount
+        }
+
+        // Now run the transform and see what comes out the other side.
+        val sourceSet = IterableDataSet(listOf(
+                SingleValueObservation.create(listOf("foo", "bar", "bar")),
+                SingleValueObservation.create(listOf("bar", "baz", "bar"))
+        ))
+
+        // Train it.
+        dg.trainTransform(sourceSet, Executors.newSingleThreadExecutor()).get()
+
+        // Now serialize it.
+        val serDeser = GraphSerDeser()
+        val output = ByteArrayOutputStream()
+        serDeser.serialize(dg, output)
+        serDeser.serialize(dg, "graph.zip")
+
+        // And deserilize it
+        val deserDg = serDeser.deserialize(ByteArrayInputStream(output.toByteArray()))
+
+        val toTransform = SingleObservationDataSet(
+                SingleValueObservation.create(listOf("foo", "bar", "foo", "foo"))
+        )
+
+        val resultDs = deserDg.transform(toTransform, Executors.newSingleThreadExecutor()).get().toList()
+
+
+        assertThat(resultDs).hasSize(1)
+        val firstRow = resultDs[0]
+        // Note that in the following I'm relying on the fact that the words are assigned indices in the order that they
+        // were encountered. Safe for the current implementation of the transform since that's just for testing.
+        assertThat(firstRow.values(dg.result.tokenGroup(wordGroupId))).isEqualTo(listOf(3, 1, 0))
     }
 }

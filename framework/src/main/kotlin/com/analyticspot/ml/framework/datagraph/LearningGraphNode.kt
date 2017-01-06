@@ -7,8 +7,9 @@ import java.util.concurrent.CompletableFuture
 /**
  * A [GraphNode] which takes a single input [DataSet] and applies a [LearningTransform] to it.
  */
-class LearningGraphNode(builder: Builder) : GraphNode(builder) {
-    val transform: LearningTransform = builder.transform ?: throw IllegalArgumentException("Transform must be non-null")
+class LearningGraphNode(builder: Builder) : HasTransformGraphNode<LearningTransform>(builder) {
+    override val transform: LearningTransform = builder.transform ?:
+            throw IllegalArgumentException("Transform must be non-null")
 
     companion object {
         fun build(id: Int, init: Builder.() -> Unit): LearningGraphNode {
