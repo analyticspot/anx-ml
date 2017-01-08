@@ -32,7 +32,7 @@ class LearningGraphNode(builder: Builder) : HasTransformGraphNode<LearningTransf
                 tokenGroups.addAll(value.description.tokenGroups)
             }
 
-        override fun build(): LearningGraphNode = LearningGraphNode(this)
+        fun build(): LearningGraphNode = LearningGraphNode(this)
     }
 
     // The execution manager for this node. Since this expects only a single input it signals onReadyToRun as soon as

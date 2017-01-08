@@ -40,7 +40,7 @@ internal open class TransformGraphNode protected constructor(builder: Builder)
                 }
             }
 
-        override fun build(): TransformGraphNode = TransformGraphNode(this)
+        fun build(): TransformGraphNode = TransformGraphNode(this)
     }
 
     // The execution manager for this node. Since this expects only a single input it signals onReadyToRun as soon as
