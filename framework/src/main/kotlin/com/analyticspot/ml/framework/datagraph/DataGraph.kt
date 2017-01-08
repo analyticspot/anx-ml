@@ -23,7 +23,7 @@ import java.util.concurrent.ExecutorService
  * Note: Unit tests for this are in `GraphExecutionTest`.
  */
 class DataGraph(builder: GraphBuilder) {
-    val source: GraphNode
+    val source: SourceGraphNode
     val result: GraphNode
     // An array of all the GraphNodes such that a node `x` can be found at `allNodes[x.id]`.
     internal val allNodes: Array<GraphNode>
@@ -51,11 +51,23 @@ class DataGraph(builder: GraphBuilder) {
     }
 
     /**
-     * Constructs an [Observation] that is compatible with the types/tokens specified for [source].
+     * Constructs an [Observation] that is compatible with the types/tokens specified for [source]. Note that this
+     * will check that the values are compatible for either training or just tranforming. In other words type checking
+     * will check trainOnly tokens if they're present and will ignore them if they're not.
      */
     fun buildSourceObservation(vararg values: Any): Observation {
+        // Ensure that each value is valid (has the right type, etc.)
         values.forEachIndexed { idx, value ->
-            check(value.javaClass == source.tokens[idx].clazz)
+            check(value.javaClass == source.tokens[idx].clazz) {
+                "Argument $idx (0-indexed) had type ${value.javaClass} but ${source.tokens[idx].clazz} was expected."
+            }
+        }
+        val numTotalTokens = source.tokens.size
+        val numTrainOnlyTokens = numTotalTokens - source.trainOnlyValueIds.size
+        // Ensure that all values are present
+        check(values.size == numTotalTokens || values.size == numTrainOnlyTokens) {
+            "${values.size} values provided by $numTotalTokens required for training and $numTrainOnlyTokens " +
+                    "required for transforming."
         }
         return ArrayObservation(values)
     }

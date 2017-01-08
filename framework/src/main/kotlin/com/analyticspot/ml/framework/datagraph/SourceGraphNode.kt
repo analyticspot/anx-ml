@@ -13,7 +13,8 @@ import java.util.concurrent.CompletableFuture
  * data that is required by the rest of teh graph. To generate a concrete instance of this backed by data one would use
  * something like [DataGraph.buildSourceObservation].
  */
-class SourceGraphNode private constructor(builder: GraphNode.Builder) : GraphNode(builder) {
+class SourceGraphNode private constructor(builder: Builder) : GraphNode(builder.gnBuilder) {
+    internal val trainOnlyValueIds = setOf(builder.trainOnlyValueIds)
 
     companion object {
         /**
@@ -47,17 +48,16 @@ class SourceGraphNode private constructor(builder: GraphNode.Builder) : GraphNod
          */
         val trainOnlyValueIds = mutableListOf<ValueId<*>>()
 
+        internal lateinit var gnBuilder: GraphNode.Builder
+
         fun build(): SourceGraphNode {
             var arrayIdx = 0
-            val gnb = GraphNode.Builder(id).apply {
-                tokens.addAll(valueIds.map {
-                    IndexValueToken.create(arrayIdx++, it)
-                })
-                trainOnlyTokens.addAll(trainOnlyValueIds.map {
+            gnBuilder = GraphNode.Builder(id).apply {
+                tokens.addAll(valueIds.plus(trainOnlyValueIds).map {
                     IndexValueToken.create(arrayIdx++, it)
                 })
             }
-            return SourceGraphNode(gnb)
+            return SourceGraphNode(this)
         }
     }
 
