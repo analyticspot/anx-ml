@@ -6,10 +6,12 @@ import java.util.concurrent.CompletableFuture
 import java.util.concurrent.atomic.AtomicInteger
 
 /**
- *
+ * A [GraphNode] that holds a [SupervisedLearningTransform].
  */
 class SupervisedLearningGraphNode(builder: Builder) : HasTransformGraphNode<SupervisedLearningTransform>(builder) {
-    override val transform: SupervisedLearningTransform = builder.transform
+    override val transform: SupervisedLearningTransform = builder.transform ?:
+            throw IllegalArgumentException("Transform can not be null")
+
     // True if the target data comes from the same data set as the main data set (that is this is true if the
     // first and second parameters to trainTransform are the same). False otherwise.
     private val targetDataIsMainData: Boolean
@@ -39,7 +41,7 @@ class SupervisedLearningGraphNode(builder: Builder) : HasTransformGraphNode<Supe
     }
 
     override fun getExecutionManager(parent: GraphExecution, execType: ExecutionType): NodeExecutionManager {
-        return when(execType) {
+        return when (execType) {
             ExecutionType.TRANSFORM -> TransformExecutionManager(this, parent)
             ExecutionType.TRAIN_TRANSFORM -> {
                 if (targetDataIsMainData) {
@@ -52,7 +54,12 @@ class SupervisedLearningGraphNode(builder: Builder) : HasTransformGraphNode<Supe
     }
 
     class Builder(id: Int) : GraphNode.Builder(id) {
-        lateinit var transform: SupervisedLearningTransform
+        var transform: SupervisedLearningTransform? = null
+            set(value) {
+                field = value ?: throw IllegalArgumentException("transform can not be null")
+                tokens.addAll(value.description.tokens)
+                tokenGroups.addAll(value.description.tokenGroups)
+            }
 
         fun build(): SupervisedLearningGraphNode = SupervisedLearningGraphNode(this)
     }
@@ -66,7 +73,6 @@ class SupervisedLearningGraphNode(builder: Builder) : HasTransformGraphNode<Supe
         private var mainData: DataSet? = null
         @Volatile
         private var targetData: DataSet? = null
-
 
         override fun onDataAvailable(subId: Int, data: DataSet) {
             if (subId == MAIN_DS_ID) {
@@ -103,7 +109,6 @@ class SupervisedLearningGraphNode(builder: Builder) : HasTransformGraphNode<Supe
         private val numReceived = AtomicInteger(0)
         @Volatile
         private var data: DataSet? = null
-
 
         override fun onDataAvailable(subId: Int, data: DataSet) {
             check(subId == MAIN_DS_ID)

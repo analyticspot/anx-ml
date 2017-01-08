@@ -2,7 +2,6 @@ package com.analyticspot.ml.framework.testutils
 
 import com.analyticspot.ml.framework.dataset.DataSet
 import com.analyticspot.ml.framework.dataset.IterableDataSet
-import com.analyticspot.ml.framework.datatransform.SupervisedLearningTransform
 import com.analyticspot.ml.framework.datatransform.TargetSupervisedLearningTransform
 import com.analyticspot.ml.framework.datatransform.TransformDescription
 import com.analyticspot.ml.framework.description.ValueId
@@ -17,7 +16,7 @@ import java.util.concurrent.CompletableFuture
  * feature in in [wordsForTrue].
  */
 class TrueIfSeenTransform(
-        val srcToken: ValueToken<String>, targetToken: ValueToken<Boolean>, val resultId: ValueId<Boolean>)
+        val srcToken: ValueToken<String>, targetToken: ValueToken<Boolean>, resultId: ValueId<Boolean>)
     : TargetSupervisedLearningTransform<Boolean>(targetToken) {
     override val description: TransformDescription = TransformDescription(listOf(ValueToken(resultId)))
     val wordsForTrue = mutableSetOf<String>()

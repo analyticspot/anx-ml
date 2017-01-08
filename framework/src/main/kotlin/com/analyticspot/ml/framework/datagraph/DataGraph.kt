@@ -163,11 +163,31 @@ class DataGraph(builder: GraphBuilder) {
          * Add a [SupervisedLearningTransform] that gets its main data from `mainSource` and the supervised data from
          * `targetSource`. In other words, `mainSource` will provide the first parameter and `targetSource` will provide
          * the second parameter to [SupervisedLearningTransform.trainTransform].
+         *
+         * If the target comes from the same data set as the main data that is fine, just pass the same value for the
+         * `mainSource` and `targetSource`.
          */
         fun addTransform(mainSource: GraphNode,
                 targetSource: GraphNode,
                 transform: SupervisedLearningTransform): GraphNode {
+            val node = SupervisedLearningGraphNode.build(nextId++) {
+                sources += mainSource
+                if (targetSource == mainSource) {
+                    log.debug("main source and target source are the same. " +
+                            "Node {} will not have any trainOnlySources", this.id)
+                } else {
+                    trainOnlySources += targetSource
+                }
+                this.transform = transform
+            }
 
+            mainSource.subscribers += Subscription(node, SupervisedLearningGraphNode.MAIN_DS_ID)
+
+            if (targetSource != mainSource) {
+                targetSource.trainOnlySubscribers += Subscription(node, SupervisedLearningGraphNode.TARGET_DS_ID)
+            }
+            addNodeToGraph(node)
+            return node
         }
 
         internal fun addTransform(sources: List<GraphNode>, transform: MultiTransform, nodeId: Int): GraphNode {
