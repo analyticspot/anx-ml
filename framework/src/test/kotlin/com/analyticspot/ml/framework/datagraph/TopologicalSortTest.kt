@@ -7,20 +7,21 @@ import org.slf4j.LoggerFactory
 import org.testng.annotations.Test
 import java.util.NoSuchElementException
 
-class TopologicalIteratorTest {
+class TopologicalSortTest {
     companion object {
-        private val log = LoggerFactory.getLogger(TopologicalIteratorTest::class.java)
+        private val log = LoggerFactory.getLogger(TopologicalSortTest::class.java)
     }
 
     @Test
     fun testIterationOfSingleNodeWorks() {
-        val iter = TopologicalIterator(DataGraph.build {
+        val iter = sort(DataGraph.build {
             val source = setSource {
                 valueIds += ValueId.create<String>("foo")
             }
 
             result = source
-        })
+        }).iterator()
+
         assertThat(iter.hasNext()).isTrue()
         val source = iter.next()
         assertThat(source).isInstanceOf(SourceGraphNode::class.java)
@@ -29,13 +30,14 @@ class TopologicalIteratorTest {
 
     @Test
     fun testEmptyThrowsCorrectException() {
-        val iter = TopologicalIterator(DataGraph.build {
+        val iter = sort(DataGraph.build {
             val source = setSource {
                 valueIds += ValueId.create<String>("foo")
             }
 
             result = source
-        })
+        }).iterator()
+
         assertThat(iter.hasNext()).isTrue()
         val source = iter.next()
         assertThat(source).isInstanceOf(SourceGraphNode::class.java)
@@ -65,7 +67,7 @@ class TopologicalIteratorTest {
             result = addC3
         }
 
-        iterationIsOk(TopologicalIterator(dg), dg)
+        iterationIsOk(sort(dg).iterator(), dg)
     }
 
     // This tests a graph where the source feeds into 3 AddConstantTransforms, those are then merged into a single
@@ -95,7 +97,7 @@ class TopologicalIteratorTest {
             result = addC4
         }
 
-        iterationIsOk(TopologicalIterator(dg), dg)
+        iterationIsOk(sort(dg).iterator(), dg)
     }
 
     // Tests a graph with "unequal legs". The source feeds into 3 transforms, C1, C2, and C3. C1 then goes through a
@@ -135,7 +137,7 @@ class TopologicalIteratorTest {
             result = merged
         }
 
-        iterationIsOk(TopologicalIterator(dg), dg)
+        iterationIsOk(sort(dg).iterator(), dg)
     }
 
     // Ensures that the iteration is legal. Specifically, when each node is returned we've already seen all the nodes

@@ -4,7 +4,7 @@ import com.analyticspot.ml.framework.datagraph.DataGraph
 import com.analyticspot.ml.framework.datagraph.GraphNode
 import com.analyticspot.ml.framework.datagraph.HasTransformGraphNode
 import com.analyticspot.ml.framework.datagraph.SourceGraphNode
-import com.analyticspot.ml.framework.datagraph.TopologicalIterator
+import com.analyticspot.ml.framework.datagraph.sort
 import com.analyticspot.ml.framework.datatransform.DataTransform
 import com.analyticspot.ml.framework.datatransform.MultiTransform
 import com.analyticspot.ml.framework.datatransform.SingleDataTransform
@@ -56,7 +56,7 @@ class GraphSerDeser {
         val graphJsonEntry = ZipEntry(MAIN_GRAPH_FILENAME)
         zipOut.putNextEntry(graphJsonEntry)
 
-        var iter = TopologicalIterator(graph)
+        var iter = sort(graph).iterator()
         val outObj = GraphStucture(graph.source.id, graph.result.id)
         iter.forEach {
             val serNode: SerGraphNode = when (it) {
@@ -79,7 +79,7 @@ class GraphSerDeser {
         zipOut.closeEntry()
 
         // Now write one more file for each node in the graph that's a TransformGraphNode
-        iter = TopologicalIterator(graph)
+        iter = sort(graph).iterator()
         iter.forEach {
             if (it is HasTransformGraphNode<*>) {
                 val nodeEntry = ZipEntry(it.id.toString())
