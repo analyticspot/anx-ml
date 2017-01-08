@@ -11,7 +11,7 @@ import java.util.LinkedList
  * that the returned `Iterable` will return all nodes that send data to node `X` before node `X` is returned.
  */
 fun sort(graph: DataGraph): Iterable<GraphNode> {
-    val sorter = TopoSorter(graph, { node -> node.subscribers })
+    val sorter = TopoSorter(graph, { node -> node.subscribers.map { it.subscriber } })
     return sorter.sort()
 }
 
@@ -21,7 +21,8 @@ fun sort(graph: DataGraph): Iterable<GraphNode> {
  * when the data is sent to `X` only during training).
  */
 fun sortWithTrain(graph: DataGraph): Iterable<GraphNode> {
-    val sorter = TopoSorter(graph, { node -> node.subscribers.plus(node.trainOnlySubscribers) })
+    val sorter = TopoSorter(graph, { node -> node.subscribers.map { it.subscriber }
+            .plus(node.trainOnlySubscribers.map { it.subscriber }) })
     return sorter.sort()
 }
 

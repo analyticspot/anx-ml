@@ -164,7 +164,7 @@ class TopologicalSortTest {
                 assertThat(seenNodes.contains(it)).isTrue()
             }
             curNode.subscribers.forEach {
-                assertThat(seenNodes.contains(it)).isFalse()
+                assertThat(seenNodes.contains(it.subscriber)).isFalse()
             }
             seenNodes.add(curNode)
         }
@@ -189,7 +189,7 @@ class TopologicalSortTest {
                 assertThat(seenNodes.contains(it)).isFalse()
             }
             curNode.subscribers.forEach {
-                assertThat(seenNodes.contains(it)).isTrue()
+                assertThat(seenNodes.contains(it.subscriber)).isTrue()
             }
             seenNodes.add(curNode)
         }

@@ -284,7 +284,7 @@ class GraphSerDeser {
             var label: String? = null
 
             fun fromNode(node: GraphNode) {
-                subscribers = node.subscribers.map { it.id }
+                subscribers = node.subscribers.map { it.subscriber.id }
                 sources = node.sources.map { it.id }
             }
         }

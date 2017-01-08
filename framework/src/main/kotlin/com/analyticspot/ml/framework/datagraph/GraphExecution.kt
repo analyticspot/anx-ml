@@ -55,10 +55,10 @@ class GraphExecution (
             executionResult.complete(data)
         } else {
             log.debug("Notifying subscribers of {}", manager.graphNode.id)
-            notifySubscribers(manager, data, manager.graphNode.subscribers)
+            notifySubscribers(data, manager.graphNode.subscribers)
             if (execType == ExecutionType.TRAIN_TRANSFORM) {
                 log.debug("Notifying train only subscribers of {}", manager.graphNode.id)
-                notifySubscribers(manager, data, manager.graphNode.trainOnlySubscribers)
+                notifySubscribers(data, manager.graphNode.trainOnlySubscribers)
             } else {
                 check(execType == ExecutionType.TRANSFORM)
             }
@@ -70,18 +70,10 @@ class GraphExecution (
         executionResult.completeExceptionally(error)
     }
 
-    private fun notifySubscribers(
-            producingManager: NodeExecutionManager, data: DataSet, subscribers: List<GraphNode>) {
+    private fun notifySubscribers(data: DataSet, subscribers: List<Subscription>) {
         for (sub in subscribers) {
-            log.debug("Notifying {} that data is available", sub.id)
-            // Find the index of this source in the subscribers list of sources
-            val sourceIdx = sub.sources.indexOfFirst { it.id == producingManager.graphNode.id }
-            check(sourceIdx >= 0) {
-                "Subscriber node ${sub.id} does not list ${producingManager.graphNode.id} as a source."
-            }
-            log.debug("Output of node {} is input {} for node {}",
-                    producingManager.graphNode.id, sourceIdx, sub.id)
-            executionManagers[sub.id].onDataAvailable(sourceIdx, data)
+            log.debug("Notifying {} that data is available", sub.subscriber.id)
+            executionManagers[sub.subscriber.id].onDataAvailable(sub.subId, data)
         }
 
     }
@@ -126,10 +118,10 @@ interface NodeExecutionManager {
     /**
      * Called when data is available that this nodes requires.
      *
-     * @param sourceIdx the index of the [GraphNode] that produced this data in the node's list of sources.
+     * @param subId the value of the `subId` in the [Subscription] that produced this data.
      * @param data the data that was produced.
      */
-    fun onDataAvailable(sourceIdx: Int, data: DataSet)
+    fun onDataAvailable(subId: Int, data: DataSet)
 
     /**
      * When called the node should compute it's result. When the result has been computed the returned future should
@@ -152,7 +144,7 @@ abstract class SingleInputExecutionManager(protected val parent: GraphExecution)
         private val log = LoggerFactory.getLogger(SingleInputExecutionManager::class.java)
     }
 
-    override fun onDataAvailable(sourceIdx: Int, data: DataSet) {
+    override fun onDataAvailable(subId: Int, data: DataSet) {
         this.data = data
         parent.onReadyToRun(this)
     }
