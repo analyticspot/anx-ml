@@ -64,7 +64,7 @@ class SourceGraphNode private constructor(builder: Builder) : GraphNode(builder.
     // Note that source data nodes are specicial and don't really participate in the GraphExecution protocol. Thus all
     // methods here just throw exceptions.
     private class ExecutionManager(override val graphNode: GraphNode) : NodeExecutionManager {
-        override fun onDataAvailable(sourceIdx: Int, data: DataSet) {
+        override fun onDataAvailable(subId: Int, data: DataSet) {
             throw IllegalStateException("This is a SourceGraphNode and it therefore does not participate in the " +
                     "normal GraphExecution protocol.")
         }

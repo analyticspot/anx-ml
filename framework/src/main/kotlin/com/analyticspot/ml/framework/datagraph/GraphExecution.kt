@@ -118,10 +118,10 @@ interface NodeExecutionManager {
     /**
      * Called when data is available that this nodes requires.
      *
-     * @param sourceIdx the index of the [GraphNode] that produced this data in the node's list of sources.
+     * @param subId the value of the `subId` in the [Subscription] that produced this data.
      * @param data the data that was produced.
      */
-    fun onDataAvailable(sourceIdx: Int, data: DataSet)
+    fun onDataAvailable(subId: Int, data: DataSet)
 
     /**
      * When called the node should compute it's result. When the result has been computed the returned future should
@@ -144,7 +144,7 @@ abstract class SingleInputExecutionManager(protected val parent: GraphExecution)
         private val log = LoggerFactory.getLogger(SingleInputExecutionManager::class.java)
     }
 
-    override fun onDataAvailable(sourceIdx: Int, data: DataSet) {
+    override fun onDataAvailable(subId: Int, data: DataSet) {
         this.data = data
         parent.onReadyToRun(this)
     }

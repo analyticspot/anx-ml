@@ -48,13 +48,13 @@ internal class MultiTransformGraphNode protected constructor(builder: Builder) :
         private val dataSets = AtomicReferenceArray<DataSet?>(graphNode.sources.size)
         private val numReceived = AtomicInteger(0)
 
-        override fun onDataAvailable(sourceIdx: Int, data: DataSet) {
-            log.debug("Node {} notified that data with source index {} is available", graphNode.id, sourceIdx)
-            assert(sourceIdx >= 0 && sourceIdx < graphNode.sources.size) {
-                "Source index had illegal value $sourceIdx"
+        override fun onDataAvailable(subId: Int, data: DataSet) {
+            log.debug("Node {} notified that data with source index {} is available", graphNode.id, subId)
+            assert(subId >= 0 && subId < graphNode.sources.size) {
+                "Source index had illegal value $subId"
             }
-            check(dataSets.getAndSet(sourceIdx, data) == null) {
-                "Data for index $sourceIdx was already received."
+            check(dataSets.getAndSet(subId, data) == null) {
+                "Data for index $subId was already received."
             }
             val received = numReceived.incrementAndGet()
             log.debug("Node {} has now received {} of {} data sets", graphNode.id, received, graphNode.sources.size)
