@@ -39,7 +39,7 @@ internal class MultiTransformGraphNode protected constructor(builder: Builder) :
                 }
             }
 
-        override fun build(): MultiTransformGraphNode = MultiTransformGraphNode(this)
+        fun build(): MultiTransformGraphNode = MultiTransformGraphNode(this)
     }
 
     private class ExecutionManager(override val graphNode: MultiTransformGraphNode, private val parent: GraphExecution)
