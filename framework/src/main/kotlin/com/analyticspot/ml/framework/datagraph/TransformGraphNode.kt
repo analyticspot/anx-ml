@@ -35,9 +35,6 @@ internal open class TransformGraphNode protected constructor(builder: Builder)
                 field = value ?: throw IllegalArgumentException("Transform can not be null")
                 tokens.addAll(value.description.tokens)
                 tokenGroups.addAll(value.description.tokenGroups)
-                check(value.description.trainOnlyTokens.size == 0) {
-                    "Non-trained DataTranform should not declare any train-only tokens"
-                }
             }
 
         fun build(): TransformGraphNode = TransformGraphNode(this)

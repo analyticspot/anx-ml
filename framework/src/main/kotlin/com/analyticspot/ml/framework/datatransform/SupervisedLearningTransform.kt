@@ -12,8 +12,7 @@ import java.util.concurrent.CompletableFuture
  */
 interface SupervisedLearningTransform : SingleDataTransform {
     /**
-     * Has the same effect as calling [train] and then calling [transform]. However, for some algorithms it can be more
-     * efficient to combine these steps.
+     * See class comments.
      */
     fun trainTransform(dataSet: DataSet, trainDs: DataSet): CompletableFuture<DataSet>
 }
