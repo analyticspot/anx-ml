@@ -11,7 +11,7 @@ import java.util.concurrent.CompletableFuture
  *
  * @param <TargetT> the type of the target.
  */
-abstract class TargetExtractingSupervisedLearningTransform<TargetT>(private val targetToken: ValueToken<TargetT>)
+abstract class TargetSupervisedLearningTransform<TargetT>(private val targetToken: ValueToken<TargetT>)
     : SupervisedLearningTransform {
     override fun trainTransform(dataSet: DataSet, trainDs: DataSet): CompletableFuture<DataSet> {
         val targets = trainDs.map { it.value(targetToken) }

@@ -6,6 +6,7 @@ import com.analyticspot.ml.framework.datatransform.LearningTransform
 import com.analyticspot.ml.framework.datatransform.MergeTransform
 import com.analyticspot.ml.framework.datatransform.MultiTransform
 import com.analyticspot.ml.framework.datatransform.SingleDataTransform
+import com.analyticspot.ml.framework.datatransform.SupervisedLearningTransform
 import com.analyticspot.ml.framework.observation.ArrayObservation
 import com.analyticspot.ml.framework.observation.Observation
 import org.slf4j.LoggerFactory
@@ -156,6 +157,17 @@ class DataGraph(builder: GraphBuilder) {
 
         fun addTransform(sources: List<GraphNode>, transform: MultiTransform): GraphNode {
             return addTransform(sources, transform, nextId++)
+        }
+
+        /**
+         * Add a [SupervisedLearningTransform] that gets its main data from `mainSource` and the supervised data from
+         * `targetSource`. In other words, `mainSource` will provide the first parameter and `targetSource` will provide
+         * the second parameter to [SupervisedLearningTransform.trainTransform].
+         */
+        fun addTransform(mainSource: GraphNode,
+                targetSource: GraphNode,
+                transform: SupervisedLearningTransform): GraphNode {
+
         }
 
         internal fun addTransform(sources: List<GraphNode>, transform: MultiTransform, nodeId: Int): GraphNode {
