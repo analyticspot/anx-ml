@@ -7,6 +7,7 @@ import com.analyticspot.ml.framework.datatransform.TransformDescription
 import com.analyticspot.ml.framework.description.ValueId
 import com.analyticspot.ml.framework.description.ValueToken
 import com.analyticspot.ml.framework.observation.SingleValueObservation
+import com.analyticspot.ml.framework.testutils.TrueIfSeenTransform
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.slf4j.LoggerFactory
@@ -14,6 +15,7 @@ import org.testng.annotations.BeforeClass
 import org.testng.annotations.Test
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.Executors
+import java.util.concurrent.atomic.AtomicInteger
 
 class GraphExecutionTest {
     companion object {
@@ -84,8 +86,130 @@ class GraphExecutionTest {
         assertThat(outValues.size).isEqualTo(srcMatrix.size)
     }
 
+    // Tests a supervised learning algorithm where the main and target data sets are the same
     @Test
-    fun testMergeTransfomExecution() {
+    fun testSupervisedLearningTransformWithSingleSourceExecution() {
+        val mainSource = ValueId.create<String>("word")
+        val targetSource = ValueId.create<Boolean>("target")
+        val resultId = ValueId.create<Boolean>("prediction")
+
+        val dg = DataGraph.build {
+            val src = setSource {
+                valueIds += mainSource
+                trainOnlyValueIds += targetSource
+            }
+
+            val trans = addTransform(src, src,
+                    TrueIfSeenTransform(src.token(mainSource), src.token(targetSource), resultId))
+
+            result = trans
+        }
+
+        // The algorithm should learn to predict true for "foo" and "baz" but nothing else.
+        val trainMatrix = listOf(
+                dg.buildSourceObservation("foo", true),
+                dg.buildSourceObservation("bar", false),
+                dg.buildSourceObservation("baz", true),
+                dg.buildSourceObservation("foo", false)
+        )
+        val trainData = IterableDataSet(trainMatrix)
+
+        val trainRes = dg.trainTransform(trainData, Executors.newSingleThreadExecutor()).get()
+
+        val trainResList = trainRes.map { it.value(dg.result.token(resultId)) }
+        // Expected predictions
+        assertThat(trainResList).isEqualTo(listOf(true, false, true, true))
+
+        // Now that it's trained we should be able to ask it to make predictions on unlabeled data.
+        val testMatrix = listOf(
+                dg.buildSourceObservation("foo"),
+                dg.buildSourceObservation("bar"),
+                dg.buildSourceObservation("baz")
+        )
+        val testData = IterableDataSet(testMatrix)
+
+        val testRes = dg.transform(testData, Executors.newSingleThreadExecutor()).get()
+        val testResList = testRes.map { it.value(dg.result.token(resultId)) }
+
+        assertThat(testResList).isEqualTo(listOf(true, false, true))
+    }
+
+    // Tests a supervised learning algorithm where the main and target data sets are different
+    @Test
+    fun testSupervisedLearningTransformWithDifferentSourceExecution() {
+        // Silly transform that inverts the target value. The purpose here is (1) to create a new data set that is
+        // only for training and (2) to be able to check that the transform is run when training but not transforming.
+        class InvertTarget(private val srcToken: ValueToken<Boolean>,
+                private val resultId: ValueId<Boolean>) : SingleDataTransform {
+            val numCalls = AtomicInteger(0)
+
+            override val description: TransformDescription = TransformDescription(listOf(ValueToken(resultId)))
+
+            override fun transform(dataSet: DataSet): CompletableFuture<DataSet> {
+                numCalls.incrementAndGet()
+                val newObs = dataSet.map { !it.value(srcToken) }.map { SingleValueObservation.create(it) }
+                return CompletableFuture.completedFuture(IterableDataSet(newObs))
+            }
+        }
+
+        val mainSource = ValueId.create<String>("word")
+        val targetSource = ValueId.create<Boolean>("target")
+        val invertedTarget = ValueId.create<Boolean>("inverted")
+        val resultId = ValueId.create<Boolean>("prediction")
+
+        var theInverter: InvertTarget? = null
+
+        val dg = DataGraph.build {
+            val src = setSource {
+                valueIds += mainSource
+                trainOnlyValueIds += targetSource
+            }
+
+            theInverter = InvertTarget(src.token(targetSource), invertedTarget)
+
+            val inverter = addTransform(src, theInverter!!)
+
+            val trans = addTransform(src, inverter,
+                    TrueIfSeenTransform(src.token(mainSource), inverter.token(invertedTarget), resultId))
+
+            result = trans
+        }
+
+        // The algorithm should learn to predict true for "foo" and "bar" but nothing else.
+        val trainMatrix = listOf(
+                dg.buildSourceObservation("foo", true),
+                dg.buildSourceObservation("bar", false),
+                dg.buildSourceObservation("baz", true),
+                dg.buildSourceObservation("foo", false)
+        )
+        val trainData = IterableDataSet(trainMatrix)
+
+        val trainRes = dg.trainTransform(trainData, Executors.newSingleThreadExecutor()).get()
+
+        val trainResList = trainRes.map { it.value(dg.result.token(resultId)) }
+        // Expected predictions
+        assertThat(trainResList).isEqualTo(listOf(true, true, false, true))
+        assertThat(theInverter!!.numCalls.get()).isEqualTo(1)
+
+        // Now that it's trained we should be able to ask it to make predictions on unlabeled data.
+        // TODO: Remove the targets once we get the train-only runs to no longer run.
+        val testMatrix = listOf(
+                dg.buildSourceObservation("foo", false),
+                dg.buildSourceObservation("bar", false),
+                dg.buildSourceObservation("baz", false)
+        )
+        val testData = IterableDataSet(testMatrix)
+
+        val testRes = dg.transform(testData, Executors.newSingleThreadExecutor()).get()
+        val testResList = testRes.map { it.value(dg.result.token(resultId)) }
+
+        assertThat(testResList).isEqualTo(listOf(true, true, false))
+        // TODO: Enable this test once we properly propagate train-only info through the graph
+        // assertThat(theInverter!!.numCalls.get()).isEqualTo(1)
+    }
+
+    @Test
+    fun testMergeTransformExecution() {
         val srcValId = ValueId.create<Int>("source")
 
         var mergeDs: GraphNode? = null
