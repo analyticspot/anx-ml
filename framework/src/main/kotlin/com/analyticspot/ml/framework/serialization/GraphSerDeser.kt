@@ -316,7 +316,8 @@ class GraphSerDeser {
             var trainOnlyValueIds: List<ValueId<*>> = listOf()
 
             fun fromNode(node: SourceGraphNode) {
-                valueIds = node.tokens.filter { !trainOnlyValueIds.contains(it.id) }.map { it.id }
+                valueIds = node.tokens.filter { !node.trainOnlyValueIds.contains(it.id) }.map { it.id }
+                trainOnlyValueIds += node.trainOnlyValueIds
                 super.fromNode(node)
             }
 

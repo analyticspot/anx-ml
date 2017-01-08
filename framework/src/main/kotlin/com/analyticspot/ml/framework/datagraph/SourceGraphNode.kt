@@ -14,7 +14,7 @@ import java.util.concurrent.CompletableFuture
  * something like [DataGraph.buildSourceObservation].
  */
 class SourceGraphNode private constructor(builder: Builder) : GraphNode(builder.gnBuilder) {
-    internal val trainOnlyValueIds = setOf(builder.trainOnlyValueIds)
+    internal val trainOnlyValueIds = builder.trainOnlyValueIds
 
     companion object {
         /**
