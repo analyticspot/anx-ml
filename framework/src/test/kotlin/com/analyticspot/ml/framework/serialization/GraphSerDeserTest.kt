@@ -135,6 +135,36 @@ class GraphSerDeserTest {
     }
 
     @Test
+    fun testSourceGraphNodeSerializesTrainOnlyInformation() {
+        val sourceValIds = listOf(
+                ValueId.create<Int>("src1"),
+                ValueId.create<String>("src2"))
+        val trainOnlySourceValIds = listOf(
+                ValueId.create<Boolean>("srcT1"),
+                ValueId.create<Int>("srcT2"))
+        val dg = DataGraph.build {
+            val source = setSource {
+                valueIds += sourceValIds
+                trainOnlyValueIds += trainOnlySourceValIds
+            }
+
+            result = source
+        }
+
+        val serDeser = GraphSerDeser()
+        val outStream = ByteArrayOutputStream(0)
+        serDeser.serialize(dg, outStream)
+        serDeser.serialize(dg, "/Users/oliver/Desktop/temp/graph.zip")
+
+        // Now deserialize the thing....
+        val inStream = ByteArrayInputStream(outStream.toByteArray())
+        val deserGraph = serDeser.deserialize(inStream)
+
+        assertThat(deserGraph.source.tokens.map { it.id }).isEqualTo(sourceValIds.plus(trainOnlySourceValIds))
+        assertThat(deserGraph.source.trainOnlyValueIds).isEqualTo(trainOnlySourceValIds)
+    }
+
+    @Test
     fun testTokenGroupsSerialize() {
         val srcId = ValueId.create<List<String>>("words")
         val wordGroupId = ValueIdGroup.create<Int>("wordCounts")

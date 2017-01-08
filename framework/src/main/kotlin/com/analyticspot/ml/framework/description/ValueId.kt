@@ -1,5 +1,7 @@
 package com.analyticspot.ml.framework.description
 
+import com.analyticspot.ml.framework.serialization.JsonMapper
+
 /**
  * A value id allows the user to obtain data from a [DataSet], or [Observation] in a type safe way. Typically
  * [DataTransform] or [DataSet] generates it's own [ValueToken]s from [ValueId]. [ValueToken] is like [ValueId] except
@@ -43,6 +45,10 @@ open class ValueId<DataT>(val name: String, val clazz: Class<DataT>) : Comparabl
 
     final override fun hashCode(): Int {
         return name.hashCode()
+    }
+
+    override fun toString(): String {
+        return JsonMapper.mapper.writeValueAsString(this)
     }
 
 }

@@ -28,7 +28,6 @@ class LearningGraphNode(builder: Builder) : HasTransformGraphNode<LearningTransf
             set(value) {
                 field = value ?: throw IllegalArgumentException("Transform can not be null")
                 tokens.addAll(value.description.tokens)
-                trainOnlyTokens.addAll(value.description.trainOnlyTokens)
                 tokenGroups.addAll(value.description.tokenGroups)
             }
 

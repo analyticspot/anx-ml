@@ -17,7 +17,6 @@ abstract class GraphNode internal constructor(builder: Builder) {
     internal val trainOnlySubscribers: MutableList<GraphNode> = mutableListOf()
     internal val id: Int = builder.id
     val tokens: List<ValueToken<*>>
-    val trainOnlyTokens: List<ValueToken<*>>
     val tokenGroups: List<ValueTokenGroup<*>>
 
     private val tokenMap: MutableMap<ValueId<*>, ValueToken<*>> = mutableMapOf()
@@ -27,9 +26,8 @@ abstract class GraphNode internal constructor(builder: Builder) {
         log.debug("GraphNode being constructed with {} tokens and {} token groups",
                 builder.tokens.size, builder.tokenGroups.size)
         tokens = builder.tokens
-        trainOnlyTokens = builder.trainOnlyTokens
         tokenGroups = builder.tokenGroups
-        tokens.asSequence().plus(trainOnlyTokens).forEach {
+        tokens.forEach {
             log.debug("Adding token named {} to the token map", it.name)
             check(!tokenMap.containsKey(it.id)) {
                 "A token with name ${it.name} is already present in this data set."
@@ -75,7 +73,6 @@ abstract class GraphNode internal constructor(builder: Builder) {
 
     open class Builder(internal val id: Int) {
         val tokens: MutableList<ValueToken<*>> = mutableListOf()
-        val trainOnlyTokens: MutableList<ValueToken<*>> = mutableListOf()
         val tokenGroups: MutableList<ValueTokenGroup<*>> = mutableListOf()
         val sources: MutableList<GraphNode> = mutableListOf()
     }
