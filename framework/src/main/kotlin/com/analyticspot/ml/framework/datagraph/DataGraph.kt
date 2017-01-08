@@ -131,7 +131,8 @@ class DataGraph(builder: GraphBuilder) {
                 this.transform = transform
                 sources += src
             }
-            addNodeToGraph(listOf(src), node)
+            src.subscribers += Subscription(node, 0)
+            addNodeToGraph(node)
             return node
         }
 
@@ -141,7 +142,8 @@ class DataGraph(builder: GraphBuilder) {
                 this.transform = transform
                 sources += src
             }
-            addNodeToGraph(listOf(src), node)
+            src.subscribers += Subscription(node, 0)
+            addNodeToGraph(node)
             return node
         }
 
@@ -161,13 +163,13 @@ class DataGraph(builder: GraphBuilder) {
                 this.transform = transform
                 this.sources += sources
             }
+            sources.forEachIndexed { idx, graphNode -> graphNode.subscribers += Subscription(node, idx) }
 
-            addNodeToGraph(sources, node)
+            addNodeToGraph(node)
             return node
         }
 
-        internal fun addNodeToGraph(sources: List<GraphNode>, nodeToAdd: GraphNode) {
-            sources.forEach { it.subscribers += nodeToAdd }
+        internal fun addNodeToGraph(nodeToAdd: GraphNode) {
             check(!nodesById.containsKey(nodeToAdd.id))
             nodesById[nodeToAdd.id] = nodeToAdd
         }
