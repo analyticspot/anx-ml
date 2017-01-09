@@ -192,11 +192,10 @@ class GraphExecutionTest {
         assertThat(theInverter!!.numCalls.get()).isEqualTo(1)
 
         // Now that it's trained we should be able to ask it to make predictions on unlabeled data.
-        // TODO: Remove the targets once we get the train-only runs to no longer run.
         val testMatrix = listOf(
-                dg.buildSourceObservation("foo", false),
-                dg.buildSourceObservation("bar", false),
-                dg.buildSourceObservation("baz", false)
+                dg.buildSourceObservation("foo"),
+                dg.buildSourceObservation("bar"),
+                dg.buildSourceObservation("baz")
         )
         val testData = IterableDataSet(testMatrix)
 
@@ -204,8 +203,7 @@ class GraphExecutionTest {
         val testResList = testRes.map { it.value(dg.result.token(resultId)) }
 
         assertThat(testResList).isEqualTo(listOf(true, true, false))
-        // TODO: Enable this test once we properly propagate train-only info through the graph
-        // assertThat(theInverter!!.numCalls.get()).isEqualTo(1)
+        assertThat(theInverter!!.numCalls.get()).isEqualTo(1)
     }
 
     @Test
