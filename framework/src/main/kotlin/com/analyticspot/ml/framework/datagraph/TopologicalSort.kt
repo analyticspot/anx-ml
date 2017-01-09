@@ -31,7 +31,7 @@ fun sortWithTrain(graph: DataGraph): Iterable<GraphNode> {
  * guarantees that the returned `Iterable` will return a node `X` before any node that sends data to `X`.
  */
 fun sortBackwards(graph: DataGraph): Iterable<GraphNode> {
-    val sorter = TopoSorter(graph, { node -> node.sources })
+    val sorter = TopoSorter(graph, { node -> node.sources.map { it.source } })
     return sorter.sort()
 }
 
@@ -41,7 +41,8 @@ fun sortBackwards(graph: DataGraph): Iterable<GraphNode> {
  * when the data is sent to `X` only during training).
  */
 fun sortWithTrainBackwards(graph: DataGraph): Iterable<GraphNode> {
-    val sorter = TopoSorter(graph, { node -> node.sources.plus(node.trainOnlySources) })
+    val sorter = TopoSorter(graph, { node -> node.sources.map { it.source }
+            .plus(node.trainOnlySources.map { it.source }) })
     return sorter.sort()
 }
 

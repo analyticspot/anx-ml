@@ -130,7 +130,7 @@ class DataGraph(builder: GraphBuilder) {
             log.debug("Adding an untrained transform to the graph.")
             val node = TransformGraphNode.build(nodeId) {
                 this.transform = transform
-                sources += src
+                sources += SubscribedTo(src, 0)
             }
             src.subscribers += Subscription(node, 0)
             addNodeToGraph(node)
@@ -141,7 +141,7 @@ class DataGraph(builder: GraphBuilder) {
             log.debug("Adding an unsupervised learning transform to the graph.")
             val node = LearningGraphNode.build(nextId++) {
                 this.transform = transform
-                sources += src
+                sources += SubscribedTo(src, 0)
             }
             src.subscribers += Subscription(node, 0)
             addNodeToGraph(node)
@@ -171,12 +171,12 @@ class DataGraph(builder: GraphBuilder) {
                 targetSource: GraphNode,
                 transform: SupervisedLearningTransform): GraphNode {
             val node = SupervisedLearningGraphNode.build(nextId++) {
-                sources += mainSource
+                sources += SubscribedTo(mainSource, SupervisedLearningGraphNode.MAIN_DS_ID)
                 if (targetSource == mainSource) {
                     log.debug("main source and target source are the same. " +
                             "Node {} will not have any trainOnlySources", this.id)
                 } else {
-                    trainOnlySources += targetSource
+                    trainOnlySources += SubscribedTo(targetSource, SupervisedLearningGraphNode.TARGET_DS_ID)
                 }
                 this.transform = transform
             }
@@ -193,9 +193,9 @@ class DataGraph(builder: GraphBuilder) {
         internal fun addTransform(sources: List<GraphNode>, transform: MultiTransform, nodeId: Int): GraphNode {
             val node = MultiTransformGraphNode.build(nodeId) {
                 this.transform = transform
-                this.sources += sources
+                this.sources += sources.mapIndexed { idx, source -> SubscribedTo(source, idx) }
             }
-            sources.forEachIndexed { idx, graphNode -> graphNode.subscribers += Subscription(node, idx) }
+            node.sources.forEach { it.source.subscribers += Subscription(node, it.subId) }
 
             addNodeToGraph(node)
             return node

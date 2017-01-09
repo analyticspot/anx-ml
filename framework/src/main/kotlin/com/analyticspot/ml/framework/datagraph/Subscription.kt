@@ -9,3 +9,9 @@ package com.analyticspot.ml.framework.datagraph
  * [NodeExecutionManager] gets notified that some data is available it knows **which** data is now available.
  */
 data class Subscription(val subscriber: GraphNode, val subId: Int)
+
+/**
+ * The other side of a [Subscription]: this indicates what node is subscribed to and what `subId` we expect when data
+ * from that source is available.
+ */
+data class SubscribedTo(val source: GraphNode, val subId: Int)
