@@ -36,6 +36,7 @@ class DataGraph(builder: GraphBuilder) {
         allNodes = Array<GraphNode>(builder.nodesById.size) {
             builder.nodesById[it] ?: throw IllegalStateException("No node in builder with id $it")
         }
+        correctGraph()
     }
 
     companion object {
@@ -47,6 +48,29 @@ class DataGraph(builder: GraphBuilder) {
             with(GraphBuilder()) {
                 init()
                 return build()
+            }
+        }
+    }
+
+    // This is the method that walks back through the graph and updates sources and subscriptions so they are
+    // correct. See the class level comments for details.
+    private fun correctGraph() {
+        // We go in reverse topological order here so that by the time we hit a node, X, we know that we've already
+        // hit all the subscribers of X.
+        for (node in sortWithTrainBackwards(this)) {
+            if (node.subscribers.size == 0 && node.trainOnlySubscribers.size != 0) {
+                // This node has subscribers but they are all train-only. Thus, all the sources of this node are really
+                // train-only sources.
+                node.trainOnlySources += node.sources
+                node.sources = listOf()
+            }
+
+            for (subTo in node.sources) {
+                subTo.source.subscribers += Subscription(node, subTo.subId)
+            }
+
+            for (subTo in node.trainOnlySources) {
+                subTo.source.trainOnlySubscribers += Subscription(node, subTo.subId)
             }
         }
     }
@@ -100,6 +124,15 @@ class DataGraph(builder: GraphBuilder) {
         return graphExec.execute(dataSet)
     }
 
+    /**
+     * Builds a [DataGraph]. Note that during the building process subscription information is not set. Similarly,
+     * [GraphNode.sources] and [GraphNode.trainOnlySources] may be incorrect. This is because if we add a node A we
+     * can't know if the subscribers to A will be "regular" or "train-only". Thus, in the [build] method we walk
+     * backward through the graph and update the train-only sources/subscribers information so that it is correct.
+     * This is important as we only serialize the "regular" (non-train-only) parts of the graph. That way unnecessary
+     * parts of the graph don't execute and we don't require the user to provide train-only data for the source in
+     * order to call [DataGraph.transform].
+     */
     class GraphBuilder {
         internal lateinit var source: SourceGraphNode
 
@@ -132,7 +165,6 @@ class DataGraph(builder: GraphBuilder) {
                 this.transform = transform
                 sources += SubscribedTo(src, 0)
             }
-            src.subscribers += Subscription(node, 0)
             addNodeToGraph(node)
             return node
         }
@@ -143,7 +175,6 @@ class DataGraph(builder: GraphBuilder) {
                 this.transform = transform
                 sources += SubscribedTo(src, 0)
             }
-            src.subscribers += Subscription(node, 0)
             addNodeToGraph(node)
             return node
         }
@@ -181,11 +212,6 @@ class DataGraph(builder: GraphBuilder) {
                 this.transform = transform
             }
 
-            mainSource.subscribers += Subscription(node, SupervisedLearningGraphNode.MAIN_DS_ID)
-
-            if (targetSource != mainSource) {
-                targetSource.trainOnlySubscribers += Subscription(node, SupervisedLearningGraphNode.TARGET_DS_ID)
-            }
             addNodeToGraph(node)
             return node
         }
@@ -195,7 +221,6 @@ class DataGraph(builder: GraphBuilder) {
                 this.transform = transform
                 this.sources += sources.mapIndexed { idx, source -> SubscribedTo(source, idx) }
             }
-            node.sources.forEach { it.source.subscribers += Subscription(node, it.subId) }
 
             addNodeToGraph(node)
             return node

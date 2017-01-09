@@ -1,0 +1,19 @@
+digraph G {
+   Source -> A;
+   A [label="LowerCase"];
+   Source -> B [style=dashed];
+   B [label="Invert"];
+   B -> C [style=dashed];
+   C [label="Invert"];
+   B -> D [style=dashed];
+   D [label="TrueIfNotSeen"];
+   A -> D;
+   C -> E [style=dashed];
+   E [label="TrueIfSeen"];
+   A -> E;
+   E -> F;
+   F [label="Merge"];
+   D -> F;
+   F -> G;
+   G [label="And"];
+}

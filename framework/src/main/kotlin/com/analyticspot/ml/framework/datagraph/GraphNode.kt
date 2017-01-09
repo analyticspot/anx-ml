@@ -12,8 +12,8 @@ import org.slf4j.LoggerFactory
  * etc.).
  */
 abstract class GraphNode internal constructor(builder: Builder) {
-    internal val sources: List<SubscribedTo> = builder.sources
-    internal val trainOnlySources: List<SubscribedTo> = builder.trainOnlySources
+    internal var sources: List<SubscribedTo> = builder.sources
+    internal var trainOnlySources: List<SubscribedTo> = builder.trainOnlySources
     internal val subscribers: MutableList<Subscription> = mutableListOf()
     internal val trainOnlySubscribers: MutableList<Subscription> = mutableListOf()
     internal val id: Int = builder.id

@@ -56,9 +56,8 @@ class GraphSerDeser {
         val graphJsonEntry = ZipEntry(MAIN_GRAPH_FILENAME)
         zipOut.putNextEntry(graphJsonEntry)
 
-        var iter = sort(graph).iterator()
         val outObj = GraphStucture(graph.source.id, graph.result.id)
-        iter.forEach {
+        sort(graph).forEach {
             val serNode: SerGraphNode = when (it) {
                 is SourceGraphNode -> SourceSerGraphNode.create(it)
                 // Note that we only serialize what's necessary to apply a model, not train one so we can treat
@@ -79,8 +78,7 @@ class GraphSerDeser {
         zipOut.closeEntry()
 
         // Now write one more file for each node in the graph that's a TransformGraphNode
-        iter = sort(graph).iterator()
-        iter.forEach {
+        sort(graph).forEach {
             if (it is HasTransformGraphNode<*>) {
                 val nodeEntry = ZipEntry(it.id.toString())
                 zipOut.putNextEntry(nodeEntry)
