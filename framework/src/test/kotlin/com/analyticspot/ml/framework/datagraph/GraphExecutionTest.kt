@@ -7,6 +7,8 @@ import com.analyticspot.ml.framework.datatransform.TransformDescription
 import com.analyticspot.ml.framework.description.ValueId
 import com.analyticspot.ml.framework.description.ValueToken
 import com.analyticspot.ml.framework.observation.SingleValueObservation
+import com.analyticspot.ml.framework.testutils.Graph1
+import com.analyticspot.ml.framework.testutils.InvertBoolean
 import com.analyticspot.ml.framework.testutils.TrueIfSeenTransform
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
@@ -15,7 +17,6 @@ import org.testng.annotations.BeforeClass
 import org.testng.annotations.Test
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.Executors
-import java.util.concurrent.atomic.AtomicInteger
 
 class GraphExecutionTest {
     companion object {
@@ -137,27 +138,12 @@ class GraphExecutionTest {
     // Tests a supervised learning algorithm where the main and target data sets are different
     @Test
     fun testSupervisedLearningTransformWithDifferentSourceExecution() {
-        // Silly transform that inverts the target value. The purpose here is (1) to create a new data set that is
-        // only for training and (2) to be able to check that the transform is run when training but not transforming.
-        class InvertTarget(private val srcToken: ValueToken<Boolean>,
-                private val resultId: ValueId<Boolean>) : SingleDataTransform {
-            val numCalls = AtomicInteger(0)
-
-            override val description: TransformDescription = TransformDescription(listOf(ValueToken(resultId)))
-
-            override fun transform(dataSet: DataSet): CompletableFuture<DataSet> {
-                numCalls.incrementAndGet()
-                val newObs = dataSet.map { !it.value(srcToken) }.map { SingleValueObservation.create(it) }
-                return CompletableFuture.completedFuture(IterableDataSet(newObs))
-            }
-        }
-
         val mainSource = ValueId.create<String>("word")
         val targetSource = ValueId.create<Boolean>("target")
         val invertedTarget = ValueId.create<Boolean>("inverted")
         val resultId = ValueId.create<Boolean>("prediction")
 
-        var theInverter: InvertTarget? = null
+        var theInverter: InvertBoolean? = null
 
         val dg = DataGraph.build {
             val src = setSource {
@@ -165,7 +151,7 @@ class GraphExecutionTest {
                 trainOnlyValueIds += targetSource
             }
 
-            theInverter = InvertTarget(src.token(targetSource), invertedTarget)
+            theInverter = InvertBoolean(src.token(targetSource), invertedTarget)
 
             val inverter = addTransform(src, theInverter!!)
 
@@ -205,6 +191,46 @@ class GraphExecutionTest {
         assertThat(testResList).isEqualTo(listOf(true, true, false))
         // Make sure the inverter wasn't called a 2nd time. Shouldn't be called since it's train-only.
         assertThat(theInverter!!.numCalls.get()).isEqualTo(1)
+    }
+
+    // Like testSupervisedLearningTransformWithDifferentSourceExecution but with a complex graph for the train-only
+    // stuff. Here we check that even with this complex only the proper parts are executed. The graph is as follows:
+    @Test
+    fun testComplexTrainOnlyGraphExecution() {
+        val g1 = Graph1()
+        // As per comments on graph 1, items will only be predicted true if the lower case version of them is in the
+        // training data with both a true and a false target. Thus, only "foo" and "bizzle" should predict true.
+        val trainMatrix = listOf(
+                g1.graph.buildSourceObservation("FOO", true),
+                g1.graph.buildSourceObservation("foo", false),
+                g1.graph.buildSourceObservation("bar", false),
+                g1.graph.buildSourceObservation("bip", true),
+                g1.graph.buildSourceObservation("baz", true),
+                g1.graph.buildSourceObservation("biZzLE", true),
+                g1.graph.buildSourceObservation("BIzZle", false)
+        )
+
+        // Number of threads here pretty random - just trying to test parallelism some.
+        val resultToken = g1.graph.result.token(g1.resultId)
+        val trainRes = g1.graph.trainTransform(IterableDataSet(trainMatrix), Executors.newFixedThreadPool(3)).get()
+        val trainRestList = trainRes.map { it.value(resultToken) }
+        assertThat(trainRestList).isEqualTo(listOf(true, true, false, false, false, true, true))
+        assertThat(g1.invert1.numCalls.get()).isEqualTo(1)
+        assertThat(g1.invert2.numCalls.get()).isEqualTo(1)
+
+        // Now get just a prediction
+        val testMatrix = listOf(
+                g1.graph.buildSourceObservation("FoO"),
+                g1.graph.buildSourceObservation("bar"),
+                g1.graph.buildSourceObservation("baZ"),
+                g1.graph.buildSourceObservation("bizzle"))
+        val predictRes = g1.graph.transform(IterableDataSet(testMatrix), Executors.newFixedThreadPool(2)).get()
+        val predictResList = predictRes.map { it.value(resultToken) }
+        assertThat(predictResList).isEqualTo(listOf(true, false, false, true))
+
+        // The invert nodes are both train-only and so should not have run again.
+        assertThat(g1.invert1.numCalls.get()).isEqualTo(1)
+        assertThat(g1.invert2.numCalls.get()).isEqualTo(1)
     }
 
     @Test
