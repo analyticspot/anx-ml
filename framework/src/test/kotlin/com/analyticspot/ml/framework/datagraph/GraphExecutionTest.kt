@@ -203,6 +203,7 @@ class GraphExecutionTest {
         val testResList = testRes.map { it.value(dg.result.token(resultId)) }
 
         assertThat(testResList).isEqualTo(listOf(true, true, false))
+        // Make sure the inverter wasn't called a 2nd time. Shouldn't be called since it's train-only.
         assertThat(theInverter!!.numCalls.get()).isEqualTo(1)
     }
 
