@@ -161,7 +161,7 @@ class TopologicalSortTest {
             curNode = iter.next()
             log.debug("Iteration returned node {}. seenNodes: {}", curNode.id, seenNodes.map { it.id })
             curNode.sources.forEach {
-                assertThat(seenNodes.contains(it)).isTrue()
+                assertThat(seenNodes.contains(it.source)).isTrue()
             }
             curNode.subscribers.forEach {
                 assertThat(seenNodes.contains(it.subscriber)).isFalse()
@@ -186,7 +186,7 @@ class TopologicalSortTest {
             curNode = iter.next()
             log.debug("Iteration returned node {}. seenNodes: {}", curNode.id, seenNodes.map { it.id })
             curNode.sources.forEach {
-                assertThat(seenNodes.contains(it)).isFalse()
+                assertThat(seenNodes.contains(it.source)).isFalse()
             }
             curNode.subscribers.forEach {
                 assertThat(seenNodes.contains(it.subscriber)).isTrue()
