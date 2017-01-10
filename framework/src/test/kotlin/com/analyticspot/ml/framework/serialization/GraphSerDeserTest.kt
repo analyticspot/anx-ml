@@ -10,6 +10,7 @@ import com.analyticspot.ml.framework.description.IndexValueToken
 import com.analyticspot.ml.framework.description.ValueId
 import com.analyticspot.ml.framework.description.ValueIdGroup
 import com.analyticspot.ml.framework.observation.SingleValueObservation
+import com.analyticspot.ml.framework.testutils.Graph1
 import com.analyticspot.ml.framework.testutils.WordCounts
 import org.assertj.core.api.Assertions.assertThat
 import org.slf4j.LoggerFactory
@@ -206,5 +207,48 @@ class GraphSerDeserTest {
         // Note that in the following I'm relying on the fact that the words are assigned indices in the order that they
         // were encountered. Safe for the current implementation of the transform since that's just for testing.
         assertThat(firstRow.values(dg.result.tokenGroup(wordGroupId))).isEqualTo(listOf(3, 1, 0))
+    }
+
+    // See comments in GraphExecutionTest.testComplexTrainOnlyGraphExecution
+    @Test
+    fun testComplexGraphDoesNotSerializeTrainOnly() {
+        val g1 = Graph1()
+
+        val trainMatrix = listOf(
+                g1.graph.buildSourceObservation("FOO", true),
+                g1.graph.buildSourceObservation("foo", false),
+                g1.graph.buildSourceObservation("bar", false),
+                g1.graph.buildSourceObservation("bip", true),
+                g1.graph.buildSourceObservation("baz", true),
+                g1.graph.buildSourceObservation("biZzLE", true),
+                g1.graph.buildSourceObservation("BIzZle", false)
+        )
+
+        val resultToken = g1.graph.result.token(g1.resultId)
+        val trainRes = g1.graph.trainTransform(IterableDataSet(trainMatrix), Executors.newFixedThreadPool(3)).get()
+        val trainRestList = trainRes.map { it.value(resultToken) }
+        assertThat(trainRestList).isEqualTo(listOf(true, true, false, false, false, true, true))
+
+        val serDeser = GraphSerDeser()
+
+        // Serialize it
+        val output = ByteArrayOutputStream()
+        serDeser.serialize(g1.graph, output)
+
+        // And deserilize it
+        val deserDg = serDeser.deserialize(ByteArrayInputStream(output.toByteArray()))
+
+        // Make sure only the non-training nodes were serialized
+        assertThat(deserDg.allNodes.count { it != null }).isEqualTo(6)
+
+        // And make sure it works.
+        val testMatrix = listOf(
+                g1.graph.buildSourceObservation("FoO"),
+                g1.graph.buildSourceObservation("bar"),
+                g1.graph.buildSourceObservation("baZ"),
+                g1.graph.buildSourceObservation("bizzle"))
+        val predictRes = g1.graph.transform(IterableDataSet(testMatrix), Executors.newFixedThreadPool(2)).get()
+        val predictResList = predictRes.map { it.value(resultToken) }
+        assertThat(predictResList).isEqualTo(listOf(true, false, false, true))
     }
 }

@@ -33,9 +33,10 @@ For example, the `graph.json` file might look like this:
 {
   "sourceId": 0,
   "resultId": 2,
-  "graph": {
-    "0": {
+  "graph": [
+    {
       "class": "com.analyticspot.ml.framework.serialization.GraphSerDeser$SourceSerGraphNode",
+      "id": 0,
       "subscribers": [1],
       "valueIds": [
         {
@@ -44,8 +45,9 @@ For example, the `graph.json` file might look like this:
         }
       ]
     },
-    "1": {
+    {
       "class": "com.analyticspot.ml.framework.serialization.GraphSerDeser$TransformSerGraphNode",
+      "id": 1,
       "sources": [0],
       "subscribers": [2],
       "metaData": {
@@ -54,8 +56,9 @@ For example, the `graph.json` file might look like this:
         "formatClass": "com.analyticspot.ml.framework.serialization.StandardJsonFormat"
       }
     },
-    "2": {
+    {
       "class": "com.analyticspot.ml.framework.serialization.GraphSerDeser$TransformSerGraphNode",
+      "id": 2,
       "sources": [1],
       "metaData": {
         "class": "com.analyticspot.ml.framework.serialization.WekaFormatMetaData",
@@ -70,6 +73,9 @@ For example, the `graph.json` file might look like this:
 Node 2 is a (theoretical) wrapper class that wraps any Weka classifier as a `DataTransform`. To see the actual data
 to deserialize we'd have to look at the file named "2" in the zip file and the `Weka` `FormatModule` (see below) would
 know how to deserialize that properly.
+
+Note that in the JSON `graph` is a list in toplological order. Thus, for any node `X`, all of `X`'s sources appear in
+the file before `X` does.
 
 # Deserialization
 

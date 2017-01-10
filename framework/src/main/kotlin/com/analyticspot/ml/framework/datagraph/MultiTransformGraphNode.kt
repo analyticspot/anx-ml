@@ -10,8 +10,10 @@ import java.util.concurrent.atomic.AtomicReferenceArray
 /**
  *
  */
-internal class MultiTransformGraphNode protected constructor(builder: Builder) : GraphNode(builder) {
-    val transform: MultiTransform = builder.transform ?: throw IllegalArgumentException("Transform must be non-null")
+internal class MultiTransformGraphNode protected constructor(builder: Builder)
+    : HasTransformGraphNode<MultiTransform>(builder) {
+    override val transform: MultiTransform = builder.transform ?:
+            throw IllegalArgumentException("Transform must be non-null")
 
     companion object {
         private val log = LoggerFactory.getLogger(Companion::class.java)

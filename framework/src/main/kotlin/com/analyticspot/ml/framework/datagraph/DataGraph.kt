@@ -26,17 +26,23 @@ import java.util.concurrent.ExecutorService
 class DataGraph(builder: GraphBuilder) {
     val source: SourceGraphNode
     val result: GraphNode
-    // An array of all the GraphNodes such that a node `x` can be found at `allNodes[x.id]`.
-    internal val allNodes: Array<GraphNode>
+    // An array of all the GraphNodes such that a node `x` can be found at `allNodes[x.id]`. Can be null because when
+    // we deserialize a graph it won't contain nodes that were only required for training.
+    internal val allNodes: Array<GraphNode?>
 
     init {
         source = builder.source
         result = builder.result
 
-        allNodes = Array<GraphNode>(builder.nodesById.size) {
-            builder.nodesById[it] ?: throw IllegalStateException("No node in builder with id $it")
+        val maxNodeId = builder.nodesById.keys.max() ?: throw IllegalStateException("Graph is empty.")
+        allNodes = Array<GraphNode?>(maxNodeId + 1) {
+            builder.nodesById[it]
         }
-        correctGraph()
+        if (builder.missingTrainNodes) {
+            correctNonTrainGraph()
+        } else {
+            correctGraph()
+        }
     }
 
     companion object {
@@ -75,9 +81,20 @@ class DataGraph(builder: GraphBuilder) {
         }
     }
 
+    // Like correctGraph but when we're deserializing a graph so we know there's no train-only information.
+    private fun correctNonTrainGraph() {
+        for (node in sortBackwards(this)) {
+            check(node.trainOnlySubscribers.size == 0)
+
+            for (subTo in node.sources) {
+                subTo.source.subscribers += Subscription(node, subTo.subId)
+            }
+        }
+    }
+
     /**
      * Constructs an [Observation] that is compatible with the types/tokens specified for [source]. Note that this
-     * will check that the values are compatible for either training or just tranforming. In other words type checking
+     * will check that the values are compatible for either training or just transforming. In other words type checking
      * will check trainOnly tokens if they're present and will ignore them if they're not.
      */
     fun buildSourceObservation(vararg values: Any): Observation {
@@ -137,6 +154,9 @@ class DataGraph(builder: GraphBuilder) {
         internal lateinit var source: SourceGraphNode
 
         lateinit var result: GraphNode
+
+        // When we're deserializing a graph the train-only nodes will be missing and this will be true
+        internal var missingTrainNodes: Boolean = false
 
         // An array of GraphNode such that nodesById[idx] returns the GraphNode whose id is idx.
         internal val nodesById: MutableMap<Int, GraphNode> = mutableMapOf()
