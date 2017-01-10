@@ -68,11 +68,6 @@ class GraphSerDeser {
                             throw IllegalStateException("Unknown format: ${it.transform.formatClass}")
                     TransformSerGraphNode.create(it, format.getMetaData(it.transform))
                 }
-                is MultiTransformGraphNode -> {
-                    val format = formatMap[it.transform.formatClass] ?:
-                            throw IllegalStateException("Unknown format: ${it.transform.formatClass}")
-                    MultiTransformSerGraphNode.create(it, format.getMetaData(it.transform))
-                }
                 else -> throw IllegalStateException("Unknown GraphNode type:  ${it.javaClass.canonicalName}")
             }
             outObj.graph.add(serNode)
@@ -85,14 +80,8 @@ class GraphSerDeser {
 
         // Now write one more file for each node in the graph that's a TransformGraphNode
         topoOrder.forEach {
-            when(it) {
+            when (it) {
                 is HasTransformGraphNode<*> -> {
-                    val nodeEntry = ZipEntry(it.id.toString())
-                    zipOut.putNextEntry(nodeEntry)
-                    serializeTransform(it.transform, zipOut)
-                    zipOut.closeEntry()
-                }
-                is MultiTransformGraphNode -> {
                     val nodeEntry = ZipEntry(it.id.toString())
                     zipOut.putNextEntry(nodeEntry)
                     serializeTransform(it.transform, zipOut)
@@ -156,29 +145,18 @@ class GraphSerDeser {
                     val transform = deserializeTransform(
                             graphDataNode.label, graphDataNode.metaData, nodeSources, zipIn)
                     zipIn.closeEntry()
-                    if (transform is SingleDataTransform) {
-                        check(nodeSources.size == 1)
-                        newNode = graphBuilder.addTransform(nodeSources[0], transform, nodeId)
-                        check(newNode.id == zipEntry.name.toInt())
-                    } else {
-                        throw IllegalStateException("Expected a SingleDataTransform but found " + transform.javaClass)
-                    }
-                }
 
-                is MultiTransformSerGraphNode -> {
-                    val nodeSources = graphDataNode.sources.map {
-                        deserializedNodeMap[it] ?: throw IllegalStateException("Unable to find node source $it")
+                    when (transform) {
+                        is SingleDataTransform -> {
+                            check(nodeSources.size == 1)
+                            newNode = graphBuilder.addTransform(nodeSources[0], transform, nodeId)
+                        }
+
+                        is MultiTransform -> {
+                            newNode = graphBuilder.addTransform(nodeSources, transform, nodeId)
+                        }
                     }
-                    zipEntry = zipIn.nextEntry ?: throw IllegalStateException("No data for node $nodeId")
-                    val transform = deserializeTransform(
-                            graphDataNode.label, graphDataNode.metaData, nodeSources, zipIn)
-                    zipIn.closeEntry()
-                    if (transform is MultiTransform) {
-                        newNode = graphBuilder.addTransform(nodeSources, transform, nodeId)
-                        check(newNode.id == zipEntry.name.toInt())
-                    } else {
-                        throw IllegalStateException("Expected MultiTransform but found " + transform.javaClass)
-                    }
+                    check(newNode!!.id == zipEntry.name.toInt())
                 }
 
                 is SourceSerGraphNode -> {
@@ -352,7 +330,14 @@ class GraphSerDeser {
                     this.metaData = metaData
                     build()
                 }
+            }
 
+            internal fun create(node: MultiTransformGraphNode, metaData: FormatMetaData): TransformSerGraphNode {
+                return with(Builder()) {
+                    fromNode(node)
+                    this.metaData = metaData
+                    build()
+                }
             }
         }
 
@@ -366,31 +351,6 @@ class GraphSerDeser {
 
             fun build(): TransformSerGraphNode {
                 return TransformSerGraphNode(this)
-            }
-        }
-    }
-
-    @JsonDeserialize(builder = MultiTransformSerGraphNode.Builder::class)
-    class MultiTransformSerGraphNode(builder: Builder) : SerGraphNode(builder) {
-        val metaData: FormatMetaData = builder.metaData ?: throw IllegalArgumentException("Missing FormatMetaData")
-
-        companion object {
-            internal fun create(node: MultiTransformGraphNode,
-                    metaData: FormatMetaData): MultiTransformSerGraphNode {
-               return with(Builder()) {
-                   fromNode(node)
-                   this.metaData = metaData
-                   build()
-               }
-            }
-        }
-
-        @JsonPOJOBuilder(withPrefix = "set")
-        class Builder : SerGraphNode.Builder() {
-            var metaData: FormatMetaData? = null
-
-            fun build(): MultiTransformSerGraphNode {
-                return MultiTransformSerGraphNode(this)
             }
         }
     }

@@ -32,7 +32,6 @@ class TrueIfSeenTransform : TargetSupervisedLearningTransform<Boolean> {
     @JsonCreator
     constructor(srcToken: ValueToken<String>, resultId: ValueId<Boolean>): this(srcToken, null, resultId)
 
-
     override fun transform(dataSet: DataSet): CompletableFuture<DataSet> {
         val resultList = dataSet
                 .map { wordsForTrue.contains(it.value(srcToken)) }
