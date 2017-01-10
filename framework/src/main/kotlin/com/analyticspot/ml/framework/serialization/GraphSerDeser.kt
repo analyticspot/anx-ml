@@ -3,7 +3,6 @@ package com.analyticspot.ml.framework.serialization
 import com.analyticspot.ml.framework.datagraph.DataGraph
 import com.analyticspot.ml.framework.datagraph.GraphNode
 import com.analyticspot.ml.framework.datagraph.HasTransformGraphNode
-import com.analyticspot.ml.framework.datagraph.MultiTransformGraphNode
 import com.analyticspot.ml.framework.datagraph.SourceGraphNode
 import com.analyticspot.ml.framework.datagraph.sort
 import com.analyticspot.ml.framework.datatransform.DataTransform
@@ -155,8 +154,10 @@ class GraphSerDeser {
                         is MultiTransform -> {
                             newNode = graphBuilder.addTransform(nodeSources, transform, nodeId)
                         }
+
+                        else -> throw IllegalStateException("Unknown transform type " + transform.javaClass)
                     }
-                    check(newNode!!.id == zipEntry.name.toInt())
+                    check(newNode.id == zipEntry.name.toInt())
                 }
 
                 is SourceSerGraphNode -> {
@@ -325,14 +326,6 @@ class GraphSerDeser {
 
         companion object {
             internal fun create(node: HasTransformGraphNode<*>, metaData: FormatMetaData): TransformSerGraphNode {
-                return with(Builder()) {
-                    fromNode(node)
-                    this.metaData = metaData
-                    build()
-                }
-            }
-
-            internal fun create(node: MultiTransformGraphNode, metaData: FormatMetaData): TransformSerGraphNode {
                 return with(Builder()) {
                     fromNode(node)
                     this.metaData = metaData
