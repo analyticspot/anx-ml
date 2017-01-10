@@ -12,7 +12,7 @@ import java.util.LinkedList
  */
 fun sort(graph: DataGraph): Iterable<GraphNode> {
     val sorter = TopoSorter(graph, { node -> node.subscribers.map { it.subscriber } })
-    return sorter.sort()
+    return sorter.sort(graph.source)
 }
 
 /**
@@ -23,7 +23,7 @@ fun sort(graph: DataGraph): Iterable<GraphNode> {
 fun sortWithTrain(graph: DataGraph): Iterable<GraphNode> {
     val sorter = TopoSorter(graph, { node -> node.subscribers.map { it.subscriber }
             .plus(node.trainOnlySubscribers.map { it.subscriber }) })
-    return sorter.sort()
+    return sorter.sort(graph.source)
 }
 
 /**
@@ -32,7 +32,7 @@ fun sortWithTrain(graph: DataGraph): Iterable<GraphNode> {
  */
 fun sortBackwards(graph: DataGraph): Iterable<GraphNode> {
     val sorter = TopoSorter(graph, { node -> node.sources.map { it.source } })
-    return sorter.sort()
+    return sorter.sort(graph.result)
 }
 
 /**
@@ -43,7 +43,7 @@ fun sortBackwards(graph: DataGraph): Iterable<GraphNode> {
 fun sortWithTrainBackwards(graph: DataGraph): Iterable<GraphNode> {
     val sorter = TopoSorter(graph, { node -> node.sources.map { it.source }
             .plus(node.trainOnlySources.map { it.source }) })
-    return sorter.sort()
+    return sorter.sort(graph.result)
 }
 
 /**
@@ -61,11 +61,14 @@ private class TopoSorter(private val graph: DataGraph,
     private val marked = Array<Boolean>(graph.allNodes.size) { false }
     private val result = LinkedList<GraphNode>()
 
-    fun sort(): List<GraphNode> {
-        for (node in graph.allNodes) {
-            visit(node)
-        }
-        assert(result.size == graph.allNodes.size)
+    /**
+     * We know that all nodes (at least all nodes we care about) are accessible via source (if we're sorting forwards)
+     * or the result (if we're sorting backwards). Thus, unlike Tarjan's "full" algorithm we don't start with a list of
+     * all nodes, we start with just one node. This also ensures that train-only nodes don't end up as part of the
+     * sort when we're doing a regular, non-training, sort.
+     */
+    fun sort(startNode: GraphNode): List<GraphNode> {
+        visit(startNode)
         return result
     }
 

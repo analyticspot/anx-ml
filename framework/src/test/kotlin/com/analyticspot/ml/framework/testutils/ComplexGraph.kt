@@ -1,6 +1,7 @@
 package com.analyticspot.ml.framework.testutils
 
 import com.analyticspot.ml.framework.datagraph.DataGraph
+import com.analyticspot.ml.framework.datagraph.GraphNode
 import com.analyticspot.ml.framework.description.ValueId
 
 /**
@@ -30,10 +31,13 @@ class Graph1 {
      * The first Invert node. Handy to have a reference to it as it keeps track of how many times it was called.
      */
     val invert1: InvertBoolean
+    val invert1Node: GraphNode
+
     /**
      * The second Invert node. Handy to have a reference to it as it keeps track of how many times it was called.
      */
     val invert2: InvertBoolean
+    val invert2Node: GraphNode
 
     init {
         val bld = DataGraph.GraphBuilder()
@@ -43,10 +47,10 @@ class Graph1 {
         }
 
         invert1 = InvertBoolean(src.token(targetId), targetId)
-        val invert1Node = bld.addTransform(src, invert1)
+        invert1Node = bld.addTransform(src, invert1)
 
         invert2 = InvertBoolean(invert1Node.token(targetId), targetId)
-        var invert2Node = bld.addTransform(invert1Node, invert2)
+        invert2Node = bld.addTransform(invert1Node, invert2)
 
         val lower = bld.addTransform(src, LowerCaseTransform(src.token(wordId), wordId))
 

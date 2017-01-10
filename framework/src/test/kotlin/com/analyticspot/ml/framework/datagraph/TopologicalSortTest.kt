@@ -1,6 +1,7 @@
 package com.analyticspot.ml.framework.datagraph
 
 import com.analyticspot.ml.framework.description.ValueId
+import com.analyticspot.ml.framework.testutils.Graph1
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.slf4j.LoggerFactory
@@ -150,6 +151,18 @@ class TopologicalSortTest {
         backwardIterationIsOk(sortWithTrainBackwards(dg).iterator(), setOf(), dg)
     }
 
+    @Test
+    fun testComplexG1Works() {
+        val g1 = Graph1()
+        val dg = g1.graph
+
+        val trainOnly = setOf(g1.invert1Node, g1.invert2Node)
+        iterationIsOk(sort(dg).iterator(), trainOnly, dg)
+        iterationIsOk(sortWithTrain(dg).iterator(), setOf(), dg)
+        backwardIterationIsOk(sortBackwards(dg).iterator(), trainOnly, dg)
+        backwardIterationIsOk(sortWithTrainBackwards(dg).iterator(), setOf(), dg)
+    }
+
     // Ensures that the iteration is legal. Specifically, when each node is returned we've already seen all the nodes
     // that it uses as a source, the first node returned is the graph's source, and the last node returned is the
     // result. We also check in the other direction: all nodes listed as a node's subscribers are returned after
@@ -180,7 +193,7 @@ class TopologicalSortTest {
         }
 
         assertThat(curNode).isSameAs(graph.result)
-        assertThat(seenNodes.size - unexpectedNodes.size).isEqualTo(graph.allNodes.size)
+        assertThat(seenNodes.size + unexpectedNodes.size).isEqualTo(graph.allNodes.size)
     }
 
     // Ensures that the backward iteration is legal. see iteratorIsOK.
@@ -208,6 +221,6 @@ class TopologicalSortTest {
         }
 
         assertThat(curNode).isSameAs(graph.source)
-        assertThat(seenNodes.size - unexpectedNodes.size).isEqualTo(graph.allNodes.size)
+        assertThat(seenNodes.size + unexpectedNodes.size).isEqualTo(graph.allNodes.size)
     }
 }
