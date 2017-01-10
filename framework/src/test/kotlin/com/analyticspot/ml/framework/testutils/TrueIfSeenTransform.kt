@@ -7,6 +7,7 @@ import com.analyticspot.ml.framework.datatransform.TransformDescription
 import com.analyticspot.ml.framework.description.ValueId
 import com.analyticspot.ml.framework.description.ValueToken
 import com.analyticspot.ml.framework.observation.SingleValueObservation
+import com.fasterxml.jackson.annotation.JsonCreator
 import java.util.concurrent.CompletableFuture
 
 /**
@@ -15,11 +16,22 @@ import java.util.concurrent.CompletableFuture
  * is `true` in [wordsForTrue]. To make a prediction it predicts `true` if and only if the observed value for the
  * feature in in [wordsForTrue].
  */
-class TrueIfSeenTransform(
-        val srcToken: ValueToken<String>, targetToken: ValueToken<Boolean>, resultId: ValueId<Boolean>)
-    : TargetSupervisedLearningTransform<Boolean>(targetToken) {
-    override val description: TransformDescription = TransformDescription(listOf(ValueToken(resultId)))
+class TrueIfSeenTransform : TargetSupervisedLearningTransform<Boolean> {
+    override val description: TransformDescription
     val wordsForTrue = mutableSetOf<String>()
+    val srcToken: ValueToken<String>
+    val resultId: ValueId<Boolean>
+
+    constructor(srcToken: ValueToken<String>, targetToken: ValueToken<Boolean>?,
+            resultId: ValueId<Boolean>) : super(targetToken) {
+        this.srcToken = srcToken
+        this.resultId = resultId
+        description = TransformDescription(listOf(ValueToken(resultId)))
+    }
+
+    @JsonCreator
+    constructor(srcToken: ValueToken<String>, resultId: ValueId<Boolean>): this(srcToken, null, resultId)
+
 
     override fun transform(dataSet: DataSet): CompletableFuture<DataSet> {
         val resultList = dataSet

@@ -10,8 +10,8 @@ import com.analyticspot.ml.framework.observation.SingleValueObservation
 /**
  * Takes a String input and converts it to lowercase.
  */
-class LowerCaseTransform(private val srcToken: ValueToken<String>,
-        private val resultId: ValueId<String>) : StreamingDataTransform() {
+class LowerCaseTransform(val srcToken: ValueToken<String>,
+        val resultId: ValueId<String>) : StreamingDataTransform() {
     override val description: TransformDescription = TransformDescription(listOf(ValueToken(resultId)))
 
     override fun transform(observation: Observation): Observation {

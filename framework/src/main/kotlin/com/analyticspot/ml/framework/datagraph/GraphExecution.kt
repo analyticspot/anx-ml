@@ -28,13 +28,14 @@ import java.util.concurrent.ExecutorService
  */
 class GraphExecution (
         private val dataGraph: DataGraph, private val execType: ExecutionType, private val exec: ExecutorService) {
-    private val executionManagers: Array<NodeExecutionManager>
+    // Can be null as there may be missing nodes if we deserialize a graph that had train-only nodes.
+    private val executionManagers: Array<NodeExecutionManager?>
     private val executionResult: CompletableFuture<DataSet> = CompletableFuture()
 
     init {
         val graphNodes = dataGraph.allNodes
-        executionManagers = Array<NodeExecutionManager>(graphNodes.size) { idx ->
-            graphNodes[idx].getExecutionManager(this, execType)
+        executionManagers = Array<NodeExecutionManager?>(graphNodes.size) { idx ->
+            graphNodes[idx]?.getExecutionManager(this, execType)
         }
     }
 
@@ -44,7 +45,7 @@ class GraphExecution (
 
     fun execute(data: DataSet): CompletableFuture<DataSet> {
         log.debug("Starting execution of DataGraph")
-        onDataComputed(executionManagers[dataGraph.source.id], data)
+        onDataComputed(executionManagers[dataGraph.source.id]!!, data)
         return executionResult
     }
 
@@ -73,7 +74,7 @@ class GraphExecution (
     private fun notifySubscribers(data: DataSet, subscribers: List<Subscription>) {
         for (sub in subscribers) {
             log.debug("Notifying {} that data is available", sub.subscriber.id)
-            executionManagers[sub.subscriber.id].onDataAvailable(sub.subId, data)
+            executionManagers[sub.subscriber.id]!!.onDataAvailable(sub.subId, data)
         }
 
     }

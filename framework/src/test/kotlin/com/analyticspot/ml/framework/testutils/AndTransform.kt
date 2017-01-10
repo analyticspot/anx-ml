@@ -11,7 +11,7 @@ import com.analyticspot.ml.framework.observation.SingleValueObservation
  * This transform returns true if the values for all the source tokens passed to the contructor are true, false
  * otherwise.
  */
-class AndTransform(private val srcTokens: List<ValueToken<Boolean>>, private val resultId: ValueId<Boolean>)
+class AndTransform(val srcTokens: List<ValueToken<Boolean>>, val resultId: ValueId<Boolean>)
     : StreamingDataTransform() {
     override val description: TransformDescription = TransformDescription(listOf(ValueToken(resultId)))
 
