@@ -279,6 +279,7 @@ class GraphSerDeser {
                 subscribers = node.subscribers.map { it.subscriber.id }
                 sources = node.sources.map { it.source.id }
                 id = node.id
+                label = node.label
             }
         }
     }

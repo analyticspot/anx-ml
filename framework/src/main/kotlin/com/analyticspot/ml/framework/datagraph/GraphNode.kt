@@ -20,6 +20,11 @@ abstract class GraphNode internal constructor(builder: Builder) {
     val tokens: List<ValueToken<*>>
     val tokenGroups: List<ValueTokenGroup<*>>
 
+    /**
+     * Labels are used for injection during deserialization. See SERIALIZATION.README.md for details.
+     */
+    var label: String? = null
+
     private val tokenMap: MutableMap<ValueId<*>, ValueToken<*>> = mutableMapOf()
     private val tokenGroupMap: MutableMap<ValueIdGroup<*>, ValueTokenGroup<*>> = mutableMapOf()
 
