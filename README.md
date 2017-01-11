@@ -61,109 +61,95 @@ This task would look something like the following in Java given this framework:
 
 ```java
 // The DataGraph represents the complete pipeline described above.
-DataGraph dg = new DataGraph.Builder();
+DataGraph.GraphBuilder builder = DataGraph.builder();
 
 // ValueIds let you obtain data in a type-safe way. Each ValueId can be converted into a ValueToken by the node that
 // produces the data. A ValueToken is just a ValueId plus some hidden data that allows fast retrieval from the
 // DataSet.
 ValueId<String> reviewValueId = new ValueId<>("review", String.class);
 ValueId<Integer> numStarsId = new ValueId<>()
-dg.addSource()
-// A DataToken refers to a specifc source or data generator so we can declare
-// that other generators depend on it.
-DataToken<String> inputSource = dg.addSource(
-    new FlatFileGenerator("path/to/reviews"), Injectables.REVIEW_SOURCE);
+// Describes the source. Unlike other nodes the source is just a description so we can later pass any values that
+// conform to the description. numStarsId is a "train-only" value because it is not required to make predictions.
+GraphNode source = builder.source().withValue(reviewValueId).withTrainOnlyValue(numStarsId).build()
 
-// The bag of words generator depends on the input source so it uses that
-// token to declare the dependency. This computes an array of doubles for
-// each input so it's type is Array<Double>.
-DataToken<Array<Double>> bagOfWords = dg.addGenerator(
-    new BagOfWordsGenerator(), inputSource);
+// Now we consume the output of the source node and transform it into a Bag of words representation. Since we don't
+// know how many words there will be until we train we use a ValueIdGroup.
+ValueIdGroup<Integer> bagOfWordsGroupId = new ValueIdGroup<>("words", Integer.class);
+GraphNode bagOfWords = builder.addTransform(source, new BagOfWords(source.token(reviewValueId), bagOfWordsGroupId));
 
-DataToken<Array<Double>> lsa = dg.addGenerator(new Lsa(), bagOfWords);
 
-DataToken<Array<Double>> reviewCentroids = db.addGenerator(
-    new CentroidComputer(), lsa);
+// Now we do some dimension reduction on the bag of words representation
+ValueIdGroup<Double> lsaGroupId = new ValueIdGroup<>("lsa", Double.class);
+GraphNode lsa = builder.addTransform(bagOfWords,
+    new LsaTransform(bagOfWords.tokenGroup(bagOfWordsGroupId), lsaGroupId));
 
-DataToken<Array<Double>> distanceFromCentroid = db.addGenerator(
-    new DistFromVector(), reviewCentroids);
+// Now compute centroids (during training) and compute the distance between the lsa vector for each review. This
+// will have 5 outputs: one for each star rating. Note that it depends on both the output of lsa and the source.
+GraphNode distFromCentroid = builder.addTransform(lsa, source,
+    new DistFromCentroidTransform(lsa.tokenGroup(lsaGroupId), stars));
 
-DataToken<Integer> numPositiveWords = db.addGenerator(
-    new WordCount(positiveWordList), bagOfWords);
 
-DataToken<Integer> numNegativeWords = db.addGenerator(
-    new WordCount(negativeWordList), bagOfWords);
+// Add our positive and negative word counts.
+GraphNode posWords = builder.addTransform(bagOfWords,
+    new WordCount(positiveWordList, bagOfWords.tokenGroup(bagOfWordsGroupId)));
 
-// Finally we add our classifier. It wants a vector of doubles for each row
-// so we have to take all the algorithm inputs and change their representation.
-DataToken<Array<Double>> vectorOfFeatures = db.addGenerator(new DoubleRepr(),
-    distanceFromCentroid, numPositiveWords, numNegativeWords);
+GraphNode negWords = builder.addTransform(bagOfWords,
+    new WordCount(negativeWordList, bagOfWords.tokenGroup(bagOfWordsGroupId)));
 
-// And finally we add the classifier.
-db.addPredictor(new LinearRegression(), vectorOfFeatures);
+// Merge together the 3 data sets we'll use for our predictions
+GraphNode merged = builder.merge(distFromCentroid, posWords, negWords);
+
+// Add our classifier
+ValueId<Integer> predictionId = new ValueId<>("prediction", Integer.class);
+GraphNode regression = builder.addTransform(merged, new LinearRegression(predictionId));
+
+// Tell the graph builder that the output of the classifier is the result of the entire graph.
+builder.setResult(regression);
+
+// And build the graph.
+DataGraph graph = builder.build();
 ```
 
 Note that, thanks to Kotlin's builder DSL the above looks a bit nicer in Kotlin.
 
 Given the above we can train the entire pipeline. This means that the bag of words component will learn the allowed
-vocabularly, the LSA will learn the appropriate dimension reduction, the centroid computation will learn the centroids
-for each rating, etc. To train the pipeline just call `dg.train()`.
+vocabulary, the LSA will learn the appropriate dimension reduction, the centroid computation will learn the centroids
+for each rating, etc. To train the pipeline just call `graph.trainTransform()`.
 
-Now that we've got our trained model we'd like to deploy it to production. This means we need to serialize all the
-model paramters that were learned: `dg.serialize("/path/to/trained")`. Finally, we're ready to deploy to production.
-However, we can't use exactly the same classes in production as we did to train. Specifically, the data shouldn't come
-from flat files, it should come from a String in memory where the string is sent to us via REST API. Thus we need to
-"rebind" the `REVIEW_SOURCE`. Note that we could rebind additional components as well. For example, we might have 
-cached expensive computations for training but need to do the computation "for real" in production. The enum we used
-above allows us to specify factory functions for each enum value. Thus we can do something like this:
+Now that we've got our trained model we'd like to deploy it to production. This means we need to serialize the entire
+graph representation and what each of the learning nodes learned:
 
 ```java
-DataGraph<Double> dg = DataGraph.fromFile("path/to/trained");
+GraphSerDeser serDeser = new GraphSerDeser();
+serDeser.serialize(graph, "/path/to/file");
+```
 
-// Now we can make predictions. Here we bind enums that weren't bound in the
-// fromFile call above, including the actual input data.
-double prediction = dg.preparePredict()
-    .withBinding(REVIEW_SOURCE, new SimpleString(dataRecievedFromTheApi))
-    .predict();
+Finally, we're ready to deploy to production. 
+
+```java
+DataGraph dg = serDeser.deserialize("path/to/trained");
+
+// Now we can make predictions.
+Observation toPredict = dg.buildObservationFromSource("the text of a movie review");
+DataSet result = dg.transform(toPredict, Executors.newFixedThreadPool(4));
 ```
 
 # Overview
 
-The library consists of several components that will be described in the sections below:
+The library consists of several components:
 
-* `SourceGenerator`: little more than an `Iterable`. This represents the "raw" training, test, or validation
-set. Here we say "raw" as the source may be heavily transformed before being consumed by a ML algorithm.
-* `DataGenerator`: this class generates data of arbitrary type. It may require other `DataGenerator` outputs as as
-input.
-* `TrainableDataGenerator`: these are `DataGenerator` instances that have a `train` method which allows them to learn
-from the data. This allows us to treat unsupervised algorithms like clustering or dimension reduction as a
-`DataGenerator`. Furthermore, classification and regression algorithms can then also be treated as
-`TrainableDataGenerator`. They are simple data generators that take several other generator outputs as input and the
-data they produce is a prediction.
-* `DataGraph`: this describes the DAG of `DataGenerator` and `SourceGenerator` instances. This is how we define the
-inputs to each component and define which `DataGenerator` instances represent the final output.
-* `RepresentationTransformer`: a `Collection<Feature<?>>` isn't a very convenient data representation for most machine
-learning algorithms. However, there is no single "best" representation. For example, a matrix of doubles is probably 
-best for a linear regression algorithm but column vectors of fixed type are probably preferable for decision trees and
-rule learners (here each column would be the value of a single feature for all items in the training set). Thus we
-employ representation transformers to convert from collections of features to something more convenient for the
-training algorithm. These representations are cached so that if several `TrainableDataGenerator` instances want the 
-same representation it is computed only once.
-
-## Source Generator
-
-This is just a source of data. It may read from a database, information passed to a service via API, or a CSV file. The
-most important thing about a source generator is that it does not have any other `SourceGenerator` or `DataGenerator`
-dependencies. This almost always represents the raw input from which we want to learn or make predictions.
-
-# Model Pipeline Serialization
-
-# Injection
-
-We might train with one source and then use a different source.
-
-Serialize a whole `DataGraph`.
-
-Use factory functions so injection compatible.
-
-
+* `ValueId`: The id used to retrieve a single data item. A value id consists of a name, which is just a `String`, and
+a type which keeps everything type safe.
+* `ValueToken`: A `ValueId` plus some hidden information that allows for fast retrieval of data. This is so that we can
+have several `DataSet` subclasses to allow for things like zero-copy merging, etc.
+* `Observation`: A single "row" of data. An `Observation` consists of multiple values which can be retrieved via a
+`ValueToken`.
+* `DataTransform`: These can be straight transformations (e.g. converting Strings to lowercase), or supervised or 
+unsupervised learners.
+* `GraphNode`: a `DataTransform` plus some other information like which other transforms feed data to this transform,
+which transforms consume the output of this transform, etc.
+* `DataGraph`: a DAG of `GraphNode` instances.
+* `GraphSerDeser`: used for serializing and deserializing a graph. This allows for a variety of serialization formats
+so that we can interoperate with other machine learning libraries and allows for injection. See the
+`SERIALIZATION.README.md` file for details.
+ 
