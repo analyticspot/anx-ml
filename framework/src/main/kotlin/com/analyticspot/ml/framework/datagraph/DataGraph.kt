@@ -7,6 +7,7 @@ import com.analyticspot.ml.framework.datatransform.MergeTransform
 import com.analyticspot.ml.framework.datatransform.MultiTransform
 import com.analyticspot.ml.framework.datatransform.SingleDataTransform
 import com.analyticspot.ml.framework.datatransform.SupervisedLearningTransform
+import com.analyticspot.ml.framework.description.ValueId
 import com.analyticspot.ml.framework.observation.ArrayObservation
 import com.analyticspot.ml.framework.observation.Observation
 import org.slf4j.LoggerFactory
@@ -56,6 +57,9 @@ class DataGraph(builder: GraphBuilder) {
                 return build()
             }
         }
+
+        @JvmStatic
+        fun builder(): GraphBuilder = GraphBuilder()
     }
 
     // This is the method that walks back through the graph and updates sources and subscriptions so they are
@@ -168,6 +172,11 @@ class DataGraph(builder: GraphBuilder) {
             return setSource(sourceNode)
         }
 
+        /**
+         * Specify the format of the node that is the source for this graph using a Java-style builder.
+         */
+        fun source(): SourceBuilder = SourceBuilder(nextId++)
+
         internal fun setSource(node: SourceGraphNode): GraphNode {
             source = node
             check(!nodesById.containsKey(node.id))
@@ -176,6 +185,9 @@ class DataGraph(builder: GraphBuilder) {
         }
 
         fun addTransform(src: GraphNode, transform: SingleDataTransform): GraphNode {
+            check(!(transform is SupervisedLearningTransform)) {
+                "This is the wrong addTransform overload to call for a supervised learning algorithm."
+            }
             return addTransform(src, transform, nextId++)
         }
 
@@ -190,6 +202,9 @@ class DataGraph(builder: GraphBuilder) {
         }
 
         fun addTransform(src: GraphNode, transform: LearningTransform): GraphNode {
+            check(!(transform is SupervisedLearningTransform)) {
+                "This is the wrong addTransform overload to call for a supervised learning algorithm."
+            }
             log.debug("Adding an unsupervised learning transform to the graph.")
             val node = LearningGraphNode.build(nextId++) {
                 this.transform = transform
@@ -253,6 +268,52 @@ class DataGraph(builder: GraphBuilder) {
 
         fun build(): DataGraph {
             return DataGraph(this)
+        }
+
+        /**
+         * A Java-style builder for constucting a source definition.
+         */
+        inner class SourceBuilder(id: Int) {
+            private val srcBuilder = SourceGraphNode.Builder(id)
+
+            /**
+             * Valid sources must include data with the type and name described by valId.
+             */
+            fun withValue(valId: ValueId<*>): SourceBuilder {
+                srcBuilder.valueIds += valId
+                return this
+            }
+
+            /**
+             * Valid sources must include data with the type and name described by the valIds.
+             */
+            fun withValues(vararg valIds: ValueId<*>): SourceBuilder {
+                srcBuilder.valueIds += valIds
+                return this
+            }
+
+            /**
+             * Valid sources must include data with the type and name described by valId during training. When just
+             * getting predictions via the [DataGraph.transform] method this value is optional.
+             */
+            fun withTrainOnlyValue(valId: ValueId<*>): SourceBuilder {
+                srcBuilder.trainOnlyValueIds += valId
+                return this
+            }
+
+            /**
+             * Valid sources must include data with the type and name described by these valIds during training. When
+             * just getting predictions via the [DataGraph.transform] method this value is optional.
+             */
+            fun withTrainOnlyValues(vararg valIds: ValueId<*>): SourceBuilder {
+                srcBuilder.trainOnlyValueIds += valIds
+                return this
+            }
+
+            fun build(): GraphNode {
+                val res = this@GraphBuilder.setSource(srcBuilder.build())
+                return res
+            }
         }
     }
 }

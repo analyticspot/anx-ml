@@ -7,16 +7,34 @@ raw data, generate new data from that, then yet more new data that may depend on
 
 Additionally, some "features" aren't really features, but just intermediate bits of data. For example, for text
 processing we might generate a matrix for the standard "bag of words" representation but we probably wouldn't use this
-directly. Instead we might do dimension reduction on that data. We thus talk about *data generators*, which can create
-arbitrary data types. Each data generator can restrict the input types it understands.
+directly. Instead we might do dimension reduction on that data. 
 
-This presents several challenges:
-* We want to compute each piece of information exactly once even if multiple data generators use the same data as input.
+Each node is the DAG is a `DataTransform`. A `DataTransform` must have a `transform` method which accepts a `DataSet`
+and produces a new `DataSet` as output. Additionally, some `DataTrasform` instances can learn from training data. These
+transforms have a `trainTransform` method that first learns from the data and then transforms it according to what was
+learned. Once `trainTransform` has been called `transform` can be called on new data to apply what was learned from
+the training data.
+
+There are several machine learning systems for Java, but they all lack some properties we want for our system. Our
+desired capabilities are:
+
+* We want to compute each piece of information exactly once even if multiple data transforms use the same data as input.
+* Some data generators are slow and may be asynchronous. We don't want to have to worry about which data is available
+when and thus know when it's safe to run the next feature/data generator in the chain.
+* We want to be able to serialize the entire trained DAG to a single file and then deserialize it in a different
+executable and apply it.
+* We want to be able to inject alternative implementations of some transforms when we deserialize. For example, we might
+obtain some data from a database during training but need to obtain that same data via an API call in production so we
+need to be able to swap out the implementation when we deserialize our trained DAG.
+* We want everything to be strongly typed: `DataTransform` instances should be able to declare the types they can
+consume and produce and `DataSet` instances should have method to retrieve some of their columns in a type safe way.
+* We want to allow `DataTransform` types that can produce multiple outputs even if the number of outputs can't be known
+until the transform has been trained (e.g. a bag of words transform can't know how many words are in the vocabulary 
+until it has seen the training data).
+* We want to be able to run independent parts of the DAG in parallel utilizing all the CPUs on the machine.
 * If some data isn't required to make a prediction we may not want to generate it. For example, if we were using a
 decision tree as our classifier, a given item might take a path through the tree such that certain features are never
 used. This is particularly useful for data generators which make API calls that may cost money.
-* Some data generators are slow and may be asynchronous. We don't want to have to worry about which data is available
-when and thus know when it's safe to run the next feature/data generator in the chain.
 
 The feature framework here is intended to solve these issues.
 
@@ -29,28 +47,28 @@ Specifically, we want to:
 
 1. Convert the input review into a "bag of words" representation: one row for each review, one column for each
 unique word, and the value at the row/column intersection is the number of times that word appeared in that review.
-2. We want to convert the bag of words into a lower-dimensional vector via LSA (basically Pincipal Components Analysis).
+2. We want to convert the bag of words into a lower-dimensional vector via LSA. 
 3. For each of the 4 possible ratings we want to compute a centroid for the vectors computed in (2) indicating a
 "typical" review for that rating.
 5. We then want to generate the following features
     1. For each review we want to compute its distance from each of those centroids thus generating 5 features.
     2. We have a list of "positive words" that contains things like "good", "excellent", etc. For each review we want to
-compute the number of times words in this list has appeared.
+compute the number of times words in this list have appeared.
     3. Similarly, we'd like to compute the number of "negative words" in each review.
 7. We then want to send the 7 features above to a linear regression algorithm
 
 This task would look something like the following in Java given this framework:
 
 ```java
-// The DataGraph represents the complete pipeline described above. It is of
-// type Double as it's final output will be a dobule - the predicted rating.
-DataGraph<Double> dg = new DataGraph();
-// This enum allows us to do a kind of injection so that, for example, we can
-// use flat files to train but data obtained via REST endpoint for predictions. 
-enum Injectables {
-  REVIEW_SOURCE
-};
+// The DataGraph represents the complete pipeline described above.
+DataGraph dg = new DataGraph.Builder();
 
+// ValueIds let you obtain data in a type-safe way. Each ValueId can be converted into a ValueToken by the node that
+// produces the data. A ValueToken is just a ValueId plus some hidden data that allows fast retrieval from the
+// DataSet.
+ValueId<String> reviewValueId = new ValueId<>("review", String.class);
+ValueId<Integer> numStarsId = new ValueId<>()
+dg.addSource()
 // A DataToken refers to a specifc source or data generator so we can declare
 // that other generators depend on it.
 DataToken<String> inputSource = dg.addSource(
