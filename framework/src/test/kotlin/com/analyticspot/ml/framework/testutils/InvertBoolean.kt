@@ -3,7 +3,7 @@ package com.analyticspot.ml.framework.testutils
 import com.analyticspot.ml.framework.dataset.DataSet
 import com.analyticspot.ml.framework.dataset.IterableDataSet
 import com.analyticspot.ml.framework.datatransform.SingleDataTransform
-import com.analyticspot.ml.framework.datatransform.TransformDescription
+import com.analyticspot.ml.framework.description.TransformDescription
 import com.analyticspot.ml.framework.description.ValueId
 import com.analyticspot.ml.framework.description.ValueToken
 import com.analyticspot.ml.framework.observation.SingleValueObservation

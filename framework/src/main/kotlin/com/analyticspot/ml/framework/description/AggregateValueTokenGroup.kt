@@ -1,12 +1,10 @@
 package com.analyticspot.ml.framework.description
 
-import com.analyticspot.ml.framework.datagraph.GraphNode
-
 /**
  * The [ValueTokenGroup] for an [AggregateValueIdGroup].
  */
 internal class AggregateValueTokenGroup<DataT>(
-        override val id: AggregateValueIdGroup<DataT>, source: GraphNode) : ValueTokenGroup<DataT> {
+        override val id: AggregateValueIdGroup<DataT>, source: TransformDescription) : ValueTokenGroup<DataT> {
     private val srcTokens: List<ValueToken<DataT>> = id.valueIds.map { source.token(it) }
     private val srcTokenGroups: List<ValueTokenGroup<DataT>> = id.valueIdGroups.map { source.tokenGroup(it) }
 

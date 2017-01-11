@@ -1,8 +1,6 @@
 package com.analyticspot.ml.framework.datagraph
 
-import com.analyticspot.ml.framework.datatransform.TransformDescription
-import com.analyticspot.ml.framework.description.AggregateValueIdGroup
-import com.analyticspot.ml.framework.description.AggregateValueTokenGroup
+import com.analyticspot.ml.framework.description.TransformDescription
 import com.analyticspot.ml.framework.description.ValueId
 import com.analyticspot.ml.framework.description.ValueIdGroup
 import com.analyticspot.ml.framework.description.ValueToken
@@ -20,13 +18,11 @@ abstract class GraphNode internal constructor(builder: Builder) {
     internal val subscribers: MutableList<Subscription> = mutableListOf()
     internal val trainOnlySubscribers: MutableList<Subscription> = mutableListOf()
     internal val id: Int = builder.id
-    val transformDescription = builder.transformDescription
-    val tokens: List<ValueToken<*>> = transformDescription.tokens
-    /**
-     * These are the [ValueTokenGroup] instances produced by the transform. However, you can always create additional
-     * [ValueTokenGroup] instances for custom groupings of [ValueToken] and [ValueTokenGroup] via ...
-     */
+    abstract val transformDescription: TransformDescription
+    val tokens: List<ValueToken<*>>
+        get() = transformDescription.tokens
     val tokenGroups: List<ValueTokenGroup<*>>
+        get() = transformDescription.tokenGroups
 
     /**
      * Labels are used for injection during deserialization. See SERIALIZATION.README.md for details.
@@ -35,13 +31,6 @@ abstract class GraphNode internal constructor(builder: Builder) {
 
     private val tokenGroupMap: MutableMap<ValueIdGroup<*>, ValueTokenGroup<*>> = mutableMapOf()
 
-    init {
-        tokenGroups = builder.tokenGroups
-
-        tokenGroups.forEach {
-            tokenGroupMap[it.id] = it
-        }
-    }
 
     companion object {
         private val log = LoggerFactory.getLogger(GraphNode::class.java)
@@ -52,31 +41,49 @@ abstract class GraphNode internal constructor(builder: Builder) {
      */
     abstract fun getExecutionManager(parent: GraphExecution, execType: ExecutionType): NodeExecutionManager
 
+    /**
+     * Returns the token for this [ValueId].
+     */
     fun <T> token(valId: ValueId<T>): ValueToken<T> {
         return transformDescription.token(valId)
     }
 
+    /**
+     * Convenience overload that is equivalent to `token(ValueId(name, clazz))`.
+     */
+    fun <T> token(name: String, clazz: Class<T>): ValueToken<T> {
+        return transformDescription.token(name, clazz)
+    }
 
+    /**
+     * Convenience overload in which the type information is determined automatically.
+     */
+    inline fun <reified T : Any> token(name: String): ValueToken<T> {
+        return token(name, T::class.java)
+    }
+
+    /**
+     * Returns the [ValueTokenGroup] for a [ValueIdGroup].
+     */
     fun <T> tokenGroup(groupId: ValueIdGroup<T>): ValueTokenGroup<T> {
-        if (groupId is AggregateValueIdGroup<T>) {
-            return AggregateValueTokenGroup(groupId, this)
-        } else {
-            val tokGroup = tokenGroupMap[groupId] ?:
-                    throw IllegalArgumentException("No token group found with id $groupId")
-            if (tokGroup.clazz == groupId.clazz) {
-                @Suppress("UNCHECKED_CAST")
-                return tokGroup as ValueTokenGroup<T>
-            } else {
-                throw IllegalArgumentException(
-                        "TokenGroup $groupId has type ${tokGroup.clazz} but ${groupId.clazz} was passed wiht the id"
-                )
-            }
-        }
+        return transformDescription.tokenGroup(groupId)
+    }
+
+    /**
+     * Convenience overload that is equivalent to `tokenGroup(ValueIdGroup(name, clazz))`.
+     */
+    fun <T> tokenGroup(name: String, clazz: Class<T>): ValueTokenGroup<T> {
+        return transformDescription.tokenGroup(name, clazz)
+    }
+
+    /**
+     * Convenience overload that determines type information from context.
+     */
+    inline fun <reified T : Any> tokenGroup(name: String): ValueTokenGroup<T> {
+        return tokenGroup(name, T::class.java)
     }
 
     open class Builder(internal val id: Int) {
-        lateinit var transformDescription: TransformDescription
-        val tokenGroups: MutableList<ValueTokenGroup<*>> = mutableListOf()
         val sources: MutableList<SubscribedTo> = mutableListOf()
         val trainOnlySources: MutableList<SubscribedTo> = mutableListOf()
     }

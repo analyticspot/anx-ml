@@ -1,7 +1,7 @@
 package com.analyticspot.ml.framework.description
 
 import com.analyticspot.ml.framework.datatransform.StreamingDataTransform
-import com.analyticspot.ml.framework.datatransform.TransformDescription
+import com.analyticspot.ml.framework.description.TransformDescription
 import com.analyticspot.ml.framework.observation.Observation
 import com.analyticspot.ml.framework.observation.SingleValueObservation
 

@@ -1,8 +1,8 @@
 package com.analyticspot.ml.framework.datagraph
 
 import com.analyticspot.ml.framework.dataset.DataSet
-import com.analyticspot.ml.framework.datatransform.TransformDescription
 import com.analyticspot.ml.framework.description.IndexValueToken
+import com.analyticspot.ml.framework.description.TransformDescription
 import com.analyticspot.ml.framework.description.ValueId
 import java.util.concurrent.CompletableFuture
 
@@ -16,6 +16,15 @@ import java.util.concurrent.CompletableFuture
  */
 class SourceGraphNode private constructor(builder: Builder) : GraphNode(builder.gnBuilder) {
     internal val trainOnlyValueIds = builder.trainOnlyValueIds
+    override val transformDescription: TransformDescription
+
+    init {
+        val tokens = builder.valueIds.plus(builder.trainOnlyValueIds).mapIndexed { idx, valueId ->
+            IndexValueToken.create(idx, valueId)
+        }
+        transformDescription = TransformDescription(tokens)
+    }
+
 
     companion object {
         /**
@@ -52,14 +61,7 @@ class SourceGraphNode private constructor(builder: Builder) : GraphNode(builder.
         internal lateinit var gnBuilder: GraphNode.Builder
 
         fun build(): SourceGraphNode {
-            var arrayIdx = 0
-            val tokens = valueIds.plus(trainOnlyValueIds).map {
-                IndexValueToken.create(arrayIdx++, it)
-            }
-            val description = TransformDescription(tokens)
-            gnBuilder = GraphNode.Builder(id).apply {
-                transformDescription = description
-            }
+            gnBuilder = GraphNode.Builder(id)
             return SourceGraphNode(this)
         }
     }

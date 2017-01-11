@@ -1,5 +1,6 @@
 package com.analyticspot.ml.framework.datatransform
 
+import com.analyticspot.ml.framework.description.TransformDescription
 import com.analyticspot.ml.framework.serialization.Format
 import com.analyticspot.ml.framework.serialization.StandardJsonFormat
 import com.fasterxml.jackson.annotation.JsonIgnore
