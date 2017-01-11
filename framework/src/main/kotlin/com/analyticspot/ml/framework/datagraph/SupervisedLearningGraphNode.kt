@@ -57,7 +57,7 @@ class SupervisedLearningGraphNode(builder: Builder) : HasTransformGraphNode<Supe
         var transform: SupervisedLearningTransform? = null
             set(value) {
                 field = value ?: throw IllegalArgumentException("transform can not be null")
-                tokens.addAll(value.description.tokens)
+                transformDescription = value.description
                 tokenGroups.addAll(value.description.tokenGroups)
             }
 

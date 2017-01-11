@@ -14,7 +14,7 @@ class TokenNamesTrans(val srcGroup: ValueTokenGroup<*>, val resultId: ValueId<St
         get() = TransformDescription(listOf(ValueToken(resultId)))
 
     override fun transform(observation: Observation): Observation {
-        val prefix = srcGroup.prefix
+        val prefix = srcGroup.name
         val tokenNames = mutableListOf<String>()
         srcGroup.tokens().forEach {
             tokenNames.add(it.name.removePrefix(prefix).removePrefix(ValueId.GROUP_SEPARATOR))

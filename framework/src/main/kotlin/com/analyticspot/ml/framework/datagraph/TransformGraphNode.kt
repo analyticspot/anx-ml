@@ -33,7 +33,7 @@ internal open class TransformGraphNode protected constructor(builder: Builder)
         var transform: SingleDataTransform? = null
             set(value) {
                 field = value ?: throw IllegalArgumentException("Transform can not be null")
-                tokens.addAll(value.description.tokens)
+                transformDescription = value.description
                 tokenGroups.addAll(value.description.tokenGroups)
             }
 

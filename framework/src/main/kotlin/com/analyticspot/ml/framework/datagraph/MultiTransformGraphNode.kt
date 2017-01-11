@@ -34,7 +34,7 @@ internal class MultiTransformGraphNode protected constructor(builder: Builder)
         var transform: MultiTransform? = null
             set(value) {
                 field = value ?: throw IllegalArgumentException("Transform can not be null")
-                tokens.addAll(value.description.tokens)
+                transformDescription = value.description
                 tokenGroups.addAll(value.description.tokenGroups)
             }
 

@@ -1,5 +1,8 @@
 package com.analyticspot.ml.framework.datagraph
 
+import com.analyticspot.ml.framework.datatransform.TransformDescription
+import com.analyticspot.ml.framework.description.AggregateValueIdGroup
+import com.analyticspot.ml.framework.description.AggregateValueTokenGroup
 import com.analyticspot.ml.framework.description.ValueId
 import com.analyticspot.ml.framework.description.ValueIdGroup
 import com.analyticspot.ml.framework.description.ValueToken
@@ -17,7 +20,12 @@ abstract class GraphNode internal constructor(builder: Builder) {
     internal val subscribers: MutableList<Subscription> = mutableListOf()
     internal val trainOnlySubscribers: MutableList<Subscription> = mutableListOf()
     internal val id: Int = builder.id
-    val tokens: List<ValueToken<*>>
+    val transformDescription = builder.transformDescription
+    val tokens: List<ValueToken<*>> = transformDescription.tokens
+    /**
+     * These are the [ValueTokenGroup] instances produced by the transform. However, you can always create additional
+     * [ValueTokenGroup] instances for custom groupings of [ValueToken] and [ValueTokenGroup] via ...
+     */
     val tokenGroups: List<ValueTokenGroup<*>>
 
     /**
@@ -25,21 +33,10 @@ abstract class GraphNode internal constructor(builder: Builder) {
      */
     var label: String? = null
 
-    private val tokenMap: MutableMap<ValueId<*>, ValueToken<*>> = mutableMapOf()
     private val tokenGroupMap: MutableMap<ValueIdGroup<*>, ValueTokenGroup<*>> = mutableMapOf()
 
     init {
-        log.debug("GraphNode being constructed with {} tokens and {} token groups",
-                builder.tokens.size, builder.tokenGroups.size)
-        tokens = builder.tokens
         tokenGroups = builder.tokenGroups
-        tokens.forEach {
-            log.debug("Adding token named {} to the token map", it.name)
-            check(!tokenMap.containsKey(it.id)) {
-                "A token with name ${it.name} is already present in this data set."
-            }
-            tokenMap[it.id] = it
-        }
 
         tokenGroups.forEach {
             tokenGroupMap[it.id] = it
@@ -56,29 +53,29 @@ abstract class GraphNode internal constructor(builder: Builder) {
     abstract fun getExecutionManager(parent: GraphExecution, execType: ExecutionType): NodeExecutionManager
 
     fun <T> token(valId: ValueId<T>): ValueToken<T> {
-        val tok = tokenMap[valId] ?: throw IllegalArgumentException("Token ${valId.name} not found")
-        if (tok.clazz == valId.clazz) {
-            @Suppress("UNCHECKED_CAST")
-            return tok as ValueToken<T>
-        } else {
-            throw IllegalArgumentException("Token ${valId.name} is not of type ${valId.clazz}")
-        }
+        return transformDescription.token(valId)
     }
 
+
     fun <T> tokenGroup(groupId: ValueIdGroup<T>): ValueTokenGroup<T> {
-        val tokGroup = tokenGroupMap[groupId] ?: throw IllegalArgumentException("No token group found with id $groupId")
-        if (tokGroup.clazz == groupId.clazz) {
-            @Suppress("UNCHECKED_CAST")
-            return tokGroup as ValueTokenGroup<T>
+        if (groupId is AggregateValueIdGroup<T>) {
+            return AggregateValueTokenGroup(groupId, this)
         } else {
-            throw IllegalArgumentException(
-                    "TokenGroup $groupId has type ${tokGroup.clazz} but ${groupId.clazz} was passed wiht the id"
-            )
+            val tokGroup = tokenGroupMap[groupId] ?:
+                    throw IllegalArgumentException("No token group found with id $groupId")
+            if (tokGroup.clazz == groupId.clazz) {
+                @Suppress("UNCHECKED_CAST")
+                return tokGroup as ValueTokenGroup<T>
+            } else {
+                throw IllegalArgumentException(
+                        "TokenGroup $groupId has type ${tokGroup.clazz} but ${groupId.clazz} was passed wiht the id"
+                )
+            }
         }
     }
 
     open class Builder(internal val id: Int) {
-        val tokens: MutableList<ValueToken<*>> = mutableListOf()
+        lateinit var transformDescription: TransformDescription
         val tokenGroups: MutableList<ValueTokenGroup<*>> = mutableListOf()
         val sources: MutableList<SubscribedTo> = mutableListOf()
         val trainOnlySources: MutableList<SubscribedTo> = mutableListOf()

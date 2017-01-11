@@ -1,6 +1,7 @@
 package com.analyticspot.ml.framework.datagraph
 
 import com.analyticspot.ml.framework.dataset.DataSet
+import com.analyticspot.ml.framework.datatransform.TransformDescription
 import com.analyticspot.ml.framework.description.IndexValueToken
 import com.analyticspot.ml.framework.description.ValueId
 import java.util.concurrent.CompletableFuture
@@ -52,10 +53,12 @@ class SourceGraphNode private constructor(builder: Builder) : GraphNode(builder.
 
         fun build(): SourceGraphNode {
             var arrayIdx = 0
+            val tokens = valueIds.plus(trainOnlyValueIds).map {
+                IndexValueToken.create(arrayIdx++, it)
+            }
+            val description = TransformDescription(tokens)
             gnBuilder = GraphNode.Builder(id).apply {
-                tokens.addAll(valueIds.plus(trainOnlyValueIds).map {
-                    IndexValueToken.create(arrayIdx++, it)
-                })
+                transformDescription = description
             }
             return SourceGraphNode(this)
         }
