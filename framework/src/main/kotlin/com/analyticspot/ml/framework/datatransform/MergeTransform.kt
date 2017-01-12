@@ -5,6 +5,7 @@ import com.analyticspot.ml.framework.dataset.DataSet
 import com.analyticspot.ml.framework.dataset.IndirectDataSet
 import com.analyticspot.ml.framework.description.IndirectValueToken
 import com.analyticspot.ml.framework.description.IndirectValueTokenGroup
+import com.analyticspot.ml.framework.description.TransformDescription
 import com.analyticspot.ml.framework.description.ValueToken
 import com.analyticspot.ml.framework.description.ValueTokenGroup
 import com.fasterxml.jackson.annotation.JacksonInject

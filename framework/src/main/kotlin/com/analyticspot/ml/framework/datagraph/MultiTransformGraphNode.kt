@@ -12,8 +12,7 @@ import java.util.concurrent.atomic.AtomicReferenceArray
  */
 internal class MultiTransformGraphNode protected constructor(builder: Builder)
     : HasTransformGraphNode<MultiTransform>(builder) {
-    override val transform: MultiTransform = builder.transform ?:
-            throw IllegalArgumentException("Transform must be non-null")
+    override val transform: MultiTransform = builder.transform
 
     companion object {
         private val log = LoggerFactory.getLogger(Companion::class.java)
@@ -31,12 +30,7 @@ internal class MultiTransformGraphNode protected constructor(builder: Builder)
     }
 
     class Builder(id: Int) : GraphNode.Builder(id) {
-        var transform: MultiTransform? = null
-            set(value) {
-                field = value ?: throw IllegalArgumentException("Transform can not be null")
-                tokens.addAll(value.description.tokens)
-                tokenGroups.addAll(value.description.tokenGroups)
-            }
+        lateinit var transform: MultiTransform
 
         fun build(): MultiTransformGraphNode = MultiTransformGraphNode(this)
     }

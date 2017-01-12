@@ -1,7 +1,7 @@
 package com.analyticspot.ml.framework.description
 
 import com.analyticspot.ml.framework.datatransform.StreamingDataTransform
-import com.analyticspot.ml.framework.datatransform.TransformDescription
+import com.analyticspot.ml.framework.description.TransformDescription
 import com.analyticspot.ml.framework.observation.Observation
 import com.analyticspot.ml.framework.observation.SingleValueObservation
 
@@ -14,7 +14,7 @@ class TokenNamesTrans(val srcGroup: ValueTokenGroup<*>, val resultId: ValueId<St
         get() = TransformDescription(listOf(ValueToken(resultId)))
 
     override fun transform(observation: Observation): Observation {
-        val prefix = srcGroup.prefix
+        val prefix = srcGroup.name
         val tokenNames = mutableListOf<String>()
         srcGroup.tokens().forEach {
             tokenNames.add(it.name.removePrefix(prefix).removePrefix(ValueId.GROUP_SEPARATOR))

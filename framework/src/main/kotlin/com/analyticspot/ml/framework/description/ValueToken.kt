@@ -37,4 +37,20 @@ open class ValueToken<DataT>(private val valId: ValueId<DataT>) {
             return source.token(valId)
         }
     }
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other is ValueToken<*>) {
+            check(other.clazz == clazz) {
+                "Two value tokens named $name but with different types: $clazz and ${other.clazz}"
+            }
+            return name == other.name
+        } else {
+            return false
+        }
+    }
+
+    override fun hashCode(): Int {
+        return name.hashCode()
+    }
 }

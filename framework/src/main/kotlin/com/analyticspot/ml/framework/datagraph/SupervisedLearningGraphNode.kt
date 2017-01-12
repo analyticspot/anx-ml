@@ -9,8 +9,7 @@ import java.util.concurrent.atomic.AtomicInteger
  * A [GraphNode] that holds a [SupervisedLearningTransform].
  */
 class SupervisedLearningGraphNode(builder: Builder) : HasTransformGraphNode<SupervisedLearningTransform>(builder) {
-    override val transform: SupervisedLearningTransform = builder.transform ?:
-            throw IllegalArgumentException("Transform can not be null")
+    override val transform: SupervisedLearningTransform = builder.transform
 
     // True if the target data comes from the same data set as the main data set (that is this is true if the
     // first and second parameters to trainTransform are the same). False otherwise.
@@ -54,12 +53,7 @@ class SupervisedLearningGraphNode(builder: Builder) : HasTransformGraphNode<Supe
     }
 
     class Builder(id: Int) : GraphNode.Builder(id) {
-        var transform: SupervisedLearningTransform? = null
-            set(value) {
-                field = value ?: throw IllegalArgumentException("transform can not be null")
-                tokens.addAll(value.description.tokens)
-                tokenGroups.addAll(value.description.tokenGroups)
-            }
+        lateinit var transform: SupervisedLearningTransform
 
         fun build(): SupervisedLearningGraphNode = SupervisedLearningGraphNode(this)
     }

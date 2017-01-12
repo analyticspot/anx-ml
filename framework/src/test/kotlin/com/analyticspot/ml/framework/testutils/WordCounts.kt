@@ -3,7 +3,7 @@ package com.analyticspot.ml.framework.testutils
 import com.analyticspot.ml.framework.dataset.DataSet
 import com.analyticspot.ml.framework.dataset.IterableDataSet
 import com.analyticspot.ml.framework.datatransform.LearningTransform
-import com.analyticspot.ml.framework.datatransform.TransformDescription
+import com.analyticspot.ml.framework.description.TransformDescription
 import com.analyticspot.ml.framework.description.IndexValueToken
 import com.analyticspot.ml.framework.description.ValueId
 import com.analyticspot.ml.framework.description.ValueIdGroup
@@ -91,7 +91,7 @@ class WordCounts private constructor(
 
         // Now that we know all the tokens, set them into the ValueTokenGroup
         val tokens = wordMap.map {
-            val tokenName = "${tokenGroupAndSetter.tokenGroup.prefix}${ValueId.GROUP_SEPARATOR}${it.key}"
+            val tokenName = "${tokenGroupAndSetter.tokenGroup.name}${ValueId.GROUP_SEPARATOR}${it.key}"
             IndexValueToken(it.value, ValueId.create<Int>(tokenName))
         }
 

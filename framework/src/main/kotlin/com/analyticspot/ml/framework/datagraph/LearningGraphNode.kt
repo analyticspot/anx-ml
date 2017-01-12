@@ -8,8 +8,7 @@ import java.util.concurrent.CompletableFuture
  * A [GraphNode] which takes a single input [DataSet] and applies a [LearningTransform] to it.
  */
 class LearningGraphNode(builder: Builder) : HasTransformGraphNode<LearningTransform>(builder) {
-    override val transform: LearningTransform = builder.transform ?:
-            throw IllegalArgumentException("Transform must be non-null")
+    override val transform: LearningTransform = builder.transform
 
     companion object {
         fun build(id: Int, init: Builder.() -> Unit): LearningGraphNode {
@@ -24,12 +23,7 @@ class LearningGraphNode(builder: Builder) : HasTransformGraphNode<LearningTransf
             ExecutionManager(this, execType, parent)
 
     class Builder(id: Int) : GraphNode.Builder(id) {
-        var transform: LearningTransform? = null
-            set(value) {
-                field = value ?: throw IllegalArgumentException("Transform can not be null")
-                tokens.addAll(value.description.tokens)
-                tokenGroups.addAll(value.description.tokenGroups)
-            }
+        lateinit var transform: LearningTransform
 
         fun build(): LearningGraphNode = LearningGraphNode(this)
     }

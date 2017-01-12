@@ -1,7 +1,7 @@
 package com.analyticspot.ml.framework.datagraph
 
 import com.analyticspot.ml.framework.datatransform.StreamingDataTransform
-import com.analyticspot.ml.framework.datatransform.TransformDescription
+import com.analyticspot.ml.framework.description.TransformDescription
 import com.analyticspot.ml.framework.description.ValueId
 import com.analyticspot.ml.framework.description.ValueToken
 import com.analyticspot.ml.framework.observation.Observation

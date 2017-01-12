@@ -23,6 +23,4 @@ class IndirectValueTokenGroup<DataT>(private val obsIndex: Int,
     override fun numTokens(): Int = sourceGroup.numTokens()
 
     override fun tokens(): List<ValueToken<DataT>> = theTokens
-
-    override fun tokenSet(): Set<ValueToken<DataT>> = theTokenSet
 }

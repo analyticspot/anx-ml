@@ -11,10 +11,6 @@ class ValueTokenGroupFromList<DataT> private constructor(override val id: ValueI
     : ValueTokenGroup<DataT> {
     private var theTokens: AtomicReference<List<ValueToken<DataT>>?> = AtomicReference()
 
-    private val theTokenSet: Set<ValueToken<DataT>> by lazy {
-        theTokens.get()?.toSet() ?: throw NOT_READY_ERR
-    }
-
     companion object {
         private val NOT_READY_ERR = IllegalStateException("You can't retrieve tokens before training is complete.")
 
@@ -34,10 +30,6 @@ class ValueTokenGroupFromList<DataT> private constructor(override val id: ValueI
 
     override fun tokens(): List<ValueToken<DataT>> {
         return theTokens.get() ?: throw NOT_READY_ERR
-    }
-
-    override fun tokenSet(): Set<ValueToken<DataT>> {
-        return theTokenSet
     }
 
     // This is private for 2 reasons:
