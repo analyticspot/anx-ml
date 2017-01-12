@@ -11,7 +11,7 @@ class TransformDescription(val tokens: List<ValueToken<*>>,
         val tokenGroups: List<ValueTokenGroup<*>> = listOf()) {
 
     private val tokenMap: Map<String, ValueToken<*>> by lazy {
-        tokens.plus(tokenGroups.flatMap { it.declaredTokens }).associateBy { it.name }
+        tokens.associateBy { it.name }
     }
 
     private val tokenGroupMap: Map<String, ValueTokenGroup<*>> by lazy {
