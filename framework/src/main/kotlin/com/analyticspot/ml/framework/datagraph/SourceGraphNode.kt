@@ -25,7 +25,6 @@ class SourceGraphNode private constructor(builder: Builder) : GraphNode(builder.
         transformDescription = TransformDescription(tokens)
     }
 
-
     companion object {
         /**
          * Construct a [SourceGraphNode].

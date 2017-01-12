@@ -31,7 +31,6 @@ abstract class GraphNode internal constructor(builder: Builder) {
 
     private val tokenGroupMap: MutableMap<ValueIdGroup<*>, ValueTokenGroup<*>> = mutableMapOf()
 
-
     companion object {
         private val log = LoggerFactory.getLogger(GraphNode::class.java)
     }

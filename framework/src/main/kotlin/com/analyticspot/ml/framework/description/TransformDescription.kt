@@ -51,19 +51,15 @@ class TransformDescription(val tokens: List<ValueToken<*>>,
      * constructed by users to group several [ValueId] and [ValueIdGroup] instances together.
      */
     fun <T> tokenGroup(groupId: ValueIdGroup<T>): ValueTokenGroup<T> {
-        if (groupId is AggregateValueIdGroup<T>) {
-            return AggregateValueTokenGroup(groupId, this)
+        val tokGroup = tokenGroupMap[groupId.name] ?:
+                throw IllegalArgumentException("No token group found with id $groupId")
+        if (tokGroup.clazz == groupId.clazz) {
+            @Suppress("UNCHECKED_CAST")
+            return tokGroup as ValueTokenGroup<T>
         } else {
-            val tokGroup = tokenGroupMap[groupId.name] ?:
-                    throw IllegalArgumentException("No token group found with id $groupId")
-            if (tokGroup.clazz == groupId.clazz) {
-                @Suppress("UNCHECKED_CAST")
-                return tokGroup as ValueTokenGroup<T>
-            } else {
-                throw IllegalArgumentException(
-                        "TokenGroup $groupId has type ${tokGroup.clazz} but ${groupId.clazz} was passed with the id"
-                )
-            }
+            throw IllegalArgumentException(
+                    "TokenGroup $groupId has type ${tokGroup.clazz} but ${groupId.clazz} was passed with the id"
+            )
         }
     }
 
