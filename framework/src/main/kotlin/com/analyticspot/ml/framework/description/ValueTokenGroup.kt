@@ -28,6 +28,11 @@ interface ValueTokenGroup<DataT> {
         get() = id.clazz
 
     /**
+     * "Declared" tokens are tokens that we know will exist in the output. See the README for details.
+     */
+    val declaredTokens: List<ValueToken<DataT>>
+
+    /**
      * Returns the number of tokens in this group. Generally not available until producing transform has been trained.
      */
     fun numTokens(): Int
@@ -37,10 +42,4 @@ interface ValueTokenGroup<DataT> {
      * been trained.
      */
     fun tokens(): List<ValueToken<DataT>>
-
-    /**
-     * Returns the tokens in [tokens] as a `Set`. Generally not available until the producing transform has been
-     * trained.
-     */
-    fun tokenSet(): Set<ValueToken<DataT>>
 }

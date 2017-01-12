@@ -63,7 +63,9 @@ abstract class GraphNode internal constructor(builder: Builder) {
     }
 
     /**
-     * Returns the [ValueTokenGroup] for a [ValueIdGroup].
+     * Returns the [ValueTokenGroup] that corresponds to the `groupId`. Note that this works with [ValueTokenGroup]
+     * instances declared by this description in the [tokenGroups] member and with [AggregateValueTokenGroup] instances
+     * constructed by users to group several [ValueId] and [ValueIdGroup] instances together.
      */
     fun <T> tokenGroup(groupId: ValueIdGroup<T>): ValueTokenGroup<T> {
         return transformDescription.tokenGroup(groupId)

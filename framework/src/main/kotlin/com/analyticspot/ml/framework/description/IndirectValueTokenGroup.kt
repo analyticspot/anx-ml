@@ -9,6 +9,8 @@ package com.analyticspot.ml.framework.description
  */
 class IndirectValueTokenGroup<DataT>(private val obsIndex: Int,
         private val sourceGroup: ValueTokenGroup<DataT>) : ValueTokenGroup<DataT> {
+    override val declaredTokens: List<ValueToken<DataT>>
+        get() = sourceGroup.declaredTokens
     override val id: ValueIdGroup<DataT>
         get() = sourceGroup.id
 
@@ -23,6 +25,4 @@ class IndirectValueTokenGroup<DataT>(private val obsIndex: Int,
     override fun numTokens(): Int = sourceGroup.numTokens()
 
     override fun tokens(): List<ValueToken<DataT>> = theTokens
-
-    override fun tokenSet(): Set<ValueToken<DataT>> = theTokenSet
 }

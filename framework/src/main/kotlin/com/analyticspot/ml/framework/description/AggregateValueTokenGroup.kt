@@ -4,9 +4,15 @@ package com.analyticspot.ml.framework.description
  * The [ValueTokenGroup] for an [AggregateValueIdGroup].
  */
 internal class AggregateValueTokenGroup<DataT>(
-        override val id: AggregateValueIdGroup<DataT>, source: TransformDescription) : ValueTokenGroup<DataT> {
-    private val srcTokens: List<ValueToken<DataT>> = id.valueIds.map { source.token(it) }
-    private val srcTokenGroups: List<ValueTokenGroup<DataT>> = id.valueIdGroups.map { source.tokenGroup(it) }
+        override val id: ValueIdGroup<DataT>,
+        private val srcTokens: List<ValueToken<DataT>>,
+        private val srcTokenGroups: List<ValueTokenGroup<DataT>>) : ValueTokenGroup<DataT> {
+
+    override val declaredTokens: List<ValueToken<DataT>>
+        get() = srcTokens
+
+    constructor(id: AggregateValueIdGroup<DataT>, source: TransformDescription) :
+            this(id, id.valueIds.map { source.token(it) }, id.valueIdGroups.map { source.tokenGroup(it) })
 
     private val _numTokens by lazy {
         srcTokens.size + srcTokenGroups.map { it.numTokens() }.sum()
@@ -23,6 +29,4 @@ internal class AggregateValueTokenGroup<DataT>(
     override fun numTokens(): Int = _numTokens
 
     override fun tokens(): List<ValueToken<DataT>> = _tokens
-
-    override fun tokenSet(): Set<ValueToken<DataT>> = _tokenSet
 }

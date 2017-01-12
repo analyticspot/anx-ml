@@ -11,14 +11,16 @@ class TransformDescription(val tokens: List<ValueToken<*>>,
         val tokenGroups: List<ValueTokenGroup<*>> = listOf()) {
 
     private val tokenMap: Map<String, ValueToken<*>> by lazy {
-        tokens.associateBy { it.name }
+        tokens.plus(tokenGroups.flatMap { it.declaredTokens }).associateBy { it.name }
     }
 
     private val tokenGroupMap: Map<String, ValueTokenGroup<*>> by lazy {
         tokenGroups.associateBy { it.name }
     }
 
-
+    /**
+     * Returns the token that corresponds to the [ValueId].
+     */
     fun <T> token(valId: ValueId<T>): ValueToken<T> {
         val tok = tokenMap[valId.name] ?: throw IllegalArgumentException("Token ${valId.name} not found")
         if (tok.clazz == valId.clazz) {
@@ -29,14 +31,25 @@ class TransformDescription(val tokens: List<ValueToken<*>>,
         }
     }
 
+    /**
+     * Convenience overload of [token] that is equivalent to `token(ValueId(name, clazz))`.
+     */
     fun <T> token(name: String, clazz: Class<T>): ValueToken<T> {
         return token(ValueId(name, clazz))
     }
 
+    /**
+     * Convenience overload of [token] that infers the type information from the context.
+     */
     inline fun <reified T : Any> token(name: String): ValueToken<T> {
         return token(name, T::class.java)
     }
 
+    /**
+     * Returns the [ValueTokenGroup] that corresponds to the `groupId`. Note that this works with [ValueTokenGroup]
+     * instances declared by this description in the [tokenGroups] member and with [AggregateValueTokenGroup] instances
+     * constructed by users to group several [ValueId] and [ValueIdGroup] instances together.
+     */
     fun <T> tokenGroup(groupId: ValueIdGroup<T>): ValueTokenGroup<T> {
         if (groupId is AggregateValueIdGroup<T>) {
             return AggregateValueTokenGroup(groupId, this)
@@ -54,10 +67,16 @@ class TransformDescription(val tokens: List<ValueToken<*>>,
         }
     }
 
+    /**
+     * Convenience overload of [tokenGroup] that is equivalent to `tokenGroup(TokenGroupId(name, clazz))`.
+     */
     fun <T> tokenGroup(name: String, clazz: Class<T>): ValueTokenGroup<T> {
         return tokenGroup(ValueIdGroup(name, clazz))
     }
 
+    /**
+     * Convenience overload of [tokenGroup] that infers the type information from the context.
+     */
     inline fun <reified T : Any> tokenGroup(name: String): ValueTokenGroup<T> {
         return tokenGroup(name, T::class.java)
     }
