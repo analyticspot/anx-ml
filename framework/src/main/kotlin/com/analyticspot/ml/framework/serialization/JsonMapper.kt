@@ -3,7 +3,6 @@ package com.analyticspot.ml.framework.serialization
 import com.fasterxml.jackson.core.JsonGenerator
 import com.fasterxml.jackson.core.JsonParser
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.databind.ser.impl.SimpleBeanPropertyFilter
 import com.fasterxml.jackson.databind.ser.impl.SimpleFilterProvider
 import com.fasterxml.jackson.module.kotlin.registerKotlinModule
 
@@ -18,12 +17,8 @@ import com.fasterxml.jackson.module.kotlin.registerKotlinModule
  */
 object JsonMapper {
     val mapper: ObjectMapper
-    // Used with @JsonFilter annotation on ValueToken so that we can be sure to filter only the ValueId part of it.
-    const val VALUE_TOKEN_FILTER_ID = "VALUE_TOKEN_FILTER"
-
     init {
-        val tokenFilter = SimpleBeanPropertyFilter.filterOutAllExcept("id")
-        val filterProvider = SimpleFilterProvider().addFilter(VALUE_TOKEN_FILTER_ID, tokenFilter)
+        val filterProvider = SimpleFilterProvider()
         mapper = ObjectMapper().registerKotlinModule().setFilterProvider(filterProvider)
                 .disable(JsonGenerator.Feature.AUTO_CLOSE_TARGET)
                 .disable(JsonParser.Feature.AUTO_CLOSE_SOURCE)
