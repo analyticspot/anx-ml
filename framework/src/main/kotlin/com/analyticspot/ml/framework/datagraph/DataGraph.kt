@@ -1,14 +1,12 @@
 package com.analyticspot.ml.framework.datagraph
 
 import com.analyticspot.ml.framework.dataset.DataSet
-import com.analyticspot.ml.framework.dataset.ListColumn
 import com.analyticspot.ml.framework.datatransform.LearningTransform
 import com.analyticspot.ml.framework.datatransform.MergeTransform
 import com.analyticspot.ml.framework.datatransform.MultiTransform
 import com.analyticspot.ml.framework.datatransform.SingleDataTransform
 import com.analyticspot.ml.framework.datatransform.SupervisedLearningTransform
 import com.analyticspot.ml.framework.description.ColumnId
-import com.analyticspot.ml.utils.isAssignableFrom
 import org.slf4j.LoggerFactory
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ExecutorService
@@ -102,40 +100,28 @@ class DataGraph(builder: GraphBuilder) {
      * train-only columns.
      */
     fun createSource(vararg vals: Any?): DataSet {
-        val expectedColCount = source.transformDescription.columns.size - source.trainOnlyColumnIds.size
-        check(vals.size == expectedColCount) {
-            "Expected $expectedColCount columns but found ${vals.size}"
-        }
-        return createAnySource(*vals)
+        return DataSet.fromMatrix(source.columns, listOf(vals.asList()))
+    }
+
+    /**
+     * Like the other [createSource] overload but lets you pass an array of rows rather than just a single row.
+     */
+    fun createSource(data: List<List<Any?>>): DataSet {
+        return DataSet.fromMatrix(source.columns, data)
     }
 
     /**
      * Like [createSource] but includes train-only columns.
      */
     fun createTrainingSource(vararg vals: Any?): DataSet {
-        val expectedColCount = source.transformDescription.columns.size
-        check(vals.size == expectedColCount) {
-            "Expected $expectedColCount columns but found ${vals.size}"
-        }
-        return createAnySource(*vals)
+        return DataSet.fromMatrix(source.columns.plus(source.trainOnlyColumnIds), listOf(vals.asList()))
     }
 
-    // Called by createSource and createTrainingSource. Does not validate number of arguments so it works for training
-    // and non-training data. Callers validate argument count.
-    private fun createAnySource(vararg vals: Any?): DataSet {
-        val bldr = DataSet.builder()
-        vals.forEachIndexed { idx, value ->
-            val colId = source.transformDescription.columns[idx]
-            if (value == null || colId.clazz isAssignableFrom value.javaClass) {
-                val colData: List<Any?> = listOf(value)
-                @Suppress("UNCHECKED_CAST")
-                bldr.addColumn(colId as ColumnId<Any>, ListColumn(colData))
-            } else {
-                throw IllegalArgumentException("Expected type for column ${colId.name} was ${colId.clazz} " +
-                        "but found ${value.javaClass}")
-            }
-        }
-        return bldr.build()
+    /**
+     * Like the other [createTrainingSource] overload but lets you pass an array of rows rather than just a single row.
+     */
+    fun createTrainingSource(data: List<List<Any?>>): DataSet {
+        return DataSet.fromMatrix(source.columns.plus(source.trainOnlyColumnIds), data)
     }
 
     /**

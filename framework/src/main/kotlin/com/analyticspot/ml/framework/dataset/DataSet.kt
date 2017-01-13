@@ -40,6 +40,9 @@ class DataSet private constructor(idAndColumns: Array<IdAndColumn<*>>) {
             }
         }
 
+    val numColumns: Int
+        get() = columnIds.size
+
     init {
         assert(isLegal(idAndColumns)) {
             throw IllegalArgumentException("Columns are not legal")
@@ -54,6 +57,42 @@ class DataSet private constructor(idAndColumns: Array<IdAndColumn<*>>) {
             return with(Builder()) {
                 init()
                 build()
+            }
+        }
+
+        /**
+         * Given a "matrix" of values such that `data[0]` is the first row of data, `data[1]` is the second row, etc.
+         * this builds a [DataSet]. This also checks that everything is "legal" - all rows have the same number of
+         * columns, the data types in each column match the data types specified in `colIds`, etc.
+         *
+         * Note that this is fairly inefficient as it is dynamically creating lists for the columns and they have
+         * unknown size. Also, the type checking takes time. This is a convenience method for small data sets, manual
+         * testing, etc. but shouldn't be used for loading very large sets of data.
+         */
+        fun fromMatrix(colIds: List<ColumnId<out Any>>, data: List<List<Any?>>): DataSet {
+            val colLists = Array<MutableList<Any?>>(colIds.size) {
+                mutableListOf()
+            }
+
+            data.forEachIndexed { rowNum, row ->
+                require(row.size == colIds.size) {
+                    "Row $rowNum contains ${row.size} columns but ${colIds.size} column Ids were provided"
+                }
+                row.forEachIndexed { colNum, value ->
+                    if (value == null || colIds[colNum].clazz isAssignableFrom value.javaClass) {
+                        colLists[colNum].add(value)
+                    } else {
+                        throw IllegalArgumentException("Row $rowNum, column $colNum is of type ${value.javaClass} " +
+                                "which is not compatible with ${colIds[colNum].clazz}")
+                    }
+                }
+            }
+
+            return build {
+                colIds.zip(colLists).forEach {
+                    @Suppress("UNCHECKED_CAST")
+                    addColumn(it.first as ColumnId<Any>, ListColumn(it.second))
+                }
             }
         }
     }

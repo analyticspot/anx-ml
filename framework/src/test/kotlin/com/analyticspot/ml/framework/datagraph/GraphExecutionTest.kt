@@ -44,39 +44,39 @@ class GraphExecutionTest {
         assertThat(resultData.value(notUsedInput, 0)).isEqualTo(srcData.value(notUsedInput, 0))
     }
 
-    // @Test
-    // fun testSingleLearningTransformExecution() {
-    //     val notUsedInput = ColumnId.create<String>("notUsed")
-    //     val usedInput = ColumnId.create<Int>("used")
-    //     val resultId = ColumnId.create<Int>("finalResult")
+     @Test
+     fun testSingleLearningTransformExecution() {
+         val notUsedInput = ColumnId.create<String>("notUsed")
+         val usedInput = ColumnId.create<Int>("used")
+         val resultId = ColumnId.create<Int>("finalResult")
 
-    //     val dg = DataGraph.build {
-    //         val src = setSource {
-    //             columnIds += listOf(notUsedInput, usedInput)
-    //         }
+         val dg = DataGraph.build {
+             val src = setSource {
+                 columnIds += listOf(notUsedInput, usedInput)
+             }
 
-    //         val trans = addTransform(src, LearnMinTransform(src.token(usedInput), resultId))
-    //         result = trans
-    //     }
+             val trans = addTransform(src, LearnMinTransform(usedInput, resultId))
+             result = trans
+         }
 
-    //     val srcMatrix = listOf(
-    //             listOf("Hello", 11),
-    //             listOf("There", 22),
-    //             listOf("Foo", 8),
-    //             listOf("Bar", 4),
-    //             listOf("Baz", 107)
-    //     )
-    //     val srcDataSet = IterableDataSet.create(srcMatrix)
+         val srcMatrix = listOf(
+                 listOf("Hello", 11),
+                 listOf("There", 22),
+                 listOf("Foo", 8),
+                 listOf("Bar", 4),
+                 listOf("Baz", 107)
+         )
+         val srcDataSet = dg.createSource(srcMatrix)
 
-    //     val transformF = dg.trainTransform(srcDataSet, Executors.newSingleThreadExecutor())
-    //     val resultObs = transformF.get()
-    //     val resultArrayOfObs = resultObs.toCollection(mutableListOf())
-    //     assertThat(resultArrayOfObs.size).isEqualTo(srcMatrix.size)
-    //     val outValues = resultObs.asSequence().map { it.value(dg.result.token(resultId)) }.toList()
-    //     assertThat(outValues.min()).isEqualTo(4)
-    //     assertThat(outValues.max()).isEqualTo(4)
-    //     assertThat(outValues.size).isEqualTo(srcMatrix.size)
-    // }
+         val transformF = dg.trainTransform(srcDataSet, Executors.newSingleThreadExecutor())
+         val resultData = transformF.get()
+         assertThat(resultData.numRows).isEqualTo(srcMatrix.size)
+         assertThat(resultData.numColumns).isEqualTo(1)
+         val outValues = resultData.column(resultId).map { it ?: throw AssertionError("Should be non-null") }
+         assertThat(outValues.min()).isEqualTo(4)
+         assertThat(outValues.max()).isEqualTo(4)
+         assertThat(outValues.size).isEqualTo(srcMatrix.size)
+     }
 
     // // Tests a supervised learning algorithm where the main and target data sets are the same
     // @Test

@@ -63,7 +63,7 @@ abstract class SingleItemDataTransform<InputT : Any, OutputT : Any>(
                 val col: Column<InputT> = dataSet.column(colId) as Column<InputT>
                 log.debug("Column {} has type {} which is compatible with {} so will transforn it.",
                         colId.name, colId.clazz, inType)
-                val newCol = col.map { this.transformItem(it) }
+                val newCol = col.mapToColumn { this.transformItem(it) }
                 resultBuilder.addColumn(ColumnId(colId.name, outType), newCol)
             } else {
                 log.debug("Column {} has type {} which is not compatible with {}. It will not be transformed",
