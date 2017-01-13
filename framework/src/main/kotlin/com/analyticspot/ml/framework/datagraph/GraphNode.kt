@@ -17,9 +17,9 @@ abstract class GraphNode internal constructor(builder: Builder) {
     internal val trainOnlySubscribers: MutableList<Subscription> = mutableListOf()
     internal val id: Int = builder.id
     abstract val transformDescription: TransformDescription
-    val tokens: List<ColumnId<*>>
+    val columns: List<ColumnId<*>>
         get() = transformDescription.columns
-    val tokenGroups: List<ColumnIdGroup<*>>
+    val columnGroups: List<ColumnIdGroup<*>>
         get() = transformDescription.columnGroups
 
     /**

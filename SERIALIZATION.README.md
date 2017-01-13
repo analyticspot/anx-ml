@@ -38,7 +38,7 @@ For example, the `graph.json` file might look like this:
       "class": "com.analyticspot.ml.framework.serialization.GraphSerDeser$SourceSerGraphNode",
       "id": 0,
       "subscribers": [1],
-      "columnIds": [
+      "columns": [
         {
           "name": "src",
           "clazz": "java.lang.Integer"
