@@ -1,6 +1,7 @@
 package com.analyticspot.ml.framework.datagraph
 
 import com.analyticspot.ml.framework.description.ColumnId
+import com.analyticspot.ml.framework.testutils.Graph1
 import com.analyticspot.ml.framework.testutils.InvertBoolean
 import com.analyticspot.ml.framework.testutils.TrueIfSeenTransform
 import org.assertj.core.api.Assertions.assertThat
@@ -183,45 +184,45 @@ class GraphExecutionTest {
          assertThat(theInverter!!.numCalls.get()).isEqualTo(1)
      }
 
-    // // Like testSupervisedLearningTransformWithDifferentSourceExecution but with a complex graph for the train-only
-    // // stuff. Here we check that even with this complex only the proper parts are executed. The graph is as follows:
-    // @Test
-    // fun testComplexTrainOnlyGraphExecution() {
-    //     val g1 = Graph1()
-    //     // As per comments on graph 1, items will only be predicted true if the lower case version of them is in the
-    //     // training data with both a true and a false target. Thus, only "foo" and "bizzle" should predict true.
-    //     val trainMatrix = listOf(
-    //             g1.graph.buildSourceObservation("FOO", true),
-    //             g1.graph.buildSourceObservation("foo", false),
-    //             g1.graph.buildSourceObservation("bar", false),
-    //             g1.graph.buildSourceObservation("bip", true),
-    //             g1.graph.buildSourceObservation("baz", true),
-    //             g1.graph.buildSourceObservation("biZzLE", true),
-    //             g1.graph.buildSourceObservation("BIzZle", false)
-    //     )
+     // Like testSupervisedLearningTransformWithDifferentSourceExecution but with a complex graph for the train-only
+     // stuff. Here we check that even with this complex only the proper parts are executed. The graph is as follows:
+     @Test
+     fun testComplexTrainOnlyGraphExecution() {
+         val g1 = Graph1()
+         // As per comments on graph 1, items will only be predicted true if the lower case version of them is in the
+         // training data with both a true and a false target. Thus, only "foo" and "bizzle" should predict true.
+         val trainMatrix = listOf(
+                 listOf("FOO", true),
+                 listOf("foo", false),
+                 listOf("bar", false),
+                 listOf("bip", true),
+                 listOf("baz", true),
+                 listOf("biZzLE", true),
+                 listOf("BIzZle", false)
+         )
 
-    //     // Number of threads here pretty random - just trying to test parallelism some.
-    //     val resultToken = g1.graph.result.token(g1.resultId)
-    //     val trainRes = g1.graph.trainTransform(IterableDataSet(trainMatrix), Executors.newFixedThreadPool(3)).get()
-    //     val trainRestList = trainRes.map { it.value(resultToken) }
-    //     assertThat(trainRestList).isEqualTo(listOf(true, true, false, false, false, true, true))
-    //     assertThat(g1.invert1.numCalls.get()).isEqualTo(1)
-    //     assertThat(g1.invert2.numCalls.get()).isEqualTo(1)
+         // Number of threads here pretty random - just trying to test parallelism some.
+         val trainRes = g1.graph.trainTransform(g1.graph.createTrainingSource(trainMatrix),
+                 Executors.newFixedThreadPool(3)).get()
+         assertThat(trainRes.numColumns).isEqualTo(1)
+         assertThat(trainRes.column(g1.resultId)).containsExactly(true, true, false, false, false, true, true)
+         assertThat(g1.invert1.numCalls.get()).isEqualTo(1)
+         assertThat(g1.invert2.numCalls.get()).isEqualTo(1)
 
-    //     // Now get just a prediction
-    //     val testMatrix = listOf(
-    //             g1.graph.buildSourceObservation("FoO"),
-    //             g1.graph.buildSourceObservation("bar"),
-    //             g1.graph.buildSourceObservation("baZ"),
-    //             g1.graph.buildSourceObservation("bizzle"))
-    //     val predictRes = g1.graph.transform(IterableDataSet(testMatrix), Executors.newFixedThreadPool(2)).get()
-    //     val predictResList = predictRes.map { it.value(resultToken) }
-    //     assertThat(predictResList).isEqualTo(listOf(true, false, false, true))
+         // Now get just a prediction
+         val testMatrix = listOf(
+                 listOf("FoO"),
+                 listOf("bar"),
+                 listOf("baZ"),
+                 listOf("bizzle"))
+         val predictRes = g1.graph.transform(g1.graph.createSource(testMatrix), Executors.newFixedThreadPool(2)).get()
+         assertThat(predictRes.numColumns).isEqualTo(1)
+         assertThat(predictRes.column(g1.resultId)).containsExactly(true, false, false, true)
 
-    //     // The invert nodes are both train-only and so should not have run again.
-    //     assertThat(g1.invert1.numCalls.get()).isEqualTo(1)
-    //     assertThat(g1.invert2.numCalls.get()).isEqualTo(1)
-    // }
+         // The invert nodes are both train-only and so should not have run again.
+         assertThat(g1.invert1.numCalls.get()).isEqualTo(1)
+         assertThat(g1.invert2.numCalls.get()).isEqualTo(1)
+     }
 
     // @Test
     // fun testMergeTransformExecution() {
