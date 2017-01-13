@@ -1,6 +1,7 @@
 package com.analyticspot.ml.framework.datagraph
 
 import com.analyticspot.ml.framework.description.ColumnId
+import com.analyticspot.ml.framework.testutils.InvertBoolean
 import com.analyticspot.ml.framework.testutils.TrueIfSeenTransform
 import org.assertj.core.api.Assertions.assertThat
 import org.slf4j.LoggerFactory
@@ -124,63 +125,63 @@ class GraphExecutionTest {
          assertThat(testRes.column(resultId)).containsExactly(true, false, true)
      }
 
-    // // Tests a supervised learning algorithm where the main and target data sets are different
-    // @Test
-    // fun testSupervisedLearningTransformWithDifferentSourceExecution() {
-    //     val mainSource = ColumnId.create<String>("word")
-    //     val targetSource = ColumnId.create<Boolean>("target")
-    //     val invertedTarget = ColumnId.create<Boolean>("inverted")
-    //     val resultId = ColumnId.create<Boolean>("prediction")
+     // Tests a supervised learning algorithm where the main and target data sets are different
+     @Test
+     fun testSupervisedLearningTransformWithDifferentSourceExecution() {
+         val mainSource = ColumnId.create<String>("word")
+         val targetSource = ColumnId.create<Boolean>("target")
+         val invertedTarget = ColumnId.create<Boolean>("inverted")
+         val resultId = ColumnId.create<Boolean>("prediction")
 
-    //     var theInverter: InvertBoolean? = null
+         var theInverter: InvertBoolean? = null
 
-    //     val dg = DataGraph.build {
-    //         val src = setSource {
-    //             columnIds += mainSource
-    //             trainOnlyColumnIds += targetSource
-    //         }
+         val dg = DataGraph.build {
+             val src = setSource {
+                 columnIds += mainSource
+                 trainOnlyColumnIds += targetSource
+             }
 
-    //         theInverter = InvertBoolean(src.token(targetSource), invertedTarget)
+             theInverter = InvertBoolean(targetSource, invertedTarget)
 
-    //         val inverter = addTransform(src, theInverter!!)
+             val inverter = addTransform(src, theInverter!!)
 
-    //         val trans = addTransform(src, inverter,
-    //                 TrueIfSeenTransform(src.token(mainSource), inverter.token(invertedTarget), resultId))
+             val trans = addTransform(src, inverter,
+                     TrueIfSeenTransform(mainSource, invertedTarget, resultId))
 
-    //         result = trans
-    //     }
+             result = trans
+         }
 
-    //     // The algorithm should learn to predict true for "foo" and "bar" but nothing else.
-    //     val trainMatrix = listOf(
-    //             dg.buildSourceObservation("foo", true),
-    //             dg.buildSourceObservation("bar", false),
-    //             dg.buildSourceObservation("baz", true),
-    //             dg.buildSourceObservation("foo", false)
-    //     )
-    //     val trainData = IterableDataSet(trainMatrix)
+         // The algorithm should learn to predict true for "foo" and "bar" but nothing else.
+         val trainMatrix = listOf(
+                 listOf("foo", true),
+                 listOf("bar", false),
+                 listOf("baz", true),
+                 listOf("foo", false)
+         )
+         val trainData = dg.createTrainingSource(trainMatrix)
 
-    //     val trainRes = dg.trainTransform(trainData, Executors.newSingleThreadExecutor()).get()
+         val trainRes = dg.trainTransform(trainData, Executors.newSingleThreadExecutor()).get()
 
-    //     val trainResList = trainRes.map { it.value(dg.result.token(resultId)) }
-    //     // Expected predictions
-    //     assertThat(trainResList).isEqualTo(listOf(true, true, false, true))
-    //     assertThat(theInverter!!.numCalls.get()).isEqualTo(1)
+         // Expected predictions
+         assertThat(trainRes.numColumns).isEqualTo(1)
+         assertThat(trainRes.column(resultId)).containsExactly(true, true, false, true)
+         assertThat(theInverter!!.numCalls.get()).isEqualTo(1)
 
-    //     // Now that it's trained we should be able to ask it to make predictions on unlabeled data.
-    //     val testMatrix = listOf(
-    //             dg.buildSourceObservation("foo"),
-    //             dg.buildSourceObservation("bar"),
-    //             dg.buildSourceObservation("baz")
-    //     )
-    //     val testData = IterableDataSet(testMatrix)
+         // Now that it's trained we should be able to ask it to make predictions on unlabeled data.
+         val testMatrix = listOf(
+                 listOf("foo"),
+                 listOf("bar"),
+                 listOf("baz")
+         )
+         val testData = dg.createSource(testMatrix)
 
-    //     val testRes = dg.transform(testData, Executors.newSingleThreadExecutor()).get()
-    //     val testResList = testRes.map { it.value(dg.result.token(resultId)) }
+         val testRes = dg.transform(testData, Executors.newSingleThreadExecutor()).get()
 
-    //     assertThat(testResList).isEqualTo(listOf(true, true, false))
-    //     // Make sure the inverter wasn't called a 2nd time. Shouldn't be called since it's train-only.
-    //     assertThat(theInverter!!.numCalls.get()).isEqualTo(1)
-    // }
+         assertThat(testRes.numColumns).isEqualTo(1)
+         assertThat(testRes.column(resultId)).containsExactly(true, true, false)
+         // Make sure the inverter wasn't called a 2nd time. Shouldn't be called since it's train-only.
+         assertThat(theInverter!!.numCalls.get()).isEqualTo(1)
+     }
 
     // // Like testSupervisedLearningTransformWithDifferentSourceExecution but with a complex graph for the train-only
     // // stuff. Here we check that even with this complex only the proper parts are executed. The graph is as follows:
