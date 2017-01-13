@@ -19,7 +19,7 @@ class AndTransform(val srcCols: List<ColumnId<Boolean>>, val resultId: ColumnId<
         for (rowIdx in 0 until dataSet.numRows) {
             var isTrue = true
             for (colId in srcCols) {
-                val colVal = dataSet.value(colId, rowIdx)
+                val colVal = dataSet.value(rowIdx, colId)
                 if (colVal == null || !colVal) {
                     isTrue = false
                     break

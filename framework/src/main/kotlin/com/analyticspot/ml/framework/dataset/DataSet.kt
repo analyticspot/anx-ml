@@ -142,7 +142,7 @@ class DataSet private constructor(idAndColumns: Array<IdAndColumn<*>>) {
         return true
     }
 
-    fun <T : Any> value(columnId: ColumnId<T>, rowIdx: Int): T? {
+    fun <T : Any> value(rowIdx: Int, columnId: ColumnId<T>): T? {
         val col = column(columnId)
         return col[rowIdx]
     }

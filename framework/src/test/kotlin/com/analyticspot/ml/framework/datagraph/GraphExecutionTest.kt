@@ -43,8 +43,8 @@ class GraphExecutionTest {
         val resultData = transformF.get()
         assertThat(resultData.numRows).isEqualTo(1)
         assertThat(resultData.columnIds).hasSize(2)
-        assertThat(resultData.value(usedInput, 0)).isEqualTo(srcData.value(usedInput, 0)!! + toAdd)
-        assertThat(resultData.value(notUsedInput, 0)).isEqualTo(srcData.value(notUsedInput, 0))
+        assertThat(resultData.value(0, usedInput)).isEqualTo(srcData.value(0, usedInput)!! + toAdd)
+        assertThat(resultData.value(0, notUsedInput)).isEqualTo(srcData.value(0, notUsedInput))
     }
 
      @Test
