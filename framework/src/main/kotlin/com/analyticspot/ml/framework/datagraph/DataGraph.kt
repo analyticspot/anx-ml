@@ -8,6 +8,7 @@ import com.analyticspot.ml.framework.datatransform.MultiTransform
 import com.analyticspot.ml.framework.datatransform.SingleDataTransform
 import com.analyticspot.ml.framework.datatransform.SupervisedLearningTransform
 import com.analyticspot.ml.framework.description.ColumnId
+import com.analyticspot.ml.utils.isAssignableFrom
 import org.slf4j.LoggerFactory
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ExecutorService
@@ -125,7 +126,7 @@ class DataGraph(builder: GraphBuilder) {
         val bldr = DataSet.builder()
         vals.forEachIndexed { idx, value ->
             val colId = source.transformDescription.columns[idx]
-            if (value == null || colId.clazz.javaObjectType.isAssignableFrom(value.javaClass)) {
+            if (value == null || colId.clazz isAssignableFrom value.javaClass) {
                 val colData: List<Any?> = listOf(value)
                 @Suppress("UNCHECKED_CAST")
                 bldr.addColumn(colId as ColumnId<Any>, ListColumn(colData))

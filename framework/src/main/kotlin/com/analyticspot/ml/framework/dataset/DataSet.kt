@@ -1,6 +1,7 @@
 package com.analyticspot.ml.framework.dataset
 
 import com.analyticspot.ml.framework.description.ColumnId
+import com.analyticspot.ml.utils.isAssignableFrom
 import org.slf4j.LoggerFactory
 
 /**
@@ -98,7 +99,7 @@ class DataSet private constructor(idAndColumns: Array<IdAndColumn<*>>) {
         }
         val theCol = columns[colIdx]
         val theColId = columnIds[colIdx]
-        check(columnId.clazz.javaObjectType.isAssignableFrom(theColId.clazz.javaObjectType)) {
+        check(columnId.clazz isAssignableFrom theColId.clazz) {
             "Column ${columnId.name} is of type ${theColId.clazz} but passed ValueId has type ${columnId.clazz}"
         }
         @Suppress("UNCHECKED_CAST")

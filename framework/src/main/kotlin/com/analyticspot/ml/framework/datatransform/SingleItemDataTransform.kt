@@ -5,6 +5,7 @@ import com.analyticspot.ml.framework.dataset.DataSet
 import com.analyticspot.ml.framework.description.ColumnId
 import com.analyticspot.ml.framework.description.ColumnIdGroup
 import com.analyticspot.ml.framework.description.TransformDescription
+import com.analyticspot.ml.utils.isAssignableFrom
 import org.slf4j.LoggerFactory
 import java.util.concurrent.CompletableFuture
 import kotlin.reflect.KClass
@@ -37,14 +38,14 @@ abstract class SingleItemDataTransform<InputT : Any, OutputT : Any>(
 
     override final val description: TransformDescription by lazy {
         val newCols = srcTransDescription.columns.map {
-            if (inType.javaObjectType.isAssignableFrom(it.clazz.javaObjectType)) {
+            if (inType isAssignableFrom it.clazz) {
                 ColumnId(it.name, outType)
             } else {
                 it
             }
         }
         val newColGroups = srcTransDescription.columnGroups.map {
-            if (inType.javaObjectType.isAssignableFrom(it.clazz)) {
+            if (inType isAssignableFrom it.clazz) {
                 ColumnIdGroup(it.prefix, outType.java)
             } else {
                 it
@@ -57,7 +58,7 @@ abstract class SingleItemDataTransform<InputT : Any, OutputT : Any>(
     final override fun transform(dataSet: DataSet): CompletableFuture<DataSet> {
         val resultBuilder = DataSet.builder()
         for (colId in dataSet.columnIds) {
-            if (inType.javaObjectType.isAssignableFrom(colId.clazz.javaObjectType)) {
+            if (inType isAssignableFrom colId.clazz) {
                 @Suppress("UNCHECKED_CAST")
                 val col: Column<InputT> = dataSet.column(colId) as Column<InputT>
                 log.debug("Column {} has type {} which is compatible with {} so will transforn it.",
