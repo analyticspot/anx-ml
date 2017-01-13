@@ -2,12 +2,7 @@ package com.analyticspot.ml.framework.datatransform
 
 import com.analyticspot.ml.framework.datagraph.GraphNode
 import com.analyticspot.ml.framework.dataset.DataSet
-import com.analyticspot.ml.framework.dataset.IndirectDataSet
-import com.analyticspot.ml.framework.description.IndirectValueToken
-import com.analyticspot.ml.framework.description.IndirectValueTokenGroup
 import com.analyticspot.ml.framework.description.TransformDescription
-import com.analyticspot.ml.framework.description.ValueToken
-import com.analyticspot.ml.framework.description.ValueTokenGroup
 import com.fasterxml.jackson.annotation.JacksonInject
 import com.fasterxml.jackson.annotation.JsonIgnore
 import com.fasterxml.jackson.annotation.JsonProperty
@@ -21,30 +16,14 @@ import java.util.concurrent.CompletableFuture
  */
 @JsonDeserialize(builder = MergeTransform.DeserBuilder::class)
 class MergeTransform (builder: Builder) : MultiTransform {
-    @JsonIgnore
-    override val description: TransformDescription
-
-    private val sources: List<GraphNode>
-
-    init {
-        sources = builder.sources
-
-        val newTokens = mutableListOf<ValueToken<*>>()
-        sources.forEachIndexed { idx, node ->
-            node.tokens.forEach { newTokens += IndirectValueToken(idx, it) }
-        }
-
-        val newGroups = mutableListOf<ValueTokenGroup<*>>()
-        sources.forEachIndexed { idx, graphNode ->
-            graphNode.tokenGroups.forEach {
-                newGroups.add(IndirectValueTokenGroup(idx, it))
-            }
-        }
-
-        description = TransformDescription(
-                tokens = newTokens,
-                tokenGroups = newGroups)
+    @get:JsonIgnore
+    override val description: TransformDescription by lazy {
+        val allColumns = builder.sources.flatMap { it.transformDescription.columns }
+        val allColGroups = builder.sources.flatMap { it.transformDescription.columnGroups }
+        TransformDescription(allColumns, allColGroups)
     }
+
+    private val sources: List<GraphNode> = builder.sources
 
     @get:JsonProperty(access = Access.READ_ONLY)
     private val sourceIds: List<Int> by lazy {
@@ -60,8 +39,14 @@ class MergeTransform (builder: Builder) : MultiTransform {
         }
     }
 
-    override fun transform(dataSets: List<DataSet>): CompletableFuture<DataSet> =
-            CompletableFuture.completedFuture(IndirectDataSet(dataSets))
+    override fun transform(dataSets: List<DataSet>): CompletableFuture<DataSet> {
+        val resultDs = DataSet.build {
+            for (dataSet in dataSets) {
+                addAll(dataSet)
+            }
+        }
+        return CompletableFuture.completedFuture(resultDs)
+    }
 
     open class Builder {
         val sources = mutableListOf<GraphNode>()

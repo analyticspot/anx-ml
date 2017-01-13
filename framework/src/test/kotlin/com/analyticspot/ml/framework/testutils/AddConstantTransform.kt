@@ -1,19 +1,18 @@
 package com.analyticspot.ml.framework.datagraph
 
-import com.analyticspot.ml.framework.datatransform.StreamingDataTransform
+import com.analyticspot.ml.framework.datatransform.SingleItemDataTransform
 import com.analyticspot.ml.framework.description.TransformDescription
-import com.analyticspot.ml.framework.description.ValueId
-import com.analyticspot.ml.framework.description.ValueToken
-import com.analyticspot.ml.framework.observation.Observation
-import com.analyticspot.ml.framework.observation.SingleValueObservation
 
-class AddConstantTransform(val toAdd: Int, val srcToken: ValueToken<Int>, val resultId: ValueId<Int>)
-    : StreamingDataTransform() {
-    private val resultToken = ValueToken(resultId)
-    override val description = TransformDescription(listOf(resultToken))
+/**
+ * Adds a constant to all integer values.
+ *
+ * @param toAdd the amount to add to each input.
+ * @param srcDesc the [TransformDescription] for the source [GraphNode].
+ */
+class AddConstantTransform(val toAdd: Int, srcDesc: TransformDescription)
+    : SingleItemDataTransform<Int, Int>(srcDesc, Int::class, Int::class) {
 
-    override fun transform(observation: Observation): Observation {
-        val srcVal: Int = observation.value(srcToken)
-        return SingleValueObservation.create(srcVal + toAdd)
+    override fun transformItem(input: Int): Int {
+        return toAdd + input
     }
 }

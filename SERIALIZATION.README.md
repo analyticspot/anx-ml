@@ -24,7 +24,7 @@ is probably to serialized a trained model for deployment. Our requirements for t
 # Format Summary and Example
 
 A `DataGraph` is serialized as a zip file. There is a file in the zip called `graph.json` that defines the graph. Each
-node in the graph has an id. However, the serialization of the node itself is in another file in the zip whose name is
+node in the graph has an id. However, the serialization of the node itself is in another file in the zip whose prefix is
 the id of the node whose data it contains. That allows us to easily mix binary and text serialization formats.
 
 For example, the `graph.json` file might look like this:
@@ -38,7 +38,7 @@ For example, the `graph.json` file might look like this:
       "class": "com.analyticspot.ml.framework.serialization.GraphSerDeser$SourceSerGraphNode",
       "id": 0,
       "subscribers": [1],
-      "valueIds": [
+      "columnIds": [
         {
           "name": "src",
           "clazz": "java.lang.Integer"

@@ -1,9 +1,8 @@
 package com.analyticspot.ml.framework.datagraph
 
 import com.analyticspot.ml.framework.dataset.DataSet
-import com.analyticspot.ml.framework.description.IndexValueToken
+import com.analyticspot.ml.framework.description.ColumnId
 import com.analyticspot.ml.framework.description.TransformDescription
-import com.analyticspot.ml.framework.description.ValueId
 import java.util.concurrent.CompletableFuture
 
 /**
@@ -15,15 +14,9 @@ import java.util.concurrent.CompletableFuture
  * something like [DataGraph.buildSourceObservation].
  */
 class SourceGraphNode private constructor(builder: Builder) : GraphNode(builder.gnBuilder) {
-    internal val trainOnlyValueIds = builder.trainOnlyValueIds
-    override val transformDescription: TransformDescription
-
-    init {
-        val tokens = builder.valueIds.plus(builder.trainOnlyValueIds).mapIndexed { idx, valueId ->
-            IndexValueToken.create(idx, valueId)
-        }
-        transformDescription = TransformDescription(tokens)
-    }
+    internal val trainOnlyColumnIds = builder.trainOnlyColumnIds
+    override val transformDescription: TransformDescription = TransformDescription(
+            builder.columnIds + builder.trainOnlyColumnIds)
 
     companion object {
         /**
@@ -49,13 +42,13 @@ class SourceGraphNode private constructor(builder: Builder) : GraphNode(builder.
         /**
          * Described the values in the source data set.
          */
-        val valueIds = mutableListOf<ValueId<*>>()
+        val columnIds = mutableListOf<ColumnId<*>>()
 
         /**
          * Described the values in the source data set which are only required when training. A typical example would be
          * the training target for a supervised learning algorithm.
          */
-        val trainOnlyValueIds = mutableListOf<ValueId<*>>()
+        val trainOnlyColumnIds = mutableListOf<ColumnId<*>>()
 
         internal lateinit var gnBuilder: GraphNode.Builder
 

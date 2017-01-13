@@ -8,7 +8,7 @@ import com.analyticspot.ml.framework.datagraph.sort
 import com.analyticspot.ml.framework.datatransform.DataTransform
 import com.analyticspot.ml.framework.datatransform.MultiTransform
 import com.analyticspot.ml.framework.datatransform.SingleDataTransform
-import com.analyticspot.ml.framework.description.ValueId
+import com.analyticspot.ml.framework.description.ColumnId
 import com.fasterxml.jackson.annotation.JsonInclude
 import com.fasterxml.jackson.annotation.JsonInclude.Include
 import com.fasterxml.jackson.annotation.JsonTypeInfo
@@ -163,8 +163,8 @@ class GraphSerDeser {
                 is SourceSerGraphNode -> {
                     check(nodeId == graphData.sourceId)
                     val sourceNode = SourceGraphNode.build(graphData.sourceId) {
-                        valueIds += graphDataNode.valueIds
-                        trainOnlyValueIds += graphDataNode.trainOnlyValueIds
+                        columnIds += graphDataNode.columnIds
+                        trainOnlyColumnIds += graphDataNode.trainOnlyColumnIds
                     }
                     newNode = graphBuilder.setSource(sourceNode)
                 }
@@ -286,13 +286,13 @@ class GraphSerDeser {
 
     @JsonDeserialize(builder = SourceSerGraphNode.Builder::class)
     class SourceSerGraphNode(builder: Builder) : SerGraphNode(builder) {
-        val valueIds: List<ValueId<*>>
+        val columnIds: List<ColumnId<*>>
         @JsonInclude(Include.NON_EMPTY)
-        val trainOnlyValueIds: List<ValueId<*>>
+        val trainOnlyColumnIds: List<ColumnId<*>>
 
         init {
-            valueIds = builder.valueIds
-            trainOnlyValueIds = builder.trainOnlyValueIds
+            columnIds = builder.columnIds
+            trainOnlyColumnIds = builder.trainOnlyColumnIds
         }
 
         companion object {
@@ -306,12 +306,12 @@ class GraphSerDeser {
 
         @JsonPOJOBuilder(withPrefix = "set")
         class Builder : SerGraphNode.Builder() {
-            var valueIds: List<ValueId<*>> = listOf()
-            var trainOnlyValueIds: List<ValueId<*>> = listOf()
+            var columnIds: List<ColumnId<*>> = listOf()
+            var trainOnlyColumnIds: List<ColumnId<*>> = listOf()
 
             fun fromNode(node: SourceGraphNode) {
-                valueIds = node.tokens.filter { !node.trainOnlyValueIds.contains(it.id) }.map { it.id }
-                trainOnlyValueIds += node.trainOnlyValueIds
+                columnIds = node.transformDescription.columns
+                trainOnlyColumnIds += node.trainOnlyColumnIds
                 super.fromNode(node)
             }
 
