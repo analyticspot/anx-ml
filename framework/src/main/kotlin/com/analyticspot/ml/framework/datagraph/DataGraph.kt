@@ -100,28 +100,28 @@ class DataGraph(builder: GraphBuilder) {
      * train-only columns.
      */
     fun createSource(vararg vals: Any?): DataSet {
-        return DataSet.fromMatrix(source.columns, listOf(vals.asList()))
+        return DataSet.fromMatrix(source.columns.minus(source.trainOnlyColumnIds), listOf(vals.asList()))
     }
 
     /**
      * Like the other [createSource] overload but lets you pass an array of rows rather than just a single row.
      */
     fun createSource(data: List<List<Any?>>): DataSet {
-        return DataSet.fromMatrix(source.columns, data)
+        return DataSet.fromMatrix(source.columns.minus(source.trainOnlyColumnIds), data)
     }
 
     /**
      * Like [createSource] but includes train-only columns.
      */
     fun createTrainingSource(vararg vals: Any?): DataSet {
-        return DataSet.fromMatrix(source.columns.plus(source.trainOnlyColumnIds), listOf(vals.asList()))
+        return DataSet.fromMatrix(source.columns, listOf(vals.asList()))
     }
 
     /**
      * Like the other [createTrainingSource] overload but lets you pass an array of rows rather than just a single row.
      */
     fun createTrainingSource(data: List<List<Any?>>): DataSet {
-        return DataSet.fromMatrix(source.columns.plus(source.trainOnlyColumnIds), data)
+        return DataSet.fromMatrix(source.columns, data)
     }
 
     /**

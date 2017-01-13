@@ -15,10 +15,11 @@ import java.util.concurrent.CompletableFuture
  *      when deserializing a trained transform.
  * @param <TargetT> the type of the target.
  */
-abstract class TargetSupervisedLearningTransform<TargetT : Any>(@JsonIgnore val targetColumn: ColumnId<TargetT>)
+abstract class TargetSupervisedLearningTransform<TargetT : Any>(@JsonIgnore val targetColumn: ColumnId<TargetT>?)
     : SupervisedLearningTransform {
-    override fun trainTransform(dataSet: DataSet, trainDs: DataSet): CompletableFuture<DataSet> {
-        return trainTransform(dataSet, trainDs.column(targetColumn))
+    override final fun trainTransform(dataSet: DataSet, trainDs: DataSet): CompletableFuture<DataSet> {
+        // targetColumn must be non-null for training but could be null for transform.
+        return trainTransform(dataSet, trainDs.column(targetColumn!!))
     }
 
     abstract fun trainTransform(dataSet: DataSet, target: Column<TargetT?>): CompletableFuture<DataSet>

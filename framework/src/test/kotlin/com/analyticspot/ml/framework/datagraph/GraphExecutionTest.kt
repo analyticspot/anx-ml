@@ -1,6 +1,7 @@
 package com.analyticspot.ml.framework.datagraph
 
 import com.analyticspot.ml.framework.description.ColumnId
+import com.analyticspot.ml.framework.testutils.TrueIfSeenTransform
 import org.assertj.core.api.Assertions.assertThat
 import org.slf4j.LoggerFactory
 import org.testng.annotations.BeforeClass
@@ -78,53 +79,50 @@ class GraphExecutionTest {
          assertThat(outValues.size).isEqualTo(srcMatrix.size)
      }
 
-    // // Tests a supervised learning algorithm where the main and target data sets are the same
-    // @Test
-    // fun testSupervisedLearningTransformWithSingleSourceExecution() {
-    //     val mainSource = ColumnId.create<String>("word")
-    //     val targetSource = ColumnId.create<Boolean>("target")
-    //     val resultId = ColumnId.create<Boolean>("prediction")
+     // Tests a supervised learning algorithm where the main and target data sets are the same
+     @Test
+     fun testSupervisedLearningTransformWithSingleSourceExecution() {
+         val mainSource = ColumnId.create<String>("word")
+         val targetSource = ColumnId.create<Boolean>("target")
+         val resultId = ColumnId.create<Boolean>("prediction")
 
-    //     val dg = DataGraph.build {
-    //         val src = setSource {
-    //             columnIds += mainSource
-    //             trainOnlyColumnIds += targetSource
-    //         }
+         val dg = DataGraph.build {
+             val src = setSource {
+                 columnIds += mainSource
+                 trainOnlyColumnIds += targetSource
+             }
 
-    //         val trans = addTransform(src, src,
-    //                 TrueIfSeenTransform(src.token(mainSource), src.token(targetSource), resultId))
+             val trans = addTransform(src, src, TrueIfSeenTransform(mainSource, targetSource, resultId))
 
-    //         result = trans
-    //     }
+             result = trans
+         }
 
-    //     // The algorithm should learn to predict true for "foo" and "baz" but nothing else.
-    //     val trainMatrix = listOf(
-    //             dg.buildSourceObservation("foo", true),
-    //             dg.buildSourceObservation("bar", false),
-    //             dg.buildSourceObservation("baz", true),
-    //             dg.buildSourceObservation("foo", false)
-    //     )
-    //     val trainData = IterableDataSet(trainMatrix)
+         // The algorithm should learn to predict true for "foo" and "baz" but nothing else.
+         val trainMatrix = listOf(
+                 listOf("foo", true),
+                 listOf("bar", false),
+                 listOf("baz", true),
+                 listOf("foo", false)
+         )
+         val trainData = dg.createTrainingSource(trainMatrix)
 
-    //     val trainRes = dg.trainTransform(trainData, Executors.newSingleThreadExecutor()).get()
+         val trainRes = dg.trainTransform(trainData, Executors.newSingleThreadExecutor()).get()
 
-    //     val trainResList = trainRes.map { it.value(dg.result.token(resultId)) }
-    //     // Expected predictions
-    //     assertThat(trainResList).isEqualTo(listOf(true, false, true, true))
+         // Expected predictions
+         assertThat(trainRes.column(resultId)).containsExactly(true, false, true, true)
 
-    //     // Now that it's trained we should be able to ask it to make predictions on unlabeled data.
-    //     val testMatrix = listOf(
-    //             dg.buildSourceObservation("foo"),
-    //             dg.buildSourceObservation("bar"),
-    //             dg.buildSourceObservation("baz")
-    //     )
-    //     val testData = IterableDataSet(testMatrix)
+         // Now that it's trained we should be able to ask it to make predictions on unlabeled data.
+         val testMatrix = listOf(
+                 listOf("foo"),
+                 listOf("bar"),
+                 listOf("baz")
+         )
+         val testData = dg.createSource(testMatrix)
 
-    //     val testRes = dg.transform(testData, Executors.newSingleThreadExecutor()).get()
-    //     val testResList = testRes.map { it.value(dg.result.token(resultId)) }
+         val testRes = dg.transform(testData, Executors.newSingleThreadExecutor()).get()
 
-    //     assertThat(testResList).isEqualTo(listOf(true, false, true))
-    // }
+         assertThat(testRes.column(resultId)).containsExactly(true, false, true)
+     }
 
     // // Tests a supervised learning algorithm where the main and target data sets are different
     // @Test

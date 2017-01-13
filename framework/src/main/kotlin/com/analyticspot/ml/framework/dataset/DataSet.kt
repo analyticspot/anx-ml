@@ -61,6 +61,22 @@ class DataSet private constructor(idAndColumns: Array<IdAndColumn<*>>) {
         }
 
         /**
+         * Creates a [DataSet] with a single column.
+         */
+        fun <T : Any> create(colId: ColumnId<T>, column: Column<T?>): DataSet {
+            return build {
+                addColumn(colId, column)
+            }
+        }
+
+        /**
+         * Creates a [DataSet] with a single column.
+         */
+        fun <T : Any> create(colId: ColumnId<T>, column: List<T?>): DataSet {
+            return create(colId, ListColumn(column))
+        }
+
+        /**
          * Given a "matrix" of values such that `data[0]` is the first row of data, `data[1]` is the second row, etc.
          * this builds a [DataSet]. This also checks that everything is "legal" - all rows have the same number of
          * columns, the data types in each column match the data types specified in `colIds`, etc.
