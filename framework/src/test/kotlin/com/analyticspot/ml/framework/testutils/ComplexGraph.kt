@@ -2,7 +2,7 @@ package com.analyticspot.ml.framework.testutils
 
 import com.analyticspot.ml.framework.datagraph.DataGraph
 import com.analyticspot.ml.framework.datagraph.GraphNode
-import com.analyticspot.ml.framework.description.ValueId
+import com.analyticspot.ml.framework.description.ColumnId
 
 /**
  * Functions that build big, complex [DataGraph] for testing.
@@ -23,9 +23,9 @@ import com.analyticspot.ml.framework.description.ValueId
  */
 class Graph1 {
     val graph: DataGraph
-    val targetId = ValueId.create<Boolean>("target")
-    val wordId = ValueId.create<String>("word")
-    val resultId = ValueId.create<Boolean>("prediction")
+    val targetId = ColumnId.create<Boolean>("target")
+    val wordId = ColumnId.create<String>("word")
+    val resultId = ColumnId.create<Boolean>("prediction")
 
     /**
      * The first Invert node. Handy to have a reference to it as it keeps track of how many times it was called.
@@ -42,30 +42,29 @@ class Graph1 {
     init {
         val bld = DataGraph.GraphBuilder()
         var src = bld.setSource {
-            valueIds += wordId
-            trainOnlyValueIds += targetId
+            columnIds += wordId
+            trainOnlyColumnIds += targetId
         }
 
-        invert1 = InvertBoolean(src.token(targetId), targetId)
+        invert1 = InvertBoolean(targetId, targetId)
         invert1Node = bld.addTransform(src, invert1)
 
-        invert2 = InvertBoolean(invert1Node.token(targetId), targetId)
+        invert2 = InvertBoolean(targetId, targetId)
         invert2Node = bld.addTransform(invert1Node, invert2)
 
-        val lower = bld.addTransform(src, LowerCaseTransform(src.token(wordId), wordId))
+        val lower = bld.addTransform(src, LowerCaseTransform(src.transformDescription))
 
-        val trueIfNotSeenId = ValueId.create<Boolean>("trueIfNotSeen")
+        val trueIfNotSeenId = ColumnId.create<Boolean>("trueIfNotSeen")
         val trueIfNotSeen = bld.addTransform(lower, invert1Node,
-                TrueIfSeenTransform(lower.token(wordId), invert1Node.token(targetId), trueIfNotSeenId))
+                TrueIfSeenTransform(wordId, targetId, trueIfNotSeenId))
 
-        val trueIfSeenId = ValueId.create<Boolean>("trueIfSeen")
+        val trueIfSeenId = ColumnId.create<Boolean>("trueIfSeen")
         val trueIfSeen = bld.addTransform(lower, invert2Node,
-                TrueIfSeenTransform(lower.token(wordId), invert2Node.token(targetId), trueIfSeenId))
+                TrueIfSeenTransform(wordId, targetId, trueIfSeenId))
 
         val merged = bld.merge(trueIfSeen, trueIfNotSeen)
 
-        val andTrans = bld.addTransform(merged,
-                AndTransform(listOf(merged.token(trueIfNotSeenId), merged.token(trueIfSeenId)), resultId))
+        val andTrans = bld.addTransform(merged, AndTransform(listOf(trueIfNotSeenId, trueIfSeenId), resultId))
         bld.result = andTrans
 
         graph = bld.build()

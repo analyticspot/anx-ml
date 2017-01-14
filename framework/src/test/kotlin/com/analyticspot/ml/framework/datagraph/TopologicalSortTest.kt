@@ -1,6 +1,6 @@
 package com.analyticspot.ml.framework.datagraph
 
-import com.analyticspot.ml.framework.description.ValueId
+import com.analyticspot.ml.framework.description.ColumnId
 import com.analyticspot.ml.framework.testutils.Graph1
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
@@ -18,7 +18,7 @@ class TopologicalSortTest {
     fun testIterationOfSingleNodeWorks() {
         val iter = sort(DataGraph.build {
             val source = setSource {
-                valueIds += ValueId.create<String>("foo")
+                columnIds += ColumnId.create<String>("foo")
             }
 
             result = source
@@ -34,7 +34,7 @@ class TopologicalSortTest {
     fun testEmptyThrowsCorrectException() {
         val iter = sort(DataGraph.build {
             val source = setSource {
-                valueIds += ValueId.create<String>("foo")
+                columnIds += ColumnId.create<String>("foo")
             }
 
             result = source
@@ -52,19 +52,16 @@ class TopologicalSortTest {
     @Test
     fun testSimplePipelineWorks() {
         val dg = DataGraph.build {
-            val sourceIds = listOf(ValueId.create<Int>("v1"), ValueId.create<Int>("v2"))
+            val sourceIds = listOf(ColumnId.create<Int>("v1"), ColumnId.create<Int>("v2"))
             val source = setSource {
-                valueIds += sourceIds
+                columnIds += sourceIds
             }
 
-            val c1ResId = ValueId.create<Int>("c1")
-            val addC1 = addTransform(source, AddConstantTransform(11, source.token(sourceIds[0]), c1ResId))
+            val addC1 = addTransform(source, AddConstantTransform(11, source.transformDescription))
 
-            val c2ResId = ValueId.create<Int>("c2")
-            val addC2 = addTransform(addC1, AddConstantTransform(12, addC1.token(c1ResId), c2ResId))
+            val addC2 = addTransform(addC1, AddConstantTransform(12, addC1.transformDescription))
 
-            val c3ResId = ValueId.create<Int>("c3")
-            val addC3 = addTransform(addC2, AddConstantTransform(88, addC2.token(c2ResId), c3ResId))
+            val addC3 = addTransform(addC2, AddConstantTransform(88, addC2.transformDescription))
 
             result = addC3
         }
@@ -80,24 +77,20 @@ class TopologicalSortTest {
     @Test
     fun testGraph1Works() {
         val dg = DataGraph.build {
-            val sourceIds = listOf(ValueId.create<Int>("v1"), ValueId.create<Int>("v2"))
+            val sourceIds = listOf(ColumnId.create<Int>("v1"), ColumnId.create<Int>("v2"))
             val source = setSource {
-                valueIds += sourceIds
+                columnIds += sourceIds
             }
 
-            val c1ResId = ValueId.create<Int>("c1")
-            val addC1 = addTransform(source, AddConstantTransform(11, source.token(sourceIds[0]), c1ResId))
+            val addC1 = addTransform(source, AddConstantTransform(11, source.transformDescription))
 
-            val c2ResId = ValueId.create<Int>("c2")
-            val addC2 = addTransform(source, AddConstantTransform(12, source.token(sourceIds[1]), c2ResId))
+            val addC2 = addTransform(source, AddConstantTransform(12, source.transformDescription))
 
-            val c3ResId = ValueId.create<Int>("c3")
-            val addC3 = addTransform(source, AddConstantTransform(12, source.token(sourceIds[0]), c3ResId))
+            val addC3 = addTransform(source, AddConstantTransform(12, source.transformDescription))
 
             val merged = merge(addC1, addC2, addC3)
 
-            val c4ResId = ValueId.create<Int>("c4")
-            val addC4 = addTransform(merged, AddConstantTransform(88, addC3.token(c3ResId), c4ResId))
+            val addC4 = addTransform(merged, AddConstantTransform(88, addC3.transformDescription))
 
             result = addC4
         }
@@ -114,30 +107,24 @@ class TopologicalSortTest {
     @Test
     fun testGraph2Works() {
         val dg = DataGraph.build {
-            val sourceIds = listOf(ValueId.create<Int>("v1"), ValueId.create<Int>("v2"))
+            val sourceIds = listOf(ColumnId.create<Int>("v1"), ColumnId.create<Int>("v2"))
             val source = setSource {
-                valueIds += sourceIds
+                columnIds += sourceIds
             }
 
-            val c1ResId = ValueId.create<Int>("c1")
-            val addC1 = addTransform(source, AddConstantTransform(11, source.token(sourceIds[0]), c1ResId))
+            val addC1 = addTransform(source, AddConstantTransform(11, source.transformDescription))
 
-            val c2ResId = ValueId.create<Int>("c2")
-            val addC2 = addTransform(source, AddConstantTransform(12, source.token(sourceIds[1]), c2ResId))
+            val addC2 = addTransform(source, AddConstantTransform(12, source.transformDescription))
 
-            val c3ResId = ValueId.create<Int>("c3")
-            val addC3 = addTransform(source, AddConstantTransform(12, source.token(sourceIds[0]), c3ResId))
+            val addC3 = addTransform(source, AddConstantTransform(12, source.transformDescription))
 
             // Two transforms in a pipeline from the output of c1
-            val c11ResId = ValueId.create<Int>("c1.1")
-            val addC11 = addTransform(addC1, AddConstantTransform(19, addC1.token(c1ResId), c11ResId))
+            val addC11 = addTransform(addC1, AddConstantTransform(19, addC1.transformDescription))
 
-            val c12ResId = ValueId.create<Int>("c1.2")
-            val addC12 = addTransform(addC11, AddConstantTransform(19, addC11.token(c11ResId), c12ResId))
+            val addC12 = addTransform(addC11, AddConstantTransform(19, addC11.transformDescription))
 
             // One transform from the output of c2
-            val c21ResId = ValueId.create<Int>("c2.1")
-            val addC21 = addTransform(addC2, AddConstantTransform(37, addC2.token(c2ResId), c21ResId))
+            val addC21 = addTransform(addC2, AddConstantTransform(37, addC2.transformDescription))
 
             // Now combine c3 and the results of the 2 other pipelines
             val merged = merge(addC3, addC12, addC21)

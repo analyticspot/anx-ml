@@ -66,41 +66,38 @@ DataGraph.GraphBuilder builder = DataGraph.builder();
 // ValueIds let you obtain data in a type-safe way. Each ValueId can be converted into a ValueToken by the node that
 // produces the data. A ValueToken is just a ValueId plus some hidden data that allows fast retrieval from the
 // DataSet.
-ValueId<String> reviewValueId = new ValueId<>("review", String.class);
-ValueId<Integer> numStarsId = new ValueId<>()
+ColumnId<String> reviewValueId = new ColmnId<>("review", String.class);
+ColumnId<Integer> numStarsId = new ColumnId<>()
+
 // Describes the source. Unlike other nodes the source is just a description so we can later pass any values that
 // conform to the description. numStarsId is a "train-only" value because it is not required to make predictions.
 GraphNode source = builder.source().withValue(reviewValueId).withTrainOnlyValue(numStarsId).build()
 
 // Now we consume the output of the source node and transform it into a Bag of words representation. Since we don't
 // know how many words there will be until we train we use a ValueIdGroup.
-ValueIdGroup<Integer> bagOfWordsGroupId = new ValueIdGroup<>("words", Integer.class);
-GraphNode bagOfWords = builder.addTransform(source, new BagOfWords(source.token(reviewValueId), bagOfWordsGroupId));
+ColumnIdGroup<Integer> bagOfWordsGroupId = new ColumnIdGroup<>("words", Integer.class);
+GraphNode bagOfWords = builder.addTransform(source, new BagOfWords(reviewValueId, bagOfWordsGroupId));
 
 
 // Now we do some dimension reduction on the bag of words representation
-ValueIdGroup<Double> lsaGroupId = new ValueIdGroup<>("lsa", Double.class);
-GraphNode lsa = builder.addTransform(bagOfWords,
-    new LsaTransform(bagOfWords.tokenGroup(bagOfWordsGroupId), lsaGroupId));
+ColumnIdGroup<Double> lsaGroupId = new ColumnIdGroup<>("lsa", Double.class);
+GraphNode lsa = builder.addTransform(bagOfWords, new LsaTransform(lsaGroupId));
 
 // Now compute centroids (during training) and compute the distance between the lsa vector for each review. This
 // will have 5 outputs: one for each star rating. Note that it depends on both the output of lsa and the source.
-GraphNode distFromCentroid = builder.addTransform(lsa, source,
-    new DistFromCentroidTransform(lsa.tokenGroup(lsaGroupId), stars));
+GraphNode distFromCentroid = builder.addTransform(lsa, source, new DistFromCentroidTransform(numStartsId));
 
 
 // Add our positive and negative word counts.
-GraphNode posWords = builder.addTransform(bagOfWords,
-    new WordCount(positiveWordList, bagOfWords.tokenGroup(bagOfWordsGroupId)));
+GraphNode posWords = builder.addTransform(bagOfWords, new WordCount(positiveWordList)));
 
-GraphNode negWords = builder.addTransform(bagOfWords,
-    new WordCount(negativeWordList, bagOfWords.tokenGroup(bagOfWordsGroupId)));
+GraphNode negWords = builder.addTransform(bagOfWords, new WordCount(negativeWordList));
 
 // Merge together the 3 data sets we'll use for our predictions
 GraphNode merged = builder.merge(distFromCentroid, posWords, negWords);
 
 // Add our classifier
-ValueId<Integer> predictionId = new ValueId<>("prediction", Integer.class);
+ColumnId<Integer> predictionId = new ColumnId<>("prediction", Integer.class);
 GraphNode regression = builder.addTransform(merged, new LinearRegression(predictionId));
 
 // Tell the graph builder that the output of the classifier is the result of the entire graph.
@@ -130,7 +127,7 @@ Finally, we're ready to deploy to production.
 DataGraph dg = serDeser.deserialize("path/to/trained");
 
 // Now we can make predictions.
-Observation toPredict = dg.buildObservationFromSource("the text of a movie review");
+Observation toPredict = dg.createSource("the text of a movie review");
 DataSet result = dg.transform(toPredict, Executors.newFixedThreadPool(4));
 ```
 
@@ -138,12 +135,12 @@ DataSet result = dg.transform(toPredict, Executors.newFixedThreadPool(4));
 
 The library consists of several components:
 
-* `ValueId`: The id used to retrieve a single data item. A value id consists of a name, which is just a `String`, and
+* `ColumnId`: The id used to retrieve a single data item. A value id consists of a name, which is just a `String`, and
 a type which keeps everything type safe.
-* `ValueToken`: A `ValueId` plus some hidden information that allows for fast retrieval of data. This is so that we can
-have several `DataSet` subclasses to allow for things like zero-copy merging, etc.
-* `Observation`: A single "row" of data. An `Observation` consists of multiple values which can be retrieved via a
-`ValueToken`.
+* `ColumnIdGroup`: represents several `ColumnId` instances whose names all have a common prefix and all of which have
+the same type. These are generally used with tranformations that learn how many columns they will create during
+training. For such transforms we can't know the id's of each column (since we can't even know how many columns there
+will be), but we can have a single `ColumnIdGroup` that lets us refer to all the columns it will produce.
 * `DataTransform`: These can be straight transformations (e.g. converting Strings to lowercase), or supervised or 
 unsupervised learners.
 * `GraphNode`: a `DataTransform` plus some other information like which other transforms feed data to this transform,

@@ -1,15 +1,12 @@
 package com.analyticspot.ml.framework.datagraph
 
 import com.analyticspot.ml.framework.dataset.DataSet
-import com.analyticspot.ml.framework.dataset.SingleObservationDataSet
 import com.analyticspot.ml.framework.datatransform.LearningTransform
 import com.analyticspot.ml.framework.datatransform.MergeTransform
 import com.analyticspot.ml.framework.datatransform.MultiTransform
 import com.analyticspot.ml.framework.datatransform.SingleDataTransform
 import com.analyticspot.ml.framework.datatransform.SupervisedLearningTransform
-import com.analyticspot.ml.framework.description.ValueId
-import com.analyticspot.ml.framework.observation.ArrayObservation
-import com.analyticspot.ml.framework.observation.Observation
+import com.analyticspot.ml.framework.description.ColumnId
 import org.slf4j.LoggerFactory
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ExecutorService
@@ -97,25 +94,50 @@ class DataGraph(builder: GraphBuilder) {
     }
 
     /**
-     * Constructs an [Observation] that is compatible with the types/tokens specified for [source]. Note that this
-     * will check that the values are compatible for either training or just transforming. In other words type checking
-     * will check trainOnly tokens if they're present and will ignore them if they're not.
+     * Creates a [DataSet] compatible with the [source] defined for this graph from the passed values. This ensures that
+     * the column types are compatible with the columns declared for [source] and that there are the right number of
+     * columns. This assumes the source is not being used for training so it will fail if data is provided for
+     * train-only columns.
      */
-    fun buildSourceObservation(vararg values: Any): Observation {
-        // Ensure that each value is valid (has the right type, etc.)
-        values.forEachIndexed { idx, value ->
-            check(value.javaClass == source.tokens[idx].clazz) {
-                "Argument $idx (0-indexed) had type ${value.javaClass} but ${source.tokens[idx].clazz} was expected."
-            }
-        }
-        val numTotalTokens = source.tokens.size
-        val numTrainOnlyTokens = numTotalTokens - source.trainOnlyValueIds.size
-        // Ensure that all values are present
-        check(values.size == numTotalTokens || values.size == numTrainOnlyTokens) {
-            "${values.size} values provided by $numTotalTokens required for training and $numTrainOnlyTokens " +
-                    "required for transforming."
-        }
-        return ArrayObservation(values)
+    fun createSource(vararg vals: Any?): DataSet {
+        return DataSet.fromMatrix(source.columns.minus(source.trainOnlyColumnIds), listOf(vals.asList()))
+    }
+
+    /**
+     * Like the other [createSource] overload but lets you pass an array of rows rather than just a single row.
+     */
+    fun createSource(data: List<List<Any?>>): DataSet {
+        return DataSet.fromMatrix(source.columns.minus(source.trainOnlyColumnIds), data)
+    }
+
+    /**
+     * Like the other [createSource] methods but lets you pass an array of arrays.
+     */
+    fun createSource(matrix: Array<Array<Any?>>): DataSet {
+        val asLists = matrix.map { it.asList() }
+        return createSource(asLists)
+    }
+
+    /**
+     * Like [createSource] but includes train-only columns.
+     */
+    fun createTrainingSource(vararg vals: Any?): DataSet {
+        return DataSet.fromMatrix(source.columns, listOf(vals.asList()))
+    }
+
+    /**
+     * Like the other [createTrainingSource] methods but lets you pass an array of arrays.
+     */
+    fun createTrainingSource(matrix: Array<Array<Any?>>): DataSet {
+        val asLists = matrix.map { it.asList() }
+        return createTrainingSource(asLists)
+    }
+
+    /**
+     * Like the other [createTrainingSource] overload but lets you pass an array of rows rather than just a single row.
+     */
+    fun createTrainingSource(data: List<List<Any?>>): DataSet {
+        return DataSet.fromMatrix(source.columns, data)
     }
 
     /**
@@ -125,15 +147,6 @@ class DataGraph(builder: GraphBuilder) {
     fun transform(dataSet: DataSet, exec: ExecutorService): CompletableFuture<DataSet> {
         val graphExec = GraphExecution(this, ExecutionType.TRANSFORM, exec)
         return graphExec.execute(dataSet)
-    }
-
-    /**
-     * Convenience overload that transforms a single [Observation].
-     */
-    fun transform(observation: Observation, exec: ExecutorService): CompletableFuture<Observation> {
-        return transform(SingleObservationDataSet(observation), exec).thenApply {
-            it.first()
-        }
     }
 
     /**
@@ -279,16 +292,16 @@ class DataGraph(builder: GraphBuilder) {
             /**
              * Valid sources must include data with the type and name described by valId.
              */
-            fun withValue(valId: ValueId<*>): SourceBuilder {
-                srcBuilder.valueIds += valId
+            fun withValue(valId: ColumnId<*>): SourceBuilder {
+                srcBuilder.columnIds += valId
                 return this
             }
 
             /**
              * Valid sources must include data with the type and name described by the valIds.
              */
-            fun withValues(vararg valIds: ValueId<*>): SourceBuilder {
-                srcBuilder.valueIds += valIds
+            fun withValues(vararg valIds: ColumnId<*>): SourceBuilder {
+                srcBuilder.columnIds += valIds
                 return this
             }
 
@@ -296,8 +309,8 @@ class DataGraph(builder: GraphBuilder) {
              * Valid sources must include data with the type and name described by valId during training. When just
              * getting predictions via the [DataGraph.transform] method this value is optional.
              */
-            fun withTrainOnlyValue(valId: ValueId<*>): SourceBuilder {
-                srcBuilder.trainOnlyValueIds += valId
+            fun withTrainOnlyValue(valId: ColumnId<*>): SourceBuilder {
+                srcBuilder.trainOnlyColumnIds += valId
                 return this
             }
 
@@ -305,8 +318,8 @@ class DataGraph(builder: GraphBuilder) {
              * Valid sources must include data with the type and name described by these valIds during training. When
              * just getting predictions via the [DataGraph.transform] method this value is optional.
              */
-            fun withTrainOnlyValues(vararg valIds: ValueId<*>): SourceBuilder {
-                srcBuilder.trainOnlyValueIds += valIds
+            fun withTrainOnlyValues(vararg valIds: ColumnId<*>): SourceBuilder {
+                srcBuilder.trainOnlyColumnIds += valIds
                 return this
             }
 

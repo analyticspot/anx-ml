@@ -4,15 +4,12 @@ import com.analyticspot.ml.framework.datagraph.AddConstantTransform
 import com.analyticspot.ml.framework.datagraph.DataGraph
 import com.analyticspot.ml.framework.datagraph.GraphNode
 import com.analyticspot.ml.framework.datagraph.SourceGraphNode
-import com.analyticspot.ml.framework.dataset.IterableDataSet
-import com.analyticspot.ml.framework.dataset.SingleObservationDataSet
 import com.analyticspot.ml.framework.datatransform.DataTransform
 import com.analyticspot.ml.framework.datatransform.MergeTransform
-import com.analyticspot.ml.framework.description.IndexValueToken
-import com.analyticspot.ml.framework.description.ValueId
-import com.analyticspot.ml.framework.description.ValueIdGroup
-import com.analyticspot.ml.framework.observation.SingleValueObservation
+import com.analyticspot.ml.framework.description.ColumnId
+import com.analyticspot.ml.framework.description.ColumnIdGroup
 import com.analyticspot.ml.framework.testutils.Graph1
+import com.analyticspot.ml.framework.testutils.LowerCaseTransform
 import com.analyticspot.ml.framework.testutils.WordCounts
 import org.assertj.core.api.Assertions.assertThat
 import org.slf4j.LoggerFactory
@@ -32,17 +29,14 @@ class GraphSerDeserTest {
     @Test
     fun testCanSerializeAndDeserializeSimpleTransform() {
         // Create a source with two valueIds, the 2nd is in the input to our transform
-        val valIdToTransform = ValueId.create<Int>("val2")
+        val valIdToTransform = ColumnId.create<Int>("val2")
         val source = SourceGraphNode.build(0) {
-            valueIds += listOf(ValueId.create<Int>("val1"), valIdToTransform)
+            columnIds += listOf(ColumnId.create<Int>("val1"), valIdToTransform)
         }
-
-        val srcToken = source.token(valIdToTransform)
 
         // Construct the transform
         val amountToAdd = 11
-        val resultId = ValueId.create<Int>("result")
-        val trans = AddConstantTransform(amountToAdd, srcToken, resultId)
+        val trans = AddConstantTransform(amountToAdd, source.transformDescription)
 
         val serDeser = GraphSerDeser()
 
@@ -56,7 +50,7 @@ class GraphSerDeserTest {
         // Construct a new source with only 1 token. Note that the index of this token will be different than the one
         // from the original source.
         val newSource = SourceGraphNode.build(0) {
-            valueIds += valIdToTransform
+            columnIds += valIdToTransform
         }
         // Now deserialize relative to this new source
         val deserialized = serDeser.deserializeTransform(
@@ -65,23 +59,19 @@ class GraphSerDeserTest {
         assertThat(deserialized).isInstanceOf(AddConstantTransform::class.java)
         val deserializedAddConstant = deserialized as AddConstantTransform
         assertThat(deserializedAddConstant.toAdd).isEqualTo(amountToAdd)
-        assertThat(deserializedAddConstant.srcToken).isInstanceOf(IndexValueToken::class.java)
-        assertThat(deserializedAddConstant.srcToken.name).isEqualTo(valIdToTransform.name)
-        assertThat(deserializedAddConstant.srcToken.clazz).isEqualTo(valIdToTransform.clazz)
-        assertThat((deserializedAddConstant.srcToken as IndexValueToken<Int>).index).isEqualTo(0)
     }
 
     @Test
     fun testCanSerializeAndDeserializeMerge() {
-        val v1Id = ValueId.create<String>("v1")
+        val v1Id = ColumnId.create<String>("v1")
         // Note: Not using sequential numbers here to ensure things deserialize using the correct data sets.
         val s1 = SourceGraphNode.build(12) {
-            valueIds += v1Id
+            columnIds += v1Id
         }
 
-        val v2Id = ValueId.create<String>("v2")
+        val v2Id = ColumnId.create<String>("v2")
         val s2 = SourceGraphNode.build(8) {
-            valueIds += v2Id
+            columnIds += v2Id
         }
 
         val merge = MergeTransform.build {
@@ -101,21 +91,20 @@ class GraphSerDeserTest {
 
         assertThat(deserialized).isInstanceOf(MergeTransform::class.java)
         val deserMerge = deserialized as MergeTransform
-        assertThat(deserMerge.description.tokens.map { it.name }).isEqualTo(listOf("v1", "v2"))
+        assertThat(deserMerge.description.columns.map { it.name }).isEqualTo(listOf("v1", "v2"))
     }
 
     @Test
     fun testCanSerializeAndDeserializeSimpleGraph() {
-        val sourceValId = ValueId.create<Int>("src")
-        val transformValId = ValueId.create<Int>("resultVal")
+        val sourceColId = ColumnId.create<Int>("src")
         val amountToAdd = 1232
         val dg = DataGraph.build {
             val source = setSource {
-                valueIds += sourceValId
+                columnIds += sourceColId
             }
 
             val trans = addTransform(
-                    source, AddConstantTransform(amountToAdd, source.token(sourceValId), transformValId))
+                    source, AddConstantTransform(amountToAdd, source.transformDescription))
             result = trans
         }
 
@@ -127,65 +116,66 @@ class GraphSerDeserTest {
         val inStream = ByteArrayInputStream(outStream.toByteArray())
         val deserGraph = serDeser.deserialize(inStream)
 
-        assertThat(deserGraph.source.tokens).hasSize(1)
-        assertThat(deserGraph.source.tokens[0].id).isEqualTo(sourceValId)
+        assertThat(deserGraph.source.columns).hasSize(1)
+        assertThat(deserGraph.source.columns[0]).isEqualTo(sourceColId)
 
         val sourceValue = 18
-        val sourceObs = deserGraph.buildSourceObservation(sourceValue)
-        val result = deserGraph.transform(sourceObs, Executors.newSingleThreadExecutor()).get()
+        val sourceData = deserGraph.createSource(sourceValue)
+        val result = deserGraph.transform(sourceData, Executors.newSingleThreadExecutor()).get()
 
-        val resultToken = deserGraph.result.token(transformValId)
-        assertThat(result.value(resultToken)).isEqualTo(sourceValue + amountToAdd)
+        assertThat(result.value(0, sourceColId)).isEqualTo(sourceValue + amountToAdd)
     }
 
     @Test
     fun testSourceGraphNodeSerializesTrainOnlyInformation() {
-        val sourceValIds = listOf(
-                ValueId.create<Int>("src1"),
-                ValueId.create<String>("src2"))
-        val trainOnlySourceValIds = listOf(
-                ValueId.create<Boolean>("srcT1"),
-                ValueId.create<Int>("srcT2"))
+        val sourceColIds = listOf(
+                ColumnId.create<Int>("src1"),
+                ColumnId.create<String>("src2"))
+
+        val trainOnlySourceColIds = listOf(
+                ColumnId.create<Boolean>("srcT1"),
+                ColumnId.create<Int>("srcT2"))
+
         val dg = DataGraph.build {
             val source = setSource {
-                valueIds += sourceValIds
-                trainOnlyValueIds += trainOnlySourceValIds
+                columnIds += sourceColIds
+                trainOnlyColumnIds += trainOnlySourceColIds
             }
 
             result = source
         }
 
         val serDeser = GraphSerDeser()
-        val outStream = ByteArrayOutputStream(0)
+        val outStream = ByteArrayOutputStream()
         serDeser.serialize(dg, outStream)
 
         // Now deserialize the thing....
         val inStream = ByteArrayInputStream(outStream.toByteArray())
         val deserGraph = serDeser.deserialize(inStream)
 
-        assertThat(deserGraph.source.tokens.map { it.id }).isEqualTo(sourceValIds.plus(trainOnlySourceValIds))
-        assertThat(deserGraph.source.trainOnlyValueIds).isEqualTo(trainOnlySourceValIds)
+        assertThat(deserGraph.source.columns).isEqualTo(sourceColIds.plus(trainOnlySourceColIds))
+        assertThat(deserGraph.source.trainOnlyColumnIds).isEqualTo(trainOnlySourceColIds)
     }
 
     @Test
-    fun testTokenGroupsSerialize() {
-        val srcId = ValueId.create<List<String>>("words")
-        val wordGroupId = ValueIdGroup.create<Int>("wordCounts")
+    fun testColumnIdGroupsSerialize() {
+        val srcId = ColumnId.create<List<String>>("words")
+        val wordGroupId = ColumnIdGroup.create<Int>("wordCounts")
         val dg = DataGraph.build {
             val src = setSource {
-                valueIds += srcId
+                columnIds += srcId
             }
 
-            // This is the transform that uses a ValueIdGroup/ValueTokenGroup.
-            val wordCount = addTransform(src, WordCounts(src.token(srcId), wordGroupId))
+            // This is the transform that uses a ColumnIdGroup
+            val wordCount = addTransform(src, WordCounts(srcId, wordGroupId))
 
             result = wordCount
         }
 
         // Now run the transform and see what comes out the other side.
-        val sourceSet = IterableDataSet(listOf(
-                SingleValueObservation.create(listOf("foo", "bar", "bar")),
-                SingleValueObservation.create(listOf("bar", "baz", "bar"))
+        val sourceSet = dg.createSource(listOf(
+                listOf(listOf("foo", "bar", "bar")),
+                listOf(listOf("bar", "baz", "bar"))
         ))
 
         // Train it.
@@ -199,17 +189,34 @@ class GraphSerDeserTest {
         // And deserilize it
         val deserDg = serDeser.deserialize(ByteArrayInputStream(output.toByteArray()))
 
-        val toTransform = SingleObservationDataSet(
-                SingleValueObservation.create(listOf("foo", "bar", "foo", "foo"))
-        )
+        val toTransform = dg.createSource(listOf("foo", "bar", "foo", "foo", "frabble"))
 
-        val resultDs = deserDg.transform(toTransform, Executors.newSingleThreadExecutor()).get().toList()
+        val resultDs = deserDg.transform(toTransform, Executors.newSingleThreadExecutor()).get()
 
-        assertThat(resultDs).hasSize(1)
-        val firstRow = resultDs[0]
-        // Note that in the following I'm relying on the fact that the words are assigned indices in the order that they
-        // were encountered. Safe for the current implementation of the transform since that's just for testing.
-        assertThat(firstRow.values(dg.result.tokenGroup(wordGroupId))).isEqualTo(listOf(3, 1, 0))
+        assertThat(resultDs.numRows).isEqualTo(1)
+        assertThat(resultDs.numColumns).isEqualTo(3)
+        assertThat(resultDs.value(0, wordGroupId.generateId("foo"))).isEqualTo(3)
+        assertThat(resultDs.value(0, wordGroupId.generateId("bar"))).isEqualTo(1)
+        assertThat(resultDs.value(0, wordGroupId.generateId("baz"))).isEqualTo(0)
+    }
+
+    @Test
+    fun testCanSerDeserSingleItemDataTransform() {
+        val sourceCol = ColumnId.create<String>("foo")
+        val source = SourceGraphNode.build(0) {
+            columnIds += sourceCol
+        }
+        val toLower = LowerCaseTransform(source.transformDescription)
+
+        val serDeser = GraphSerDeser()
+        val output = ByteArrayOutputStream()
+        serDeser.serializeTransform(toLower, output)
+        log.debug("Serialized as: {}", output.toString())
+        val input = ByteArrayInputStream(output.toByteArray())
+
+        val deserialized = serDeser.deserializeTransform(
+                null, StandardJsonFormat.MetaData(toLower), listOf(source), input)
+        assertThat(deserialized.description).isEqualToComparingFieldByField(toLower.description)
     }
 
     // See comments in GraphExecutionTest.testComplexTrainOnlyGraphExecution
@@ -218,19 +225,20 @@ class GraphSerDeserTest {
         val g1 = Graph1()
 
         val trainMatrix = listOf(
-                g1.graph.buildSourceObservation("FOO", true),
-                g1.graph.buildSourceObservation("foo", false),
-                g1.graph.buildSourceObservation("bar", false),
-                g1.graph.buildSourceObservation("bip", true),
-                g1.graph.buildSourceObservation("baz", true),
-                g1.graph.buildSourceObservation("biZzLE", true),
-                g1.graph.buildSourceObservation("BIzZle", false)
+                listOf("FOO", true),
+                listOf("foo", false),
+                listOf("bar", false),
+                listOf("bip", true),
+                listOf("baz", true),
+                listOf("biZzLE", true),
+                listOf("BIzZle", false)
         )
 
-        val resultToken = g1.graph.result.token(g1.resultId)
-        val trainRes = g1.graph.trainTransform(IterableDataSet(trainMatrix), Executors.newFixedThreadPool(3)).get()
-        val trainRestList = trainRes.map { it.value(resultToken) }
-        assertThat(trainRestList).isEqualTo(listOf(true, true, false, false, false, true, true))
+        val trainRes = g1.graph.trainTransform(
+                g1.graph.createTrainingSource(trainMatrix), Executors.newFixedThreadPool(3)).get()
+        assertThat(trainRes.numRows).isEqualTo(trainMatrix.size)
+        assertThat(trainRes.numColumns).isEqualTo(1)
+        assertThat(trainRes.column(g1.resultId)).containsExactly(true, true, false, false, false, true, true)
 
         val serDeser = GraphSerDeser()
 
@@ -246,33 +254,33 @@ class GraphSerDeserTest {
 
         // And make sure it works.
         val testMatrix = listOf(
-                g1.graph.buildSourceObservation("FoO"),
-                g1.graph.buildSourceObservation("bar"),
-                g1.graph.buildSourceObservation("baZ"),
-                g1.graph.buildSourceObservation("bizzle"))
-        val predictRes = g1.graph.transform(IterableDataSet(testMatrix), Executors.newFixedThreadPool(2)).get()
-        val predictResList = predictRes.map { it.value(resultToken) }
-        assertThat(predictResList).isEqualTo(listOf(true, false, false, true))
+                listOf("FoO"),
+                listOf("bar"),
+                listOf("baZ"),
+                listOf("bizzle"))
+        val predictRes = g1.graph.transform(g1.graph.createSource(testMatrix), Executors.newFixedThreadPool(2)).get()
+        assertThat(predictRes.numRows).isEqualTo(testMatrix.size)
+        assertThat(predictRes.numColumns).isEqualTo(1)
+        assertThat(predictRes.column(g1.resultId)).containsExactly(true, false, false, true)
     }
 
     @Test
     fun testSimpleInjection() {
-        val sourceValId = ValueId.create<Int>("src")
-        val transformValId = ValueId.create<Int>("resultVal")
+        val sourceColId = ColumnId.create<Int>("src")
         val amountToAdd1 = 1232
         val amountToAdd2 = 4
         val injectionLabel = "INJECT"
         val dg = DataGraph.build {
             val source = setSource {
-                valueIds += sourceValId
+                columnIds += sourceColId
             }
 
             val trans1 = addTransform(
-                    source, AddConstantTransform(amountToAdd1, source.token(sourceValId), transformValId))
+                    source, AddConstantTransform(amountToAdd1, source.transformDescription))
             trans1.label = injectionLabel
 
             val trans2 = addTransform(
-                    trans1, AddConstantTransform(amountToAdd2, trans1.token(transformValId), transformValId))
+                    trans1, AddConstantTransform(amountToAdd2, source.transformDescription))
             result = trans2
         }
 
@@ -293,7 +301,7 @@ class GraphSerDeserTest {
                 assertThat(theData.findValue("toAdd").intValue()).isEqualTo(amountToAdd1)
                 assertThat(sources).hasSize(1)
 
-                return AddConstantTransform(amountToAddAfterInjection, sources[0].token(sourceValId), transformValId)
+                return AddConstantTransform(amountToAddAfterInjection, sources[0].transformDescription)
             }
         }
 
@@ -304,10 +312,9 @@ class GraphSerDeserTest {
         val deserGraph = serDeser.deserialize(inStream)
 
         val sourceValue = 18
-        val sourceObs = deserGraph.buildSourceObservation(sourceValue)
+        val sourceObs = deserGraph.createSource(sourceValue)
         val result = deserGraph.transform(sourceObs, Executors.newSingleThreadExecutor()).get()
 
-        val resultToken = deserGraph.result.token(transformValId)
-        assertThat(result.value(resultToken)).isEqualTo(sourceValue + amountToAddAfterInjection + amountToAdd2)
+        assertThat(result.value(0, sourceColId)).isEqualTo(sourceValue + amountToAddAfterInjection + amountToAdd2)
     }
 }

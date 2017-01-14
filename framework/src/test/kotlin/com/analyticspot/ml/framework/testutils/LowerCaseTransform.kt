@@ -1,21 +1,15 @@
 package com.analyticspot.ml.framework.testutils
 
-import com.analyticspot.ml.framework.datatransform.StreamingDataTransform
+import com.analyticspot.ml.framework.datatransform.SingleItemDataTransform
 import com.analyticspot.ml.framework.description.TransformDescription
-import com.analyticspot.ml.framework.description.ValueId
-import com.analyticspot.ml.framework.description.ValueToken
-import com.analyticspot.ml.framework.observation.Observation
-import com.analyticspot.ml.framework.observation.SingleValueObservation
 
 /**
- * Takes a String input and converts it to lowercase.
+ * Converts all the `String` type columns in a [DataSet] to lowercase.
  */
-class LowerCaseTransform(val srcToken: ValueToken<String>,
-        val resultId: ValueId<String>) : StreamingDataTransform() {
-    override val description: TransformDescription = TransformDescription(listOf(ValueToken(resultId)))
+class LowerCaseTransform(srcTransDescription: TransformDescription)
+    : SingleItemDataTransform<String, String>(srcTransDescription, String::class, String::class) {
 
-    override fun transform(observation: Observation): Observation {
-        val toLowercase = observation.value(srcToken)
-        return SingleValueObservation.create(toLowercase.toLowerCase())
+    override fun transformItem(input: String): String {
+        return input.toLowerCase()
     }
 }

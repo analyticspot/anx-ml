@@ -1,30 +1,32 @@
 package com.analyticspot.ml.framework.description
 
 import com.analyticspot.ml.framework.serialization.JsonMapper
+import kotlin.reflect.KClass
 
 /**
- * A value id allows the user to obtain data from a [DataSet], or [Observation] in a type safe way. Typically
- * [DataTransform] or [DataSet] generates it's own [ValueToken]s from [ValueId]. [ValueToken] is like [ValueId] except
- * that it also includes information about how to access the data efficiently. This allows each execute/data set to
- * create tokens that allow them to efficiently access their underlying data structure.
+ * A value id allows the user to obtain data from a [DataSet] in a type safe way.
  *
  * By convention groups of related values are named with a prefix, a separator of `-` and a suffix. Thus, if you are
  * naming just a single feature/data item refrain from using the `-` character.
  */
-open class ValueId<DataT>(val name: String, val clazz: Class<DataT>) : Comparable<ValueId<*>> {
+open class ColumnId<DataT : Any>(val name: String, val clazz: KClass<DataT>) : Comparable<ColumnId<*>> {
+    /**
+     * Alternative constructor taking Java classes.
+     */
+    constructor(name: String, clazz: Class<DataT>) : this(name, clazz.kotlin)
 
     companion object {
-        inline fun <reified T : Any> create(name: String) = ValueId<T>(name, T::class.java)
+        inline fun <reified T : Any> create(name: String) = ColumnId<T>(name, T::class)
         /**
          * The character used to separate the prefix and the tokens in a [ValueTokenGroup].
          */
         const val GROUP_SEPARATOR = "-"
     }
 
-    final override fun compareTo(other: ValueId<*>): Int {
+    final override fun compareTo(other: ColumnId<*>): Int {
         if (name == other.name) {
-            check(clazz == other.clazz) {
-                "Somehow there's two ValueToken instances named $name with different types: " +
+            check(clazz.javaObjectType == other.clazz.javaObjectType) {
+                "Somehow there's two ColumnId instances named $name with different types: " +
                     "[$clazz] and [${other.clazz}]"
             }
             return 0
@@ -36,7 +38,7 @@ open class ValueId<DataT>(val name: String, val clazz: Class<DataT>) : Comparabl
     final override fun equals(other: Any?): Boolean {
         if (this === other) return true
 
-        if (other is ValueId<*>) {
+        if (other is ColumnId<*>) {
             return compareTo(other) == 0
         } else {
             return false
@@ -50,5 +52,4 @@ open class ValueId<DataT>(val name: String, val clazz: Class<DataT>) : Comparabl
     override fun toString(): String {
         return JsonMapper.mapper.writeValueAsString(this)
     }
-
 }
