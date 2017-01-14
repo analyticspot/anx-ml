@@ -1,5 +1,6 @@
 package com.analyticspot.ml.framework.datagraph
 
+import com.analyticspot.ml.framework.datatransform.ColumnSubsetTransform
 import com.analyticspot.ml.framework.description.ColumnId
 import com.analyticspot.ml.framework.testutils.Graph1
 import com.analyticspot.ml.framework.testutils.InvertBoolean
@@ -224,45 +225,53 @@ class GraphExecutionTest {
          assertThat(g1.invert2.numCalls.get()).isEqualTo(1)
      }
 
-    // @Test
-    // fun testMergeTransformExecution() {
-    //     val srcValId = ColumnId.create<Int>("source")
+     @Test
+     fun testMergeTransformExecution() {
+         val srcColId = ColumnId.create<Int>("source")
 
-    //     var mergeDs: GraphNode? = null
+         val resultColumns = listOf(
+                 ColumnId.create<Int>("t1"),
+                 ColumnId.create<Int>("t2"),
+                 ColumnId.create<Int>("t3")
+         )
 
-    //     val resultValIds = listOf(
-    //             ColumnId.create<Int>("t1"),
-    //             ColumnId.create<Int>("t2"),
-    //             ColumnId.create<Int>("t3")
-    //     )
+         val dg = DataGraph.build {
+             val src = setSource {
+                 columnIds += srcColId
+             }
 
-    //     val dg = DataGraph.build {
-    //         val src = setSource {
-    //             columnIds += srcValId
-    //         }
+             // 3 parallel transforms that add 1, 2 and 3 respectively
+             val t1Temp = addTransform(src, AddConstantTransform(1, src))
+             val t1 = addTransform(t1Temp, ColumnSubsetTransform.build {
+                 keepAndRename(srcColId, resultColumns[0])
+             })
 
-    //         // 3 parallel transforms that add 1, 2 and 3 respectively
-    //         val t1 = addTransform(src, AddConstantTransform(1, src.token(srcValId), resultValIds[0]))
-    //         val t2 = addTransform(src, AddConstantTransform(2, src.token(srcValId), resultValIds[1]))
-    //         val t3 = addTransform(src, AddConstantTransform(3, src.token(srcValId), resultValIds[2]))
+             val t2Temp = addTransform(src, AddConstantTransform(2, src))
+             val t2 = addTransform(t2Temp, ColumnSubsetTransform.build {
+                 keepAndRename(srcColId, resultColumns[1])
+             })
 
-    //         mergeDs = merge(t1, t2, t3)
+             val t3Temp = addTransform(src, AddConstantTransform(3, src))
+             val t3 = addTransform(t3Temp, ColumnSubsetTransform.build {
+                 keepAndRename(srcColId, resultColumns[2])
+             })
 
-    //         result = mergeDs ?: throw AssertionError("Should be non-null here")
-    //     }
+             val mergeDs = merge(t1, t2, t3)
 
-    //     val nnMergeDs = mergeDs ?: throw AssertionError("data set should not be null")
-    //     assertThat(nnMergeDs.tokens).hasSize(3)
-    //     assertThat(nnMergeDs.tokens.map { it.name }.toSet()).isEqualTo(resultValIds.map { it.name }.toSet())
+             result = mergeDs
+         }
 
-    //     val resultF = dg.transform(SingleValueObservation.create(0), Executors.newFixedThreadPool(3))
-    //     val resultObs = resultF.get()
-    //     assertThat(resultObs.size).isEqualTo(3)
-    //     val resultTokens = resultValIds.map { dg.result.token(it) }
-    //     assertThat(resultObs.value(resultTokens[0])).isEqualTo(1)
-    //     assertThat(resultObs.value(resultTokens[1])).isEqualTo(2)
-    //     assertThat(resultObs.value(resultTokens[2])).isEqualTo(3)
-    // }
+         assertThat(dg.result.columns).hasSize(3)
+         // assertThat(nnMergeDs.tokens.map { it.name }.toSet()).isEqualTo(resultValIds.map { it.name }.toSet())
+
+         val resultF = dg.transform(dg.createSource(0), Executors.newFixedThreadPool(3))
+         val resultData = resultF.get()
+         assertThat(resultData.numRows).isEqualTo(1)
+         assertThat(resultData.numColumns).isEqualTo(3)
+         assertThat(resultData.value(0, resultColumns[0])).isEqualTo(1)
+         assertThat(resultData.value(0, resultColumns[1])).isEqualTo(2)
+         assertThat(resultData.value(0, resultColumns[2])).isEqualTo(3)
+     }
 
     // @Test
     // fun testThrowingTransformCausesGraphExecutionToThrow() {

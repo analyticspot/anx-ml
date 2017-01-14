@@ -44,10 +44,12 @@ class DataSet private constructor(idAndColumns: Array<IdAndColumn<*>>) {
         get() = columnIds.size
 
     init {
-        assert(isLegal(idAndColumns)) {
-            throw IllegalArgumentException("Columns are not legal")
+        val colProblems = columnErrors(idAndColumns)
+        if (colProblems != null) {
+            throw IllegalArgumentException(colProblems)
         }
     }
+
     companion object {
         private val log = LoggerFactory.getLogger(DataSet::class.java)
 
@@ -114,11 +116,11 @@ class DataSet private constructor(idAndColumns: Array<IdAndColumn<*>>) {
     }
 
     // Column names must be unique, be in sorted order, and all columns must have the same length. This checks to make
-    // sure that's the case. Note that this is somewhat expensive so this should probably always be wrapped in an
-    // `assert` call.
-    private fun isLegal(cols: Array<IdAndColumn<*>>): Boolean {
+    // sure that's the case. This returns a non-null string indicating what the issue is if the columns aren't legal.
+    // Returns null if everything is legal.
+    private fun columnErrors(cols: Array<IdAndColumn<*>>): String? {
         if (cols.size == 0) {
-            return true
+            return null
         }
 
         var lastCol = cols[0]
@@ -126,20 +128,17 @@ class DataSet private constructor(idAndColumns: Array<IdAndColumn<*>>) {
         for (idx in 1 until cols.size) {
             val nextCol = cols[idx]
             if (lastCol > nextCol) {
-                log.error("Columns are not in sorted order.")
-                return false
+                return "Columns are not in sorted order."
             }
             if (lastCol.id.name == nextCol.id.name) {
-                log.error("Duplicate columns with name {}", lastCol.id.name)
-                return false
+                return "Duplicate columns with name '${lastCol.id.name}'"
             }
             if (nextCol.column.size != colSize) {
-                log.error("Not all columns are the same length")
-                return false
+                return "Not all columns are the same length"
             }
             lastCol = nextCol
         }
-        return true
+        return null
     }
 
     fun <T : Any> value(rowIdx: Int, columnId: ColumnId<T>): T? {
