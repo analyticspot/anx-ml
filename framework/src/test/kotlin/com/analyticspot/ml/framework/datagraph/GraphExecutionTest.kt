@@ -298,25 +298,25 @@ class GraphExecutionTest {
          assertThatThrownBy { transformF.get() }.hasMessageContaining(ThrowsExceptionTransform.ERROR_MESSAGE)
      }
 
-    // @Test
-    // fun testTransformCompletingWithExceptionCausesGraphExecutionToThrow() {
-    //     val input = ColumnId.create<Int>("input")
-    //     val resultId = ColumnId.create<String>("finalResult")
+     @Test
+     fun testTransformCompletingWithExceptionCausesGraphExecutionToThrow() {
+         val input = ColumnId.create<Int>("input")
+         val resultId = ColumnId.create<String>("finalResult")
 
-    //     val dg = DataGraph.build {
-    //         val src = setSource {
-    //             columnIds += input
-    //         }
+         val dg = DataGraph.build {
+             val src = setSource {
+                 columnIds += input
+             }
 
-    //         val trans = addTransform(src, CompletesWithExceptionTransform(resultId))
-    //         result = trans
-    //     }
+             val trans = addTransform(src, CompletesWithExceptionTransform(resultId))
+             result = trans
+         }
 
-    //     val srcObs = dg.buildSourceObservation(88)
+         val srcObs = dg.createSource(88)
 
-    //     val transformF = dg.transform(srcObs, Executors.newSingleThreadExecutor())
-    //     assertThatThrownBy { transformF.get() }.hasMessageContaining(CompletesWithExceptionTransform.ERROR_MESSAGE)
-    // }
+         val transformF = dg.transform(srcObs, Executors.newSingleThreadExecutor())
+         assertThatThrownBy { transformF.get() }.hasMessageContaining(CompletesWithExceptionTransform.ERROR_MESSAGE)
+     }
 
      class ThrowsExceptionTransform(private val resultId: ColumnId<String>) : SingleDataTransform {
          companion object {
@@ -330,17 +330,17 @@ class GraphExecutionTest {
          }
      }
 
-    // class CompletesWithExceptionTransform(private val resultId: ColumnId<String>) : SingleDataTransform {
-    //     companion object {
-    //         const val ERROR_MESSAGE = "Pretending bad things happened."
-    //     }
-    //     override val description: TransformDescription
-    //         get() = TransformDescription(listOf(ValueToken(resultId)))
+     class CompletesWithExceptionTransform(private val resultId: ColumnId<String>) : SingleDataTransform {
+         companion object {
+             const val ERROR_MESSAGE = "Pretending bad things happened."
+         }
+         override val description: TransformDescription
+             get() = TransformDescription(listOf(resultId))
 
-    //     override fun transform(dataSet: DataSet): CompletableFuture<DataSet> {
-    //         val result = CompletableFuture<DataSet>()
-    //         result.completeExceptionally(RuntimeException(ERROR_MESSAGE))
-    //         return result
-    //     }
-    // }
+         override fun transform(dataSet: DataSet): CompletableFuture<DataSet> {
+             val result = CompletableFuture<DataSet>()
+             result.completeExceptionally(RuntimeException(ERROR_MESSAGE))
+             return result
+         }
+     }
 }
