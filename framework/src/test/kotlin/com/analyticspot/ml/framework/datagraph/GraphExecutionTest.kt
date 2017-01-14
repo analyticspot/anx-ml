@@ -1,14 +1,19 @@
 package com.analyticspot.ml.framework.datagraph
 
+import com.analyticspot.ml.framework.dataset.DataSet
 import com.analyticspot.ml.framework.datatransform.ColumnSubsetTransform
+import com.analyticspot.ml.framework.datatransform.SingleDataTransform
 import com.analyticspot.ml.framework.description.ColumnId
+import com.analyticspot.ml.framework.description.TransformDescription
 import com.analyticspot.ml.framework.testutils.Graph1
 import com.analyticspot.ml.framework.testutils.InvertBoolean
 import com.analyticspot.ml.framework.testutils.TrueIfSeenTransform
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.slf4j.LoggerFactory
 import org.testng.annotations.BeforeClass
 import org.testng.annotations.Test
+import java.util.concurrent.CompletableFuture
 import java.util.concurrent.Executors
 
 class GraphExecutionTest {
@@ -273,25 +278,25 @@ class GraphExecutionTest {
          assertThat(resultData.value(0, resultColumns[2])).isEqualTo(3)
      }
 
-    // @Test
-    // fun testThrowingTransformCausesGraphExecutionToThrow() {
-    //     val input = ColumnId.create<Int>("input")
-    //     val resultId = ColumnId.create<String>("finalResult")
+     @Test
+     fun testThrowingTransformCausesGraphExecutionToThrow() {
+         val input = ColumnId.create<Int>("input")
+         val resultId = ColumnId.create<String>("finalResult")
 
-    //     val dg = DataGraph.build {
-    //         val src = setSource {
-    //             columnIds += input
-    //         }
+         val dg = DataGraph.build {
+             val src = setSource {
+                 columnIds += input
+             }
 
-    //         val trans = addTransform(src, ThrowsExceptionTransform(resultId))
-    //         result = trans
-    //     }
+             val trans = addTransform(src, ThrowsExceptionTransform(resultId))
+             result = trans
+         }
 
-    //     val srcObs = dg.buildSourceObservation(88)
+         val srcObs = dg.createSource(88)
 
-    //     val transformF = dg.transform(srcObs, Executors.newSingleThreadExecutor())
-    //     assertThatThrownBy { transformF.get() }.hasMessageContaining(ThrowsExceptionTransform.ERROR_MESSAGE)
-    // }
+         val transformF = dg.transform(srcObs, Executors.newSingleThreadExecutor())
+         assertThatThrownBy { transformF.get() }.hasMessageContaining(ThrowsExceptionTransform.ERROR_MESSAGE)
+     }
 
     // @Test
     // fun testTransformCompletingWithExceptionCausesGraphExecutionToThrow() {
@@ -313,17 +318,17 @@ class GraphExecutionTest {
     //     assertThatThrownBy { transformF.get() }.hasMessageContaining(CompletesWithExceptionTransform.ERROR_MESSAGE)
     // }
 
-    // class ThrowsExceptionTransform(private val resultId: ColumnId<String>) : SingleDataTransform {
-    //     companion object {
-    //         const val ERROR_MESSAGE = "Pretending bad things happened."
-    //     }
-    //     override val description: TransformDescription
-    //         get() = TransformDescription(listOf(ValueToken(resultId)))
+     class ThrowsExceptionTransform(private val resultId: ColumnId<String>) : SingleDataTransform {
+         companion object {
+             const val ERROR_MESSAGE = "Pretending bad things happened."
+         }
+         override val description: TransformDescription
+             get() = TransformDescription(listOf(resultId))
 
-    //     override fun transform(dataSet: DataSet): CompletableFuture<DataSet> {
-    //         throw RuntimeException(ERROR_MESSAGE)
-    //     }
-    // }
+         override fun transform(dataSet: DataSet): CompletableFuture<DataSet> {
+             throw RuntimeException(ERROR_MESSAGE)
+         }
+     }
 
     // class CompletesWithExceptionTransform(private val resultId: ColumnId<String>) : SingleDataTransform {
     //     companion object {
