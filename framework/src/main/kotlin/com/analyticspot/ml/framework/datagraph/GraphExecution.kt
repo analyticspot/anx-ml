@@ -6,7 +6,7 @@ import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ExecutorService
 
 /**
- * Manages the execution of a single observation through the graph. See the PUSH.OR.PULL.README.md file in this
+ * Manages the execution of a single [DataSet] through the graph. See the PUSH.OR.PULL.README.md file in this
  * directory for details. It manages the execution by cooperating with a set of [NodeExecutionManager] instances: one
  * per node in the graph. These [NodeExecutionManager] instances keep track of what data is needed by the node they
  * manage and letting the [GraphExecution] know when the necessary data is available. Similarly, they also take
@@ -17,7 +17,7 @@ import java.util.concurrent.ExecutorService
  *
  * Protocol:
  *
- * * When data is avaiable the [NodeExecutionManager.onDataAvailable] method will be called for all nodes that have
+ * * When data is available the [NodeExecutionManager.onDataAvailable] method will be called for all nodes that have
  *   subscribed to that data.
  * * When a [NodeExecutionManager] has all the data it needs to run that manager will call [onReadyToRun] on this
  *   instance. This will then schedule the node to be run (often on another thread).
@@ -50,7 +50,7 @@ class GraphExecution (
     }
 
     fun onDataComputed(manager: NodeExecutionManager, data: DataSet) {
-        log.debug("Node {} has finished computing its Observation.", manager.graphNode.id)
+        log.debug("Node {} has finished computing its data.", manager.graphNode.id)
         if (manager.graphNode.id == dataGraph.result.id) {
             log.debug("Result node has called onDataComputed so execution is complete.")
             executionResult.complete(data)

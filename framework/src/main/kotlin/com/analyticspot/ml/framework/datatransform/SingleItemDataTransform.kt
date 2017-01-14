@@ -46,7 +46,7 @@ abstract class SingleItemDataTransform<InputT : Any, OutputT : Any>(
         }
         val newColGroups = srcTransDescription.columnGroups.map {
             if (inType isAssignableFrom it.clazz) {
-                ColumnIdGroup(it.prefix, outType.java)
+                ColumnIdGroup(it.prefix, outType)
             } else {
                 it
             }

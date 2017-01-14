@@ -54,7 +54,11 @@ object JsonMapper {
                 Short::class.qualifiedName to Short::class,
                 Byte::class.qualifiedName to Byte::class,
                 String::class.qualifiedName to String::class,
-                Boolean::class.qualifiedName to Boolean::class
+                Boolean::class.qualifiedName to Boolean::class,
+                List::class.qualifiedName to List::class,
+                MutableList::class.qualifiedName to MutableList::class,
+                Map::class.qualifiedName to Map::class,
+                MutableMap::class.qualifiedName to MutableMap::class
         )
 
         override fun deserialize(parser: JsonParser, ctxt: DeserializationContext): KClass<*> {
