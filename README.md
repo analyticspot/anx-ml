@@ -9,7 +9,7 @@ Additionally, some "features" aren't really features, but just intermediate bits
 processing we might generate a matrix for the standard "bag of words" representation but we probably wouldn't use this
 directly. Instead we might do dimension reduction on that data. 
 
-Each node is the DAG is a `DataTransform`. A `DataTransform` must have a `transform` method which accepts a `DataSet`
+Each node in the DAG is a `DataTransform`. A `DataTransform` must have a `transform` method which accepts a `DataSet`
 and produces a new `DataSet` as output. Additionally, some `DataTrasform` instances can learn from training data. These
 transforms have a `trainTransform` method that first learns from the data and then transforms it according to what was
 learned. Once `trainTransform` has been called `transform` can be called on new data to apply what was learned from
