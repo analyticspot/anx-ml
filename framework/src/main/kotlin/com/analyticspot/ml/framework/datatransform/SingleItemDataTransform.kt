@@ -28,7 +28,7 @@ import kotlin.reflect.KClass
  * @param outType the type of the output this will produce.
  */
 abstract class SingleItemDataTransform<InputT : Any, OutputT : Any>(
-        srcTransDescription: TransformDescription,
+        val srcTransDescription: TransformDescription,
         private val inType: KClass<InputT>,
         private val outType: KClass<OutputT>) : SingleDataTransform {
 

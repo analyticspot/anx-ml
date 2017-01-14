@@ -23,7 +23,8 @@ import kotlin.reflect.KClass
 object JsonMapper {
     val mapper: ObjectMapper
     init {
-        mapper = ObjectMapper().registerKotlinModule()
+        mapper = ObjectMapper()
+                .registerKotlinModule()
                 .registerModule(kClassModule)
                 .disable(JsonGenerator.Feature.AUTO_CLOSE_TARGET)
                 .disable(JsonParser.Feature.AUTO_CLOSE_SOURCE)

@@ -1,5 +1,8 @@
 package com.analyticspot.ml.framework.description
 
+import com.fasterxml.jackson.annotation.JsonCreator
+import com.fasterxml.jackson.annotation.JsonProperty
+
 /**
  * Describes the outputs produced by an execution of the node. This allows each [GraphNode] to tell subscribing nodes
  * what columns are available.
@@ -12,6 +15,6 @@ package com.analyticspot.ml.framework.description
  *     size until it's trained, but it knows it will produce one column for each unique word in the input and can thus
  *     provide a [ColumnIdGroup] to allow access to all the generated columns.
  */
-class TransformDescription(val columns: List<ColumnId<*>>,
-        val columnGroups: List<ColumnIdGroup<*>> = listOf()) {
+data class TransformDescription @JsonCreator constructor(@JsonProperty("columns") val columns: List<ColumnId<*>>,
+        @JsonProperty("columnGroups") val columnGroups: List<ColumnIdGroup<*>> = listOf()) {
 }

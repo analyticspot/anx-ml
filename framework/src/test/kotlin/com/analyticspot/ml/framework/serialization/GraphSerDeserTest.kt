@@ -6,6 +6,8 @@ import com.analyticspot.ml.framework.datagraph.SourceGraphNode
 import com.analyticspot.ml.framework.datatransform.MergeTransform
 import com.analyticspot.ml.framework.description.ColumnId
 import com.analyticspot.ml.framework.description.ColumnIdGroup
+import com.analyticspot.ml.framework.testutils.Graph1
+import com.analyticspot.ml.framework.testutils.LowerCaseTransform
 import com.analyticspot.ml.framework.testutils.WordCounts
 import org.assertj.core.api.Assertions.assertThat
 import org.slf4j.LoggerFactory
@@ -181,7 +183,6 @@ class GraphSerDeserTest {
         val serDeser = GraphSerDeser()
         val output = ByteArrayOutputStream()
         serDeser.serialize(dg, output)
-        serDeser.serialize(dg, "/Users/oliver/Desktop/temp/graph.zip")
 
         // And deserilize it
         val deserDg = serDeser.deserialize(ByteArrayInputStream(output.toByteArray()))
@@ -196,49 +197,71 @@ class GraphSerDeserTest {
         assertThat(resultDs.value(0, wordGroupId.generateId("bar"))).isEqualTo(1)
         assertThat(resultDs.value(0, wordGroupId.generateId("baz"))).isEqualTo(0)
     }
-//
-//    // See comments in GraphExecutionTest.testComplexTrainOnlyGraphExecution
-//    @Test
-//    fun testComplexGraphDoesNotSerializeTrainOnly() {
-//        val g1 = Graph1()
-//
-//        val trainMatrix = listOf(
-//                g1.graph.buildSourceObservation("FOO", true),
-//                g1.graph.buildSourceObservation("foo", false),
-//                g1.graph.buildSourceObservation("bar", false),
-//                g1.graph.buildSourceObservation("bip", true),
-//                g1.graph.buildSourceObservation("baz", true),
-//                g1.graph.buildSourceObservation("biZzLE", true),
-//                g1.graph.buildSourceObservation("BIzZle", false)
-//        )
-//
-//        val resultToken = g1.graph.result.token(g1.resultId)
-//        val trainRes = g1.graph.trainTransform(IterableDataSet(trainMatrix), Executors.newFixedThreadPool(3)).get()
-//        val trainRestList = trainRes.map { it.value(resultToken) }
-//        assertThat(trainRestList).isEqualTo(listOf(true, true, false, false, false, true, true))
-//
-//        val serDeser = GraphSerDeser()
-//
-//        // Serialize it
-//        val output = ByteArrayOutputStream()
-//        serDeser.serialize(g1.graph, output)
-//
-//        // And deserilize it
-//        val deserDg = serDeser.deserialize(ByteArrayInputStream(output.toByteArray()))
-//
-//        // Make sure only the non-training nodes were serialized
-//        assertThat(deserDg.allNodes.count { it != null }).isEqualTo(6)
-//
-//        // And make sure it works.
-//        val testMatrix = listOf(
-//                g1.graph.buildSourceObservation("FoO"),
-//                g1.graph.buildSourceObservation("bar"),
-//                g1.graph.buildSourceObservation("baZ"),
-//                g1.graph.buildSourceObservation("bizzle"))
-//        val predictRes = g1.graph.transform(IterableDataSet(testMatrix), Executors.newFixedThreadPool(2)).get()
-//        val predictResList = predictRes.map { it.value(resultToken) }
-//        assertThat(predictResList).isEqualTo(listOf(true, false, false, true))
-//    }
+
+    @Test
+    fun testCanSerDeserSingleItemDataTransform() {
+        val sourceCol = ColumnId.create<String>("foo")
+        val source = SourceGraphNode.build(0) {
+            columnIds += sourceCol
+        }
+        val toLower = LowerCaseTransform(source.transformDescription)
+
+        val serDeser = GraphSerDeser()
+        val output = ByteArrayOutputStream()
+        serDeser.serializeTransform(toLower, output)
+        log.debug("Serialized as: {}", output.toString())
+        val input = ByteArrayInputStream(output.toByteArray())
+
+        val deserialized = serDeser.deserializeTransform(
+                null, StandardJsonFormat.MetaData(toLower), listOf(source), input)
+        assertThat(deserialized.description).isEqualToComparingFieldByField(toLower.description)
+    }
+
+    // See comments in GraphExecutionTest.testComplexTrainOnlyGraphExecution
+    @Test
+    fun testComplexGraphDoesNotSerializeTrainOnly() {
+        val g1 = Graph1()
+
+        val trainMatrix = listOf(
+                listOf("FOO", true),
+                listOf("foo", false),
+                listOf("bar", false),
+                listOf("bip", true),
+                listOf("baz", true),
+                listOf("biZzLE", true),
+                listOf("BIzZle", false)
+        )
+
+        val trainRes = g1.graph.trainTransform(
+                g1.graph.createTrainingSource(trainMatrix), Executors.newFixedThreadPool(3)).get()
+        assertThat(trainRes.numRows).isEqualTo(trainMatrix.size)
+        assertThat(trainRes.numColumns).isEqualTo(1)
+        assertThat(trainRes.column(g1.resultId)).containsExactly(true, true, false, false, false, true, true)
+
+        val serDeser = GraphSerDeser()
+
+        // Serialize it
+        val output = ByteArrayOutputStream()
+        serDeser.serialize(g1.graph, output)
+        serDeser.serialize(g1.graph, "/Users/oliver/Desktop/temp/graph.zip")
+
+        // And deserilize it
+        val deserDg = serDeser.deserialize(ByteArrayInputStream(output.toByteArray()))
+
+        // Make sure only the non-training nodes were serialized
+        assertThat(deserDg.allNodes.count { it != null }).isEqualTo(6)
+
+        // And make sure it works.
+        val testMatrix = listOf(
+                listOf("FoO"),
+                listOf("bar"),
+                listOf("baZ"),
+                listOf("bizzle"))
+        val predictRes = g1.graph.transform(g1.graph.createSource(testMatrix), Executors.newFixedThreadPool(2)).get()
+        assertThat(predictRes.numRows).isEqualTo(testMatrix.size)
+        assertThat(predictRes.numColumns).isEqualTo(1)
+        assertThat(predictRes.column(g1.resultId)).containsExactly(true, false, false, true)
+    }
 //
 //    @Test
 //    fun testSimpleInjection() {
