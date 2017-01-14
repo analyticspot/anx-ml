@@ -2,7 +2,9 @@ package com.analyticspot.ml.framework.serialization
 
 import com.analyticspot.ml.framework.datagraph.AddConstantTransform
 import com.analyticspot.ml.framework.datagraph.DataGraph
+import com.analyticspot.ml.framework.datagraph.GraphNode
 import com.analyticspot.ml.framework.datagraph.SourceGraphNode
+import com.analyticspot.ml.framework.datatransform.DataTransform
 import com.analyticspot.ml.framework.datatransform.MergeTransform
 import com.analyticspot.ml.framework.description.ColumnId
 import com.analyticspot.ml.framework.description.ColumnIdGroup
@@ -14,6 +16,7 @@ import org.slf4j.LoggerFactory
 import org.testng.annotations.Test
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
+import java.io.InputStream
 import java.util.concurrent.Executors
 
 class GraphSerDeserTest {
@@ -262,60 +265,58 @@ class GraphSerDeserTest {
         assertThat(predictRes.numColumns).isEqualTo(1)
         assertThat(predictRes.column(g1.resultId)).containsExactly(true, false, false, true)
     }
-//
-//    @Test
-//    fun testSimpleInjection() {
-//        val sourceValId = ColumnId.create<Int>("src")
-//        val transformValId = ColumnId.create<Int>("resultVal")
-//        val amountToAdd1 = 1232
-//        val amountToAdd2 = 4
-//        val injectionLabel = "INJECT"
-//        val dg = DataGraph.build {
-//            val source = setSource {
-//                columnIds += sourceValId
-//            }
-//
-//            val trans1 = addTransform(
-//                    source, AddConstantTransform(amountToAdd1, source.token(sourceValId), transformValId))
-//            trans1.label = injectionLabel
-//
-//            val trans2 = addTransform(
-//                    trans1, AddConstantTransform(amountToAdd2, trans1.token(transformValId), transformValId))
-//            result = trans2
-//        }
-//
-//        val serDeser = GraphSerDeser()
-//        val outStream = ByteArrayOutputStream(0)
-//        serDeser.serialize(dg, outStream)
-//
-//        val amountToAddAfterInjection = 92
-//
-//        // Will create another AddConstantTransform but with a different constant
-//        val factory = object : TransformFactory<StandardJsonFormat.MetaData> {
-//            override fun deserialize(
-//                    metaData: StandardJsonFormat.MetaData,
-//                    sources: List<GraphNode>, input: InputStream): DataTransform {
-//                assertThat(metaData.transformClass).isEqualTo(AddConstantTransform::class.java)
-//                val theData = JsonMapper.mapper.readTree(input)
-//                assertThat(theData.isObject).isTrue()
-//                assertThat(theData.findValue("toAdd").intValue()).isEqualTo(amountToAdd1)
-//                assertThat(sources).hasSize(1)
-//
-//                return AddConstantTransform(amountToAddAfterInjection, sources[0].token(sourceValId), transformValId)
-//            }
-//        }
-//
-//        serDeser.registerFactoryForLabel(injectionLabel, factory)
-//
-//        // Now deserialize the thing....
-//        val inStream = ByteArrayInputStream(outStream.toByteArray())
-//        val deserGraph = serDeser.deserialize(inStream)
-//
-//        val sourceValue = 18
-//        val sourceObs = deserGraph.buildSourceObservation(sourceValue)
-//        val result = deserGraph.transform(sourceObs, Executors.newSingleThreadExecutor()).get()
-//
-//        val resultToken = deserGraph.result.token(transformValId)
-//        assertThat(result.value(resultToken)).isEqualTo(sourceValue + amountToAddAfterInjection + amountToAdd2)
-//    }
+
+    @Test
+    fun testSimpleInjection() {
+        val sourceColId = ColumnId.create<Int>("src")
+        val amountToAdd1 = 1232
+        val amountToAdd2 = 4
+        val injectionLabel = "INJECT"
+        val dg = DataGraph.build {
+            val source = setSource {
+                columnIds += sourceColId
+            }
+
+            val trans1 = addTransform(
+                    source, AddConstantTransform(amountToAdd1, source.transformDescription))
+            trans1.label = injectionLabel
+
+            val trans2 = addTransform(
+                    trans1, AddConstantTransform(amountToAdd2, source.transformDescription))
+            result = trans2
+        }
+
+        val serDeser = GraphSerDeser()
+        val outStream = ByteArrayOutputStream(0)
+        serDeser.serialize(dg, outStream)
+
+        val amountToAddAfterInjection = 92
+
+        // Will create another AddConstantTransform but with a different constant
+        val factory = object : TransformFactory<StandardJsonFormat.MetaData> {
+            override fun deserialize(
+                    metaData: StandardJsonFormat.MetaData,
+                    sources: List<GraphNode>, input: InputStream): DataTransform {
+                assertThat(metaData.transformClass).isEqualTo(AddConstantTransform::class.java)
+                val theData = JsonMapper.mapper.readTree(input)
+                assertThat(theData.isObject).isTrue()
+                assertThat(theData.findValue("toAdd").intValue()).isEqualTo(amountToAdd1)
+                assertThat(sources).hasSize(1)
+
+                return AddConstantTransform(amountToAddAfterInjection, sources[0].transformDescription)
+            }
+        }
+
+        serDeser.registerFactoryForLabel(injectionLabel, factory)
+
+        // Now deserialize the thing....
+        val inStream = ByteArrayInputStream(outStream.toByteArray())
+        val deserGraph = serDeser.deserialize(inStream)
+
+        val sourceValue = 18
+        val sourceObs = deserGraph.createSource(sourceValue)
+        val result = deserGraph.transform(sourceObs, Executors.newSingleThreadExecutor()).get()
+
+        assertThat(result.value(0, sourceColId)).isEqualTo(sourceValue + amountToAddAfterInjection + amountToAdd2)
+    }
 }
