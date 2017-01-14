@@ -1,7 +1,8 @@
 package com.analyticspot.ml.framework.dataset
 
 import com.analyticspot.ml.framework.description.ColumnId
-import com.analyticspot.ml.utils.isAssignableFrom
+// Lint disable as this is used but there's a ktlint bug.
+import com.analyticspot.ml.utils.isAssignableFrom // ktlint-disable no-unused-imports
 import org.slf4j.LoggerFactory
 
 /**

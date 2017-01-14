@@ -5,7 +5,8 @@ import com.analyticspot.ml.framework.dataset.DataSet
 import com.analyticspot.ml.framework.description.ColumnId
 import com.analyticspot.ml.framework.description.ColumnIdGroup
 import com.analyticspot.ml.framework.description.TransformDescription
-import com.analyticspot.ml.utils.isAssignableFrom
+// Lint disable as this is used but there's a ktlint bug.
+import com.analyticspot.ml.utils.isAssignableFrom // ktlint-disable no-unused-imports
 import org.slf4j.LoggerFactory
 import java.util.concurrent.CompletableFuture
 import kotlin.reflect.KClass

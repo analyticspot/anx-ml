@@ -19,7 +19,6 @@ class AddConstantTransform(val toAdd: Int, srcDesc: TransformDescription)
     constructor(@JsonProperty("toAdd") toAdd: Int, @JacksonInject source: GraphNode)
             : this(toAdd, source.transformDescription)
 
-
     override fun transformItem(input: Int): Int {
         return toAdd + input
     }
