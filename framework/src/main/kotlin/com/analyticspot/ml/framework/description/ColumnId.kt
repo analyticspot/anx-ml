@@ -10,6 +10,10 @@ import kotlin.reflect.KClass
  * naming just a single feature/data item refrain from using the `-` character.
  */
 open class ColumnId<DataT : Any>(val name: String, val clazz: KClass<DataT>) : Comparable<ColumnId<*>> {
+    /**
+     * Alternative constructor taking Java classes.
+     */
+    constructor(name: String, clazz: Class<DataT>) : this(name, clazz.kotlin)
 
     companion object {
         inline fun <reified T : Any> create(name: String) = ColumnId<T>(name, T::class)

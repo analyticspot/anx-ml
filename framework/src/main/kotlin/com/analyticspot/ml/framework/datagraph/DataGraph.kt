@@ -111,10 +111,26 @@ class DataGraph(builder: GraphBuilder) {
     }
 
     /**
+     * Like the other [createSource] methods but lets you pass an array of arrays.
+     */
+    fun createSource(matrix: Array<Array<Any?>>): DataSet {
+        val asLists = matrix.map { it.asList() }
+        return createSource(asLists)
+    }
+
+    /**
      * Like [createSource] but includes train-only columns.
      */
     fun createTrainingSource(vararg vals: Any?): DataSet {
         return DataSet.fromMatrix(source.columns, listOf(vals.asList()))
+    }
+
+    /**
+     * Like the other [createTrainingSource] methods but lets you pass an array of arrays.
+     */
+    fun createTrainingSource(matrix: Array<Array<Any?>>): DataSet {
+        val asLists = matrix.map { it.asList() }
+        return createTrainingSource(asLists)
     }
 
     /**

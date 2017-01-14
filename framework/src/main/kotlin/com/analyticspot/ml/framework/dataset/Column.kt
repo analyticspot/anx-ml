@@ -1,6 +1,8 @@
 package com.analyticspot.ml.framework.dataset
 
+import kotlinx.support.jdk8.collections.spliterator
 import java.util.stream.Stream
+import java.util.stream.StreamSupport
 
 /**
  * The interface for all the columns in a [DataSet]. Different subtypes may use different storage.
@@ -17,7 +19,7 @@ interface Column<out T : Any?> : Iterable<T> {
     /**
      * Returns the values in the column as a Java 8 `Stream`.
      */
-    fun stream(): Stream<out T> = this.stream()
+    fun stream(): Stream<out T> = StreamSupport.stream(this.spliterator(), false)
 
     /**
      * Maps one column to a new column via a function.
