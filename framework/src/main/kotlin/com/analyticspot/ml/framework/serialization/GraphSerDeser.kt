@@ -163,7 +163,7 @@ class GraphSerDeser {
                 is SourceSerGraphNode -> {
                     check(nodeId == graphData.sourceId)
                     val sourceNode = SourceGraphNode.build(graphData.sourceId) {
-                        columnIds += graphDataNode.columnIds
+                        columnIds += graphDataNode.columnIds.minus(graphDataNode.trainOnlyColumnIds)
                         trainOnlyColumnIds += graphDataNode.trainOnlyColumnIds
                     }
                     newNode = graphBuilder.setSource(sourceNode)

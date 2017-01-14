@@ -119,35 +119,37 @@ class GraphSerDeserTest {
 
         assertThat(result.value(0, sourceColId)).isEqualTo(sourceValue + amountToAdd)
     }
-//
-//    @Test
-//    fun testSourceGraphNodeSerializesTrainOnlyInformation() {
-//        val sourceValIds = listOf(
-//                ColumnId.create<Int>("src1"),
-//                ColumnId.create<String>("src2"))
-//        val trainOnlySourceValIds = listOf(
-//                ColumnId.create<Boolean>("srcT1"),
-//                ColumnId.create<Int>("srcT2"))
-//        val dg = DataGraph.build {
-//            val source = setSource {
-//                columnIds += sourceValIds
-//                trainOnlyColumnIds += trainOnlySourceValIds
-//            }
-//
-//            result = source
-//        }
-//
-//        val serDeser = GraphSerDeser()
-//        val outStream = ByteArrayOutputStream(0)
-//        serDeser.serialize(dg, outStream)
-//
-//        // Now deserialize the thing....
-//        val inStream = ByteArrayInputStream(outStream.toByteArray())
-//        val deserGraph = serDeser.deserialize(inStream)
-//
-//        assertThat(deserGraph.source.tokens.map { it.id }).isEqualTo(sourceValIds.plus(trainOnlySourceValIds))
-//        assertThat(deserGraph.source.trainOnlyColumnIds).isEqualTo(trainOnlySourceValIds)
-//    }
+
+    @Test
+    fun testSourceGraphNodeSerializesTrainOnlyInformation() {
+        val sourceColIds = listOf(
+                ColumnId.create<Int>("src1"),
+                ColumnId.create<String>("src2"))
+
+        val trainOnlySourceColIds = listOf(
+                ColumnId.create<Boolean>("srcT1"),
+                ColumnId.create<Int>("srcT2"))
+
+        val dg = DataGraph.build {
+            val source = setSource {
+                columnIds += sourceColIds
+                trainOnlyColumnIds += trainOnlySourceColIds
+            }
+
+            result = source
+        }
+
+        val serDeser = GraphSerDeser()
+        val outStream = ByteArrayOutputStream()
+        serDeser.serialize(dg, outStream)
+
+        // Now deserialize the thing....
+        val inStream = ByteArrayInputStream(outStream.toByteArray())
+        val deserGraph = serDeser.deserialize(inStream)
+
+        assertThat(deserGraph.source.columns).isEqualTo(sourceColIds.plus(trainOnlySourceColIds))
+        assertThat(deserGraph.source.trainOnlyColumnIds).isEqualTo(trainOnlySourceColIds)
+    }
 //
 //    @Test
 //    fun testTokenGroupsSerialize() {
