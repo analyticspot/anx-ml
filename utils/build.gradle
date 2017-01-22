@@ -1,4 +1,5 @@
 apply plugin: 'anx-kotlin'
+apply plugin: 'anx-jar-publish'
 
 dependencies {
    compile Deps.ktStdlib
