@@ -193,6 +193,10 @@ class DataSet private constructor(idAndColumns: Array<IdAndColumn<*>>) {
             return this
         }
 
+        fun <ColT : Any> addColumn(id: ColumnId<ColT>, col: List<ColT?>): Builder {
+            return addColumn(id, ListColumn(col))
+        }
+
         /**
          * Adds all the columns in `dataSet` to the new []DataSet].
          */
