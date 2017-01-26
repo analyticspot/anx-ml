@@ -76,7 +76,6 @@ class TaggedDocumentIterator(val dataSet: DataSet, val docColumn: ColumnId<List<
         throw UnsupportedOperationException("not implemented")
     }
 
-
     override fun getPreProcessor(): SentencePreProcessor {
         throw UnsupportedOperationException("not implemented")
     }
