@@ -150,3 +150,13 @@ which transforms consume the output of this transform, etc.
 so that we can interoperate with other machine learning libraries and allows for injection. See the
 `SERIALIZATION.README.md` file for details.
  
+# Using
+
+To use, you can download the source here and build it by running `./gradlew check`. Alternatively, you can download
+pre-built jar files from jcenter. The maven coordinates for the main framework are:
+
+* groupId: com.analyticspot.ml
+* artifactId: framework
+* version: the `VERSION` file in this directory contains the latest version number.
+
+For gradle, this means a dependency like `compile 'com.analyticspot.ml:framework:0.1.1'` will pull the correct jar.
