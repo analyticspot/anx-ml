@@ -1,0 +1,14 @@
+apply plugin: 'anx-kotlin'
+apply plugin: 'anx-jar-publish'
+
+dependencies {
+    compile project(':framework')
+    compile Deps.ktStdlib
+    compile Deps.ktJava8
+    compile Deps.slf4j
+    compile Deps.deepLearning4jCore
+    compile Deps.deepLearning4jNlp
+
+    testCompile Deps.standardTest
+    testCompile Deps.logback
+}
