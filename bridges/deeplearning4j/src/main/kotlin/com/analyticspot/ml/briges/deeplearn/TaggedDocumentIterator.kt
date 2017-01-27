@@ -1,7 +1,6 @@
 package com.analyticspot.ml.briges.deeplearn
 
-import com.analyticspot.ml.framework.dataset.DataSet
-import com.analyticspot.ml.framework.description.ColumnId
+import com.analyticspot.ml.framework.dataset.Column
 import org.deeplearning4j.text.sentenceiterator.SentencePreProcessor
 import org.deeplearning4j.text.sentenceiterator.labelaware.LabelAwareSentenceIterator
 import org.slf4j.LoggerFactory
@@ -18,16 +17,14 @@ import org.slf4j.LoggerFactory
  * document and a sentence so we go with Sentence here. Indeed, a look at the source code for `ParagraphVectors` shows
  * that document and sentence iterators are treated identically.
  *
- * @param dataSet the [DataSet] from which the data will be pulled.
  * @param docColumn the column from which the documents will be pulled. The document is assumed to be already
  *     tokenized so it is represented as a `List<String>` -- a list of the tokens. It is up to the user if they want
  *     to include punctuation tokens to delimit sentences; the "right" answer will depend on the context. Tokens must
  *     not contain spaces.
- * @param labelColumns the columns from which the labels will be pulled. These can be of any type - the value's
- *     `toString` method will be used to convert the value into a legal DeepLearning4j label.
+ * @param labelColumns the columns from which the labels will be pulled.
  */
-class TaggedDocumentIterator(val dataSet: DataSet, val docColumn: ColumnId<List<String>>,
-        val labelColumns: List<ColumnId<*>>)
+class TaggedDocumentIterator(val docColumn: Column<List<String>?>,
+        val labelColumns: List<Column<String?>>)
     : LabelAwareSentenceIterator {
 
     // The row that will be used on the next call to nextSentence
@@ -36,18 +33,24 @@ class TaggedDocumentIterator(val dataSet: DataSet, val docColumn: ColumnId<List<
     private val curRow: Int
         get() = nextRow - 1
 
+    init {
+        labelColumns.forEach {
+            check(it.size == docColumn.size)
+        }
+    }
+
     companion object {
         private val log = LoggerFactory.getLogger(TaggedDocumentIterator::class.java)
     }
 
-    override fun hasNext(): Boolean = nextRow < dataSet.numRows
+    override fun hasNext(): Boolean = nextRow < docColumn.size
 
     /**
      * Returns the next **document** (even though DeepLearning4j calls this a sentence).
      */
     override fun nextSentence(): String {
         check(hasNext())
-        val tokens = dataSet.value(nextRow, docColumn) ?: listOf()
+        val tokens = docColumn[nextRow] ?: listOf()
         // Annoyingly DeepLearning4j ONLY supports un-tokenized strings and it insists on tokenize them itself so
         // here we concatenate the tokens with spaces and then use a simple space tokenizer to break them back apart.
         val result = tokens.joinToString(" ")
@@ -57,7 +60,7 @@ class TaggedDocumentIterator(val dataSet: DataSet, val docColumn: ColumnId<List<
 
     override fun currentLabels(): List<String> {
         check(curRow >= 0)
-        return labelColumns.map { dataSet.value(curRow, it).toString() }
+        return labelColumns.map { it[curRow] ?: "" }
     }
 
     override fun currentLabel(): String {
