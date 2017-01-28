@@ -9,29 +9,33 @@ class TaggedDocumentIteratorTest {
     @Test
     fun testNoLabels() {
         val docs = listOf(
-                listOf("foo", "bar", "baz"),
+                listOf("foo", "bar", "."),
                 listOf("a", "b", "c", "d", "e", "f"),
-                listOf("AnalyticSpot", "makes", "awesome", "software")
+                listOf("AnalyticSpot", "makes", "awesome", "software", "!")
         )
         val docCol = ColumnId.create<List<String>>("doc")
         val ds = DataSet.build {
             addColumn(docCol, docs)
         }
 
-        val iter = TaggedDocumentIterator(ds, docCol, listOf())
+        val iter = TaggedDocumentIterator(ds.column(docCol), listOf())
 
         assertThat(iter.hasNext()).isTrue()
-        assertThat(iter.nextSentence()).isEqualTo(docs[0].joinToString(" "))
-        assertThat(iter.currentLabels()).isEmpty()
+        var doc = iter.nextDocument()
+        assertThat(doc.content).isEqualTo(docs[0].joinToString(" "))
+        assertThat(doc.labels).isEmpty()
+
         assertThat(iter.hasNext()).isTrue()
-        assertThat(iter.nextSentence()).isEqualTo(docs[1].joinToString(" "))
-        assertThat(iter.currentLabels()).isEmpty()
+        doc = iter.nextDocument()
+        assertThat(doc.content).isEqualTo(docs[1].joinToString(" "))
+        assertThat(doc.labels).isEmpty()
+
         assertThat(iter.hasNext()).isTrue()
-        assertThat(iter.nextSentence()).isEqualTo(docs[2].joinToString(" "))
-        assertThat(iter.currentLabels()).isEmpty()
+        doc = iter.nextDocument()
+        assertThat(doc.content).isEqualTo(docs[2].joinToString(" "))
+        assertThat(doc.labels).isEmpty()
+
         assertThat(iter.hasNext()).isFalse()
-
-        iter.finish()
     }
 
     @Test
@@ -41,18 +45,17 @@ class TaggedDocumentIteratorTest {
             addColumn(docCol, listOf())
         }
 
-        val iter = TaggedDocumentIterator(ds, docCol, listOf())
+        val iter = TaggedDocumentIterator(ds.column(docCol), listOf())
 
         assertThat(iter.hasNext()).isFalse()
-        iter.finish()
     }
 
     @Test
     fun testWithOneLabel() {
         val docs = listOf(
-                listOf("foo", "bar", "baz"),
+                listOf("foo", "!", "baz"),
                 listOf("a", "b", "c", "d", "e", "f"),
-                listOf("AnalyticSpot", "makes", "awesome", "software")
+                listOf("AnalyticSpot", "makes", "awesome", "software", "!!", "Really", ".")
         )
         val docCol = ColumnId.create<List<String>>("doc")
 
@@ -63,20 +66,24 @@ class TaggedDocumentIteratorTest {
             addColumn(labelCol, labels)
         }
 
-        val iter = TaggedDocumentIterator(ds, docCol, listOf(labelCol))
+        val iter = TaggedDocumentIterator(ds.column(docCol), listOf(ds.column(labelCol)))
 
         assertThat(iter.hasNext()).isTrue()
-        assertThat(iter.nextSentence()).isEqualTo(docs[0].joinToString(" "))
-        assertThat(iter.currentLabels()).containsExactly(labels[0])
+        var doc = iter.nextDocument()
+        assertThat(doc.content).isEqualTo(docs[0].joinToString(" "))
+        assertThat(doc.labels).containsExactly(labels[0])
+
         assertThat(iter.hasNext()).isTrue()
-        assertThat(iter.nextSentence()).isEqualTo(docs[1].joinToString(" "))
-        assertThat(iter.currentLabels()).containsExactly(labels[1])
+        doc = iter.nextDocument()
+        assertThat(doc.content).isEqualTo(docs[1].joinToString(" "))
+        assertThat(doc.labels).containsExactly(labels[1])
+
         assertThat(iter.hasNext()).isTrue()
-        assertThat(iter.nextSentence()).isEqualTo(docs[2].joinToString(" "))
-        assertThat(iter.currentLabels()).containsExactly(labels[2])
+        doc = iter.nextDocument()
+        assertThat(doc.content).isEqualTo(docs[2].joinToString(" "))
+        assertThat(doc.labels).containsExactly(labels[2])
+
         assertThat(iter.hasNext()).isFalse()
-
-        iter.finish()
     }
 
     @Test
@@ -91,8 +98,8 @@ class TaggedDocumentIteratorTest {
         val labels1 = listOf("X", "Y", "Z")
         val label1Col = ColumnId.create<String>("label1")
 
-        val labels2 = listOf(1, 10, 20)
-        val label2Col = ColumnId.create<Int>("label2")
+        val labels2 = listOf("be", "bop", "bazzle")
+        val label2Col = ColumnId.create<String>("label2")
 
         val labels3 = listOf("bi", "bim", "bap")
         val label3Col = ColumnId.create<String>("label3")
@@ -104,19 +111,24 @@ class TaggedDocumentIteratorTest {
             addColumn(label3Col, labels3)
         }
 
-        val iter = TaggedDocumentIterator(ds, docCol, listOf(label1Col, label2Col, label3Col))
+        val iter = TaggedDocumentIterator(ds.column(docCol),
+                listOf(ds.column(label1Col), ds.column(label2Col), ds.column(label3Col)))
 
         assertThat(iter.hasNext()).isTrue()
-        assertThat(iter.nextSentence()).isEqualTo(docs[0].joinToString(" "))
-        assertThat(iter.currentLabels()).containsExactly(labels1[0], labels2[0].toString(), labels3[0])
+        var doc = iter.nextDocument()
+        assertThat(doc.content).isEqualTo(docs[0].joinToString(" "))
+        assertThat(doc.labels).containsExactly(labels1[0], labels2[0], labels3[0])
+
         assertThat(iter.hasNext()).isTrue()
-        assertThat(iter.nextSentence()).isEqualTo(docs[1].joinToString(" "))
-        assertThat(iter.currentLabels()).containsExactly(labels1[1], labels2[1].toString(), labels3[1])
+        doc = iter.nextDocument()
+        assertThat(doc.content).isEqualTo(docs[1].joinToString(" "))
+        assertThat(doc.labels).containsExactly(labels1[1], labels2[1], labels3[1])
+
         assertThat(iter.hasNext()).isTrue()
-        assertThat(iter.nextSentence()).isEqualTo(docs[2].joinToString(" "))
-        assertThat(iter.currentLabels()).containsExactly(labels1[2], labels2[2].toString(), labels3[2])
+        doc = iter.nextDocument()
+        assertThat(doc.content).isEqualTo(docs[2].joinToString(" "))
+        assertThat(doc.labels).containsExactly(labels1[2], labels2[2], labels3[2])
+
         assertThat(iter.hasNext()).isFalse()
-
-        iter.finish()
     }
 }
