@@ -41,6 +41,8 @@ class JavaPublishPlugin implements Plugin<Project> {
                 user = System.getenv('BINTRAY_USER')
                 key = System.getenv('BINTRAY_KEY')
                 publications = ['JarPublication']
+                // Makes it public so you don't have to go to bintray and manually publish it after upload.
+                publish = true
 
                 pkg {
                     repo = 'ANX'
