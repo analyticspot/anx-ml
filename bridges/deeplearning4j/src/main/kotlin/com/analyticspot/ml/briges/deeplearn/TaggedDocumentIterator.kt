@@ -6,11 +6,7 @@ import org.deeplearning4j.text.documentiterator.SimpleLabelAwareIterator
 import org.slf4j.LoggerFactory
 
 /**
- * To use DeepLearning4j's doc2vec implementation (which they call `ParagraphVectors`) you need a
- * `LabelAwareIterator`. Note that even though we've already tokenized the document DL4j doesn't support creating an
- * iterator in this way (confirmed on their chat with one of the devs): you **have to** concatenate all the tokens
- * into a single string and then, when you use it (e.g. with `ParagraphVectors`) supply a tokenizer that splits on
- * whitespace (the `DefaultTokenizer` does this).
+ * To use DeepLearning4j's doc2vec implementation (which they call `ParagraphVectors`) you need a `LabelAwareIterator`.
  *
  * Note that DeepLearning4j also has a `DocumentIterator` and a `LabelAwareDocumentIterator` but these treat a document
  * as an `InputStream` and allow only 1 label.
@@ -21,8 +17,7 @@ import org.slf4j.LoggerFactory
  *     not contain spaces.
  * @param labelColumns the columns from which the labels will be pulled.
  */
-class TaggedDocumentIterator(val docColumn: Column<List<String>?>,
-        val labelColumns: List<Column<String?>>)
+class TaggedDocumentIterator(val docColumn: Column<String?>, val labelColumns: List<Column<String?>>)
     : SimpleLabelAwareIterator(toIterableOfLabelledDoc(docColumn, labelColumns)) {
 
     // The row that will be used on the next call to nextSentence
@@ -34,8 +29,23 @@ class TaggedDocumentIterator(val docColumn: Column<List<String>?>,
     companion object {
         private val log = LoggerFactory.getLogger(TaggedDocumentIterator::class.java)
 
+        /**
+         * Convenience factory that take a document column that's already been tokenized. This is handy for those cases
+         * where we've already tokenized the document because DL4j doesn't support creating an iterator in this way
+         * (confirmed on their chat with one of the devs): you **have to** concatenate all the tokens into a single
+         * string and then, when you use it (e.g. with `ParagraphVectors`) supply a tokenizer that splits on whitespace
+         * (the `DefaultTokenizer` does this). This constructor will handle the concatenation for you.
+         */
+        fun fromTokenized(docCol: Column<List<String>?>, labelColumns: List<Column<String?>>): TaggedDocumentIterator {
+            return TaggedDocumentIterator(concatenateStringsInColumn(docCol), labelColumns)
+        }
+
+        private fun concatenateStringsInColumn(docCol: Column<List<String>?>): Column<String?> {
+            return docCol.mapToColumn { it?.joinToString(" ") ?: "" }
+        }
+
         private fun toIterableOfLabelledDoc(
-                docColumn: Column<List<String>?>, labelColumns: List<Column<String?>>): Iterable<LabelledDocument> {
+                docColumn: Column<String?>, labelColumns: List<Column<String?>>): Iterable<LabelledDocument> {
             labelColumns.forEach {
                 check(it.size == docColumn.size)
             }
@@ -43,7 +53,7 @@ class TaggedDocumentIterator(val docColumn: Column<List<String>?>,
                 val labels = labelColumns.mapNotNull { it[idx] }
                 val doc = docColumn[idx]
                 // As per class comment, we have to concatenate all the text for this to work
-                val docStr = doc?.joinToString(" ") ?: ""
+                val docStr = doc ?: ""
                 DocWithLabels(docStr, labels)
             }
             return labelledDocList
