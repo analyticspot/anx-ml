@@ -101,7 +101,6 @@ class MultiFileMixedFormat() : Format<MultiFileMixedFormat.MetaData> {
         return buffer
     }
 
-
     class MetaData(val transformClass: Class<out DataTransform>) : FormatMetaData {
         override val formatClass = MultiFileMixedFormat::class.java
 

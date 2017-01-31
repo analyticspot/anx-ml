@@ -69,8 +69,6 @@ class MultiFileMixedFormatTest {
         assertThat(resultDs.column(sillyNode.outColumn)).containsExactly(sillyOutput.toLowerCase())
     }
 
-
-
     class SillyBinaryExample : SingleDataTransform, MultiFileMixedTransform {
         val outColumn = ColumnId.create<String>("foo")
         override val description: TransformDescription = TransformDescription(listOf(outColumn))
@@ -101,7 +99,6 @@ class MultiFileMixedFormatTest {
             0.until(dataSet.numRows).forEach { resultList.add(transformOutput) }
             return CompletableFuture.completedFuture(DataSet.create(outColumn, resultList))
         }
-
 
         override fun serializeBinaryData(output: OutputStream) {
             output.write(randomBytes.toByteArray())
