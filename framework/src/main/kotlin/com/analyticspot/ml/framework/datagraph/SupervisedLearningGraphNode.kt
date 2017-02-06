@@ -20,6 +20,7 @@ package com.analyticspot.ml.framework.datagraph
 import com.analyticspot.ml.framework.dataset.DataSet
 import com.analyticspot.ml.framework.datatransform.SupervisedLearningTransform
 import java.util.concurrent.CompletableFuture
+import java.util.concurrent.ExecutorService
 import java.util.concurrent.atomic.AtomicInteger
 
 /**
@@ -102,14 +103,15 @@ class SupervisedLearningGraphNode(builder: Builder) : HasTransformGraphNode<Supe
             }
         }
 
-        override fun run(): CompletableFuture<DataSet> {
+        override fun run(exec: ExecutorService): CompletableFuture<DataSet> {
             assert(mainData != null)
             assert(targetData != null)
-            return graphNode.transform.trainTransform(mainData!!, targetData!!).whenComplete { dataSet, throwable ->
-                // Free the data sets so they can be GC'd
-                mainData = null
-                targetData = null
-            }
+            return graphNode.transform.trainTransform(mainData!!, targetData!!, exec)
+                    .whenComplete { dataSet, throwable ->
+                        // Free the data sets so they can be GC'd
+                    mainData = null
+                    targetData = null
+                }
         }
     }
 
@@ -128,9 +130,9 @@ class SupervisedLearningGraphNode(builder: Builder) : HasTransformGraphNode<Supe
             parent.onReadyToRun(this)
         }
 
-        override fun run(): CompletableFuture<DataSet> {
+        override fun run(exec: ExecutorService): CompletableFuture<DataSet> {
             assert(data != null)
-            return graphNode.transform.trainTransform(data!!, data!!).whenComplete { dataSet, throwable ->
+            return graphNode.transform.trainTransform(data!!, data!!, exec).whenComplete { dataSet, throwable ->
                 // Free the data sets so they can be GC'd
                 data = null
             }
@@ -140,8 +142,8 @@ class SupervisedLearningGraphNode(builder: Builder) : HasTransformGraphNode<Supe
     // An execution manager for performing a transform. This is just a regular single input data set.
     private class TransformExecutionManager(override val graphNode: SupervisedLearningGraphNode,
             parent: GraphExecution) : SingleInputExecutionManager(parent) {
-        override fun doRun(dataSet: DataSet): CompletableFuture<DataSet> {
-            return graphNode.transform.transform(dataSet)
+        override fun doRun(dataSet: DataSet, exec: ExecutorService): CompletableFuture<DataSet> {
+            return graphNode.transform.transform(dataSet, exec)
         }
 
     }

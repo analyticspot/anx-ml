@@ -19,6 +19,7 @@ package com.analyticspot.ml.framework.datatransform
 
 import com.analyticspot.ml.framework.dataset.DataSet
 import java.util.concurrent.CompletableFuture
+import java.util.concurrent.ExecutorService
 
 /**
  * A [DataTransform] that learns from the data. To use it one should call `trainTransform` to both train the algorithm
@@ -28,5 +29,5 @@ interface LearningTransform : SingleDataTransform {
     /**
      * Learn from the data and then applies what was learned to produce a new [DataSet].
      */
-    fun trainTransform(dataSet: DataSet): CompletableFuture<DataSet>
+    fun trainTransform(dataSet: DataSet, exec: ExecutorService): CompletableFuture<DataSet>
 }

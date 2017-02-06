@@ -103,7 +103,7 @@ class GraphExecution (
         exec.submit {
             log.debug("Starting execution of node {}", manager.graphNode.id)
             try {
-                manager.run().whenComplete { dataSet, throwable ->
+                manager.run(exec).whenComplete { dataSet, throwable ->
                     if (throwable == null) {
                         onDataComputed(manager, dataSet)
                     } else {
@@ -147,7 +147,7 @@ interface NodeExecutionManager {
      *
      * Note that any exceptions thrown by this method will be handled by the framework.
      */
-    fun run(): CompletableFuture<DataSet>
+    fun run(exec: ExecutorService): CompletableFuture<DataSet>
 }
 
 /**
@@ -167,13 +167,13 @@ abstract class SingleInputExecutionManager(protected val parent: GraphExecution)
         parent.onReadyToRun(this)
     }
 
-    final override fun run(): CompletableFuture<DataSet> {
-        return doRun(data!!).whenComplete { dataSet, throwable ->
+    final override fun run(exec: ExecutorService): CompletableFuture<DataSet> {
+        return doRun(data!!, exec).whenComplete { dataSet, throwable ->
             // Get rid of our reference to the observaton so it can be GC'd if nothing else is using it.
             data = null
         }
     }
 
-    abstract fun doRun(dataSet: DataSet): CompletableFuture<DataSet>
+    abstract fun doRun(dataSet: DataSet, exec: ExecutorService): CompletableFuture<DataSet>
 
 }

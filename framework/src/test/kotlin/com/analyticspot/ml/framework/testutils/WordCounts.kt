@@ -28,6 +28,7 @@ import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder
 import org.slf4j.LoggerFactory
 import java.util.TreeMap
 import java.util.concurrent.CompletableFuture
+import java.util.concurrent.ExecutorService
 
 /**
  * An example of an unsupervised learner that doesn't know in advance how many outputs it will have. This one takes in
@@ -55,7 +56,7 @@ class WordCounts private constructor(
         private val log = LoggerFactory.getLogger(WordCounts::class.java)
     }
 
-    override fun transform(dataSet: DataSet): CompletableFuture<DataSet> {
+    override fun transform(dataSet: DataSet, exec: ExecutorService): CompletableFuture<DataSet> {
         val counts: MutableMap<String, MutableList<Int>> = TreeMap()
         wordSet.forEach { counts.put(it, mutableListOf()) }
         dataSet.column(sourceColumn).forEach { transform(it, counts) }
@@ -86,13 +87,13 @@ class WordCounts private constructor(
 
     }
 
-    override fun trainTransform(dataSet: DataSet): CompletableFuture<DataSet> {
+    override fun trainTransform(dataSet: DataSet, exec: ExecutorService): CompletableFuture<DataSet> {
         // Training phase
         dataSet.column(sourceColumn).forEach {
             it?.forEach { wordSet.add(it) }
         }
 
-        return transform(dataSet)
+        return transform(dataSet, exec)
     }
 
     // This should be unnecessary but is a workaround for this bug:

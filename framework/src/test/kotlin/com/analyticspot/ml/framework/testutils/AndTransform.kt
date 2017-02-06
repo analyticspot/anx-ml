@@ -23,6 +23,7 @@ import com.analyticspot.ml.framework.description.ColumnId
 import com.analyticspot.ml.framework.description.TransformDescription
 import java.util.ArrayList
 import java.util.concurrent.CompletableFuture
+import java.util.concurrent.ExecutorService
 
 /**
  * This transform returns true if the values for all the source columns passed to the contructor are true, false
@@ -31,7 +32,7 @@ import java.util.concurrent.CompletableFuture
 class AndTransform(val srcCols: List<ColumnId<Boolean>>, val resultId: ColumnId<Boolean>) : SingleDataTransform {
     override val description: TransformDescription = TransformDescription(listOf(resultId))
 
-    override fun transform(dataSet: DataSet): CompletableFuture<DataSet> {
+    override fun transform(dataSet: DataSet, exec: ExecutorService): CompletableFuture<DataSet> {
         val resultList = ArrayList<Boolean>(dataSet.numRows)
         for (rowIdx in 0 until dataSet.numRows) {
             var isTrue = true

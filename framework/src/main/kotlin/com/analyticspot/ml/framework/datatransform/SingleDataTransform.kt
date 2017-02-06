@@ -19,11 +19,12 @@ package com.analyticspot.ml.framework.datatransform
 
 import com.analyticspot.ml.framework.dataset.DataSet
 import java.util.concurrent.CompletableFuture
+import java.util.concurrent.ExecutorService
 
 /**
  * A [DataTransform] that operates on a single input [DataSet]. As noted in [MultiTransform], most transforms should
  * implement [SingleDataTransform] and, if they need multiple inputs, use a [MergeTransform].
  */
 interface SingleDataTransform : DataTransform {
-    fun transform(dataSet: DataSet): CompletableFuture<DataSet>
+    fun transform(dataSet: DataSet, exec: ExecutorService): CompletableFuture<DataSet>
 }

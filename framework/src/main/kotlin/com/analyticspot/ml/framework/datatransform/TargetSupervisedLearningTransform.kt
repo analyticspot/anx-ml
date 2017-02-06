@@ -22,6 +22,7 @@ import com.analyticspot.ml.framework.dataset.DataSet
 import com.analyticspot.ml.framework.description.ColumnId
 import com.fasterxml.jackson.annotation.JsonIgnore
 import java.util.concurrent.CompletableFuture
+import java.util.concurrent.ExecutorService
 
 /**
  * As supervised learning algorithms that work with a single target value are common this is a convenience class that
@@ -34,11 +35,12 @@ import java.util.concurrent.CompletableFuture
  */
 abstract class TargetSupervisedLearningTransform<TargetT : Any>(@JsonIgnore val targetColumn: ColumnId<TargetT>?)
     : SupervisedLearningTransform {
-    override final fun trainTransform(dataSet: DataSet, trainDs: DataSet): CompletableFuture<DataSet> {
+    override final fun trainTransform(dataSet: DataSet, trainDs: DataSet, exec: ExecutorService): CompletableFuture<DataSet> {
         // targetColumn must be non-null for training but could be null for transform.
-        return trainTransform(dataSet, trainDs.column(targetColumn!!))
+        return trainTransform(dataSet, trainDs.column(targetColumn!!), exec)
     }
 
-    abstract fun trainTransform(dataSet: DataSet, target: Column<TargetT?>): CompletableFuture<DataSet>
+    abstract fun trainTransform(dataSet: DataSet, target: Column<TargetT?>, exec: ExecutorService)
+            : CompletableFuture<DataSet>
 
 }

@@ -26,6 +26,7 @@ import com.analyticspot.ml.framework.description.TransformDescription
 import com.analyticspot.ml.utils.isAssignableFrom // ktlint-disable no-unused-imports
 import org.slf4j.LoggerFactory
 import java.util.concurrent.CompletableFuture
+import java.util.concurrent.ExecutorService
 import kotlin.reflect.KClass
 
 /**
@@ -73,7 +74,7 @@ abstract class SingleItemDataTransform<InputT : Any, OutputT : Any>(
         TransformDescription(newCols, newColGroups)
     }
 
-    final override fun transform(dataSet: DataSet): CompletableFuture<DataSet> {
+    final override fun transform(dataSet: DataSet, exec: ExecutorService): CompletableFuture<DataSet> {
         val resultBuilder = DataSet.builder()
         for (colId in dataSet.columnIds) {
             if (inType isAssignableFrom colId.clazz) {

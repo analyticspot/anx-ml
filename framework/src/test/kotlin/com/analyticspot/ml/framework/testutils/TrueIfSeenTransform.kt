@@ -24,6 +24,7 @@ import com.analyticspot.ml.framework.description.ColumnId
 import com.analyticspot.ml.framework.description.TransformDescription
 import com.fasterxml.jackson.annotation.JsonCreator
 import java.util.concurrent.CompletableFuture
+import java.util.concurrent.ExecutorService
 
 /**
  * A very simple [SupervisedLearningTransform] that learns to predict a boolean target based on a single feature of type
@@ -40,20 +41,21 @@ class TrueIfSeenTransform(
     @JsonCreator
     private constructor(srcColumn: ColumnId<String>, resultId: ColumnId<Boolean>): this(srcColumn, null, resultId)
 
-    override fun transform(dataSet: DataSet): CompletableFuture<DataSet> {
+    override fun transform(dataSet: DataSet, exec: ExecutorService): CompletableFuture<DataSet> {
         val resultList = dataSet.column(srcColumn)
                 .map { wordsForTrue.contains(it) }
                 .toList()
         return CompletableFuture.completedFuture(DataSet.create(resultId, resultList))
     }
 
-    override fun trainTransform(dataSet: DataSet, target: Column<Boolean?>): CompletableFuture<DataSet> {
+    override fun trainTransform(dataSet: DataSet, target: Column<Boolean?>, exec: ExecutorService)
+            : CompletableFuture<DataSet> {
         dataSet.column(srcColumn).zip(target).forEach { valueTargetPair ->
             val (value, targ) = valueTargetPair
             if (targ!! && value != null) {
                 wordsForTrue.add(value)
             }
         }
-        return transform(dataSet)
+        return transform(dataSet, exec)
     }
 }

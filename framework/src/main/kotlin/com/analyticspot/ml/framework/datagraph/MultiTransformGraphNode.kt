@@ -21,6 +21,7 @@ import com.analyticspot.ml.framework.dataset.DataSet
 import com.analyticspot.ml.framework.datatransform.MultiTransform
 import org.slf4j.LoggerFactory
 import java.util.concurrent.CompletableFuture
+import java.util.concurrent.ExecutorService
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicReferenceArray
 
@@ -74,7 +75,7 @@ internal class MultiTransformGraphNode protected constructor(builder: Builder)
             }
         }
 
-        override fun run(): CompletableFuture<DataSet> {
+        override fun run(exec: ExecutorService): CompletableFuture<DataSet> {
             log.debug("Node {} is executing.", graphNode.id)
             val sourceList: List<DataSet> = graphNode.sources.indices.map {
                 dataSets.get(it) ?: throw IllegalStateException("Data set for index $it was missing")
