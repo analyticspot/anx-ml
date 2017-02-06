@@ -18,6 +18,7 @@ import java.io.InputStream
 import java.io.OutputStream
 import java.util.Random
 import java.util.concurrent.CompletableFuture
+import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 
 class MultiFileMixedFormatTest {
@@ -94,7 +95,7 @@ class MultiFileMixedFormatTest {
             val NUM_BINARY_BYTES = 100
         }
 
-        override fun transform(dataSet: DataSet): CompletableFuture<DataSet> {
+        override fun transform(dataSet: DataSet, exec: ExecutorService): CompletableFuture<DataSet> {
             val resultList = mutableListOf<String>()
             0.until(dataSet.numRows).forEach { resultList.add(transformOutput) }
             return CompletableFuture.completedFuture(DataSet.create(outColumn, resultList))

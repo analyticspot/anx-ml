@@ -24,6 +24,7 @@ import com.fasterxml.jackson.annotation.JsonCreator
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.annotation.JsonProperty.Access
 import java.util.concurrent.CompletableFuture
+import java.util.concurrent.ExecutorService
 
 /**
  * Takes in a source [DataSet] and returns a new [DataSet] that contains a subset of the columns in the source. There
@@ -54,7 +55,7 @@ class ColumnSubsetTransform : SingleDataTransform {
         }
     }
 
-    override fun transform(dataSet: DataSet): CompletableFuture<DataSet> {
+    override fun transform(dataSet: DataSet, exec: ExecutorService): CompletableFuture<DataSet> {
         val bldr = DataSet.builder()
         keepMap.forEach { entry ->
             @Suppress("UNCHECKED_CAST")

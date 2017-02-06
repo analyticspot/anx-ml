@@ -25,6 +25,7 @@ import com.analyticspot.ml.framework.description.TransformDescription
 import org.slf4j.LoggerFactory
 import java.util.Collections
 import java.util.concurrent.CompletableFuture
+import java.util.concurrent.ExecutorService
 
 /**
  * Learns the minimum value for a single column and produces a [DataSet] with a single column, identified by `resultId`,
@@ -39,14 +40,14 @@ class LearnMinTransform(private val srcColumn: ColumnId<Int>, val resultId: Colu
         private val log = LoggerFactory.getLogger(LearnMinTransform::class.java)
     }
 
-    override fun trainTransform(dataSet: DataSet): CompletableFuture<DataSet> {
+    override fun trainTransform(dataSet: DataSet, exec: ExecutorService): CompletableFuture<DataSet> {
         log.debug("{} is training", this.javaClass)
         val dsMin = dataSet.column(srcColumn).map { it ?: Int.MAX_VALUE }.min()
         minValue = dsMin ?: minValue
-        return transform(dataSet)
+        return transform(dataSet, exec)
     }
 
-    override fun transform(dataSet: DataSet): CompletableFuture<DataSet> {
+    override fun transform(dataSet: DataSet, exec: ExecutorService): CompletableFuture<DataSet> {
         val col = ListColumn(Collections.nCopies(dataSet.numRows, minValue))
         val ds = DataSet.build {
             addColumn(resultId, col)

@@ -21,6 +21,7 @@ import com.analyticspot.ml.framework.dataset.DataSet
 import com.analyticspot.ml.framework.description.ColumnId
 import com.analyticspot.ml.framework.description.TransformDescription
 import java.util.concurrent.CompletableFuture
+import java.util.concurrent.ExecutorService
 
 /**
  * A special [GraphNode] for the one node that is the source for the entire graph. While most nodes know how to compute
@@ -83,7 +84,7 @@ class SourceGraphNode private constructor(builder: Builder) : GraphNode(builder.
                     "normal GraphExecution protocol.")
         }
 
-        override fun run(): CompletableFuture<DataSet> {
+        override fun run(exec: ExecutorService): CompletableFuture<DataSet> {
             throw IllegalStateException("This is a SourceGraphNode and it therefore does not participate in the " +
                     "normal GraphExecution protocol.")
         }

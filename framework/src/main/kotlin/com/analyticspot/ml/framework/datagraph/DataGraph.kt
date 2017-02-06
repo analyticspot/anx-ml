@@ -24,6 +24,7 @@ import com.analyticspot.ml.framework.datatransform.MultiTransform
 import com.analyticspot.ml.framework.datatransform.SingleDataTransform
 import com.analyticspot.ml.framework.datatransform.SupervisedLearningTransform
 import com.analyticspot.ml.framework.description.ColumnId
+import com.analyticspot.ml.framework.description.TransformDescription
 import org.slf4j.LoggerFactory
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ExecutorService
@@ -38,7 +39,9 @@ import java.util.concurrent.ExecutorService
  *
  * Note: Unit tests for this are in `GraphExecutionTest`.
  */
-class DataGraph(builder: GraphBuilder) {
+class DataGraph(builder: GraphBuilder) : LearningTransform {
+    override val description: TransformDescription
+        get() = result.transformDescription
     val source: SourceGraphNode
     val result: GraphNode
     // An array of all the GraphNodes such that a node `x` can be found at `allNodes[x.id]`. Can be null because when
@@ -161,7 +164,7 @@ class DataGraph(builder: GraphBuilder) {
      * Run the data through the entire graph. The result type is a future of `DataSet` because the graph
      * might contain an asynchronous [DataTransform] or it might contain an [OnDemandValue].
      */
-    fun transform(dataSet: DataSet, exec: ExecutorService): CompletableFuture<DataSet> {
+    override fun transform(dataSet: DataSet, exec: ExecutorService): CompletableFuture<DataSet> {
         val graphExec = GraphExecution(this, ExecutionType.TRANSFORM, exec)
         return graphExec.execute(dataSet)
     }
@@ -170,7 +173,7 @@ class DataGraph(builder: GraphBuilder) {
      * Train the graph on the given inputs and return the result of transforming the source data set via the trained
      * transformers.
      */
-    fun trainTransform(dataSet: DataSet, exec: ExecutorService): CompletableFuture<DataSet> {
+    override fun trainTransform(dataSet: DataSet, exec: ExecutorService): CompletableFuture<DataSet> {
         val graphExec = GraphExecution(this, ExecutionType.TRAIN_TRANSFORM, exec)
         return graphExec.execute(dataSet)
     }

@@ -22,6 +22,7 @@ import com.analyticspot.ml.framework.datatransform.SingleDataTransform
 import com.analyticspot.ml.framework.description.ColumnId
 import com.analyticspot.ml.framework.description.TransformDescription
 import java.util.concurrent.CompletableFuture
+import java.util.concurrent.ExecutorService
 import java.util.concurrent.atomic.AtomicInteger
 
 /**
@@ -34,7 +35,7 @@ class InvertBoolean(private val srcColumn: ColumnId<Boolean>,
 
     override val description: TransformDescription = TransformDescription(listOf(resultId))
 
-    override fun transform(dataSet: DataSet): CompletableFuture<DataSet> {
+    override fun transform(dataSet: DataSet, exec: ExecutorService): CompletableFuture<DataSet> {
         numCalls.incrementAndGet()
         val newCol = dataSet.column(srcColumn).mapToColumn { !it!! }
         return CompletableFuture.completedFuture(DataSet.Companion.create(resultId, newCol))

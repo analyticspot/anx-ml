@@ -31,6 +31,7 @@ import org.slf4j.LoggerFactory
 import org.testng.annotations.BeforeClass
 import org.testng.annotations.Test
 import java.util.concurrent.CompletableFuture
+import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 
 class GraphExecutionTest {
@@ -342,7 +343,7 @@ class GraphExecutionTest {
         override val description: TransformDescription
             get() = TransformDescription(listOf(resultId))
 
-        override fun transform(dataSet: DataSet): CompletableFuture<DataSet> {
+        override fun transform(dataSet: DataSet, exec: ExecutorService): CompletableFuture<DataSet> {
             throw RuntimeException(ERROR_MESSAGE)
         }
     }
@@ -354,7 +355,7 @@ class GraphExecutionTest {
         override val description: TransformDescription
             get() = TransformDescription(listOf(resultId))
 
-        override fun transform(dataSet: DataSet): CompletableFuture<DataSet> {
+        override fun transform(dataSet: DataSet, exec: ExecutorService): CompletableFuture<DataSet> {
             val result = CompletableFuture<DataSet>()
             result.completeExceptionally(RuntimeException(ERROR_MESSAGE))
             return result

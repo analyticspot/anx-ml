@@ -20,6 +20,7 @@ package com.analyticspot.ml.framework.datagraph
 import com.analyticspot.ml.framework.dataset.DataSet
 import com.analyticspot.ml.framework.datatransform.SingleDataTransform
 import org.slf4j.LoggerFactory
+import java.util.concurrent.ExecutorService
 
 /**
  * A [GraphNode] that takes a single input, runs it through a [DataTransform] and produces a single output.
@@ -60,7 +61,7 @@ internal open class TransformGraphNode protected constructor(builder: Builder)
     private class ExecutionManager(override val graphNode: TransformGraphNode, parent: GraphExecution)
         : SingleInputExecutionManager(parent) {
 
-        override fun doRun(dataSet: DataSet) = graphNode.transform.transform(dataSet)
+        override fun doRun(dataSet: DataSet, exec: ExecutorService) = graphNode.transform.transform(dataSet, exec)
     }
 }
 

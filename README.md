@@ -131,6 +131,10 @@ Observation toPredict = dg.createSource("the text of a movie review");
 DataSet result = dg.transform(toPredict, Executors.newFixedThreadPool(4));
 ```
 
+Note that `DataGraph` implements `LearningTransform` and so can be used just like a single transform in another
+`DataGraph`. This allows you to decompose a large graph into several smaller ones. It also allows you to use the
+deserialization injection on entire subgraphs. See the `SERIALIZATION.README.md` file for details.
+
 # Overview
 
 The library consists of several components:
@@ -149,6 +153,18 @@ which transforms consume the output of this transform, etc.
 * `GraphSerDeser`: used for serializing and deserializing a graph. This allows for a variety of serialization formats
 so that we can interoperate with other machine learning libraries and allows for injection. See the
 `SERIALIZATION.README.md` file for details.
+
+# ExecutorService
+
+Methods like `transform`, `trainTransform` and their counterparts from convenience classes like
+`TargetSupervisedLearningTransform` take an argument of type `ExecutorService`. These methods are guaranteed to be
+called on a thread managed by the passed `ExecutorService`. Thus, if the transform is going to some computationally
+expensive work in a single thread they can simply run thier computation directly in the method and ignore the
+`ExecutorService`. However, computations that can be parallelized are free to submit work to the `ExecutorService`.
+Since this is the same `ExecutorService` that manages the execution of the `DataGraph` the submitted work will be
+interleaved with the work of other `DataTransform` instance in the same `DataGraph`. This allows us to do things
+like create one thread per CPU and use that thread pool for all computationally expensive work parallelizing not only
+the execution of individual transforms but also the work done by a single transform if it can be parallelized.
  
 # Using
 
