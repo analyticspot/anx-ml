@@ -29,6 +29,10 @@ ext.Deps = [
         ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
         'deepLearning4jCore': 'org.deeplearning4j:deeplearning4j-core:0.7.2',
         'deepLearning4jNlp': 'org.deeplearning4j:deeplearning4j-nlp:0.7.2',
+        'smile': [
+                'com.github.haifengl:smile-core:1.2.2',
+                'com.github.haifengl:smile-data:1.2.2'
+        ],
 
 
         ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
