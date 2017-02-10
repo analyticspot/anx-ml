@@ -1,0 +1,13 @@
+apply plugin: 'anx-kotlin'
+apply plugin: 'anx-jar-publish'
+
+dependencies {
+    compile project(':framework')
+    compile Deps.ktStdlib
+    compile Deps.ktJava8
+    compile Deps.slf4j
+    compile Deps.smile
+
+    testCompile Deps.standardTest
+    testCompile Deps.logback
+}
