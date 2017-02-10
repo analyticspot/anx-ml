@@ -26,7 +26,7 @@ import java.util.concurrent.ExecutorService
 
 /**
  * As supervised learning algorithms that work with a single target value are common this is a convenience class that
- * extracts the target for the user. Subclasses then implmement the [trainTransform] overload that takes a `TargetT`
+ * extracts the target for the user. Subclasses then implement the [trainTransform] overload that takes a `TargetT`
  * rather than the one that takes an entire [DataSet].
  *
  * @param targetColumn the token used to extract the target value from the data. Can be null as it will not be available
