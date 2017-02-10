@@ -1,6 +1,5 @@
 package com.analyticspot.ml.bridges.smile
 
-import com.analyticspot.ml.framework.dataset.DataSet
 import com.analyticspot.ml.framework.dataset.FeatureDataSet
 import com.analyticspot.ml.framework.feature.CategoricalFeatureId
 import com.analyticspot.ml.framework.feature.NumericalFeatureId
