@@ -25,6 +25,9 @@ import kotlin.reflect.KClass
  *
  * By convention groups of related values are named with a prefix, a separator of `-` and a suffix. Thus, if you are
  * naming just a single feature/data item refrain from using the `-` character.
+ *
+ * Most machine learning algorithms require a limited set of types, usually with some meta-data. Thus, the learners
+ * usually work only with subclasses of [Feature].
  */
 open class ColumnId<DataT : Any>(val name: String, val clazz: KClass<DataT>) : Comparable<ColumnId<*>> {
     /**
