@@ -4,7 +4,6 @@ import com.analyticspot.ml.framework.description.ColumnId
 // Lint disable as this is used but there's a ktlint bug.
 import com.analyticspot.ml.utils.isAssignableFrom // ktlint-disable no-unused-imports
 
-
 /**
  * A [DataSetBase] for any data type. If all the columns are a subclass of [FeatureId] use [FeatureDataSet] instead.
  */

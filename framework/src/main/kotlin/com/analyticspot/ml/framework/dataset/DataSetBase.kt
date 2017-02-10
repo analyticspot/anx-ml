@@ -20,8 +20,6 @@ package com.analyticspot.ml.framework.dataset
 import com.analyticspot.ml.framework.description.ColumnId
 // Lint disable as this is used but there's a ktlint bug.
 import com.analyticspot.ml.utils.isAssignableFrom // ktlint-disable no-unused-imports
-import org.slf4j.LoggerFactory
-import java.util.Arrays
 
 /**
  * This is what holds the data that is passed through the [DataGraph]. It is column-oriented so that creating a

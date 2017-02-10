@@ -2,7 +2,6 @@ package com.analyticspot.ml.framework.dataset
 
 import com.analyticspot.ml.framework.description.ColumnId
 import com.analyticspot.ml.framework.feature.CategoricalFeatureId
-import com.analyticspot.ml.framework.feature.FeatureId
 import com.analyticspot.ml.framework.feature.NumericalFeatureId
 import org.assertj.core.api.Assertions.assertThat
 import org.testng.annotations.Test
