@@ -1,6 +1,7 @@
 package com.analyticspot.ml.bridges.smile
 
 import com.analyticspot.ml.framework.dataset.DataSet
+import com.analyticspot.ml.framework.feature.BooleanFeatureId
 import com.analyticspot.ml.framework.feature.CategoricalFeatureId
 import com.analyticspot.ml.framework.feature.NumericalFeatureId
 import org.assertj.core.api.Assertions.assertThat
@@ -33,6 +34,31 @@ class AttributeConversionTest {
         assertThat(valA).isEqualTo(smileNominal.valueOf("a"))
         assertThat(valB).isEqualTo(smileNominal.valueOf("b"))
         assertThat(valC).isEqualTo(smileNominal.valueOf("c"))
+
+        assertThat(smileNominal.toString(valA)).isEqualTo("a")
+        assertThat(smileNominal.toString(valB)).isEqualTo("b")
+        assertThat(smileNominal.toString(valC)).isEqualTo("c")
+    }
+
+    @Test
+    fun testBooleanConversion() {
+        val boolId = BooleanFeatureId("foo", true)
+
+        val smileBoolean = AttributeConversion.toAttribute(boolId)
+
+        assertThat(smileBoolean.isOpen).isFalse()
+        assertThat(smileBoolean.size()).isEqualTo(2)
+        assertThat(smileBoolean.values()).containsAll(listOf("true", "false"))
+        assertThat(smileBoolean.values()).containsOnly("true", "false")
+        assertThat(smileBoolean.name).isEqualTo(boolId.name)
+
+        // We want true to be encoded as 1 in the smile data and false as 0 for consistency with what most people
+        // expect.
+        assertThat(smileBoolean.valueOf("true")).isEqualTo(1.0)
+        assertThat(smileBoolean.valueOf("false")).isEqualTo(0.0)
+
+        assertThat(smileBoolean.toString(1.0)).isEqualTo("true")
+        assertThat(smileBoolean.toString(0.0)).isEqualTo("false")
     }
 
     @Test
@@ -40,11 +66,13 @@ class AttributeConversionTest {
         val catId = CategoricalFeatureId("foo", true, setOf("a", "b", "c"))
         val numId1 = NumericalFeatureId("bar", true)
         val numId2 = NumericalFeatureId("baz", false)
+        val boolId = BooleanFeatureId("zap", true)
 
         val ds = DataSet.build {
             addColumn(catId, listOf("a", "a"))
             addColumn(numId1, listOf(1.0, 2.0))
             addColumn(numId2, listOf(3.0, 4.0))
+            addColumn(boolId, listOf(true, false))
         }
 
         val attrs = AttributeConversion.toSmileAttributes(ds)
@@ -65,5 +93,11 @@ class AttributeConversionTest {
         assertThat(attrs[2].type).isEqualTo(Attribute.Type.NOMINAL)
         val nominalAttr = attrs[2] as NominalAttribute
         assertThat(nominalAttr.values()).containsExactlyElementsOf(catId.possibleValues)
+
+        assertThat(attrs[3].name).isEqualTo("zap")
+        assertThat(attrs[3].type).isEqualTo(Attribute.Type.NOMINAL)
+        val boolAttr = attrs[3] as NominalAttribute
+        assertThat(boolAttr.values()).contains("true", "false")
+        assertThat(boolAttr.values()).containsOnly("true", "false")
     }
 }

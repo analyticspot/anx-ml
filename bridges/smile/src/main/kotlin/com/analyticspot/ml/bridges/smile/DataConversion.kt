@@ -1,6 +1,7 @@
 package com.analyticspot.ml.bridges.smile
 
 import com.analyticspot.ml.framework.dataset.DataSet
+import com.analyticspot.ml.framework.feature.BooleanFeatureId
 import com.analyticspot.ml.framework.feature.CategoricalFeatureId
 import com.analyticspot.ml.framework.feature.NumericalFeatureId
 import smile.data.NominalAttribute
@@ -26,7 +27,9 @@ object DataConversion {
             DoubleArray(dataSet.numColumns) { colIdx ->
                 val colId = dataSet.columnIds[colIdx]
                 when (colId) {
-                    is CategoricalFeatureId -> categoricalToDouble(dataSet.value(rowIdx, colId),
+                    is CategoricalFeatureId -> categoricalOrBooleanToDouble(dataSet.value(rowIdx, colId),
+                            attrs[colIdx] as NominalAttribute)
+                    is BooleanFeatureId -> categoricalOrBooleanToDouble(dataSet.value(rowIdx, colId)?.toString(),
                             attrs[colIdx] as NominalAttribute)
                     is NumericalFeatureId -> dataSet.value(rowIdx, colId) ?: Double.NaN
                     else -> throw IllegalArgumentException("Unknown column type ${colId.javaClass}")
@@ -37,7 +40,7 @@ object DataConversion {
         return DataAndAttrs(data, attrs)
     }
 
-    fun categoricalToDouble(value: String?, attr: NominalAttribute): Double {
+    private fun categoricalOrBooleanToDouble(value: String?, attr: NominalAttribute): Double {
         if (value == null) {
             return Double.NaN
         } else {

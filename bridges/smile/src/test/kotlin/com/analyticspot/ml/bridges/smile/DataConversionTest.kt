@@ -1,6 +1,7 @@
 package com.analyticspot.ml.bridges.smile
 
 import com.analyticspot.ml.framework.dataset.DataSet
+import com.analyticspot.ml.framework.feature.BooleanFeatureId
 import com.analyticspot.ml.framework.feature.CategoricalFeatureId
 import com.analyticspot.ml.framework.feature.NumericalFeatureId
 import org.assertj.core.api.Assertions.assertThat
@@ -13,6 +14,7 @@ class DataConversionTest {
         val catId2 = CategoricalFeatureId("c2", true, setOf("x", "y", "z"))
         val numId1 = NumericalFeatureId("n1", false)
         val numId2 = NumericalFeatureId("n2", true)
+        val boolId = BooleanFeatureId("pb", true)
 
         // note that we add columns here in alphabetical order by column id so make it easier to understand how the data
         // will be converted since the converted columns go in order of ds.columnIds where are alphabetical order.
@@ -21,6 +23,7 @@ class DataConversionTest {
             addColumn(catId2, listOf("x", null))
             addColumn(numId1, listOf(1.0, 2.0))
             addColumn(numId2, listOf(null, 3.0))
+            addColumn(boolId, listOf(true, null))
         }
 
         val converted = DataConversion.fromDataSet(ds)
@@ -44,6 +47,10 @@ class DataConversionTest {
 
         assertThat(converted.data[0][3]).isNaN()
 
+        val v04 = converted.data[0][4]
+        assertThat(v04).isEqualTo(converted.attributes[4].valueOf("true"))
+        assertThat(converted.attributes[4].toString(v04)).isEqualTo("true")
+
         // row 2
         assertThat(converted.data[1].size).isEqualTo(ds.numColumns)
         val v10 = converted.data[1][0]
@@ -54,5 +61,7 @@ class DataConversionTest {
 
         assertThat(converted.data[1][2]).isEqualTo(2.0)
         assertThat(converted.data[1][3]).isEqualTo(3.0)
+
+        assertThat(converted.data[1][4]).isNaN()
     }
 }
