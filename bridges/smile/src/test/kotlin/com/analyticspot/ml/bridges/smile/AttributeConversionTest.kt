@@ -1,6 +1,6 @@
 package com.analyticspot.ml.bridges.smile
 
-import com.analyticspot.ml.framework.dataset.FeatureDataSet
+import com.analyticspot.ml.framework.dataset.DataSet
 import com.analyticspot.ml.framework.feature.CategoricalFeatureId
 import com.analyticspot.ml.framework.feature.NumericalFeatureId
 import org.assertj.core.api.Assertions.assertThat
@@ -41,7 +41,7 @@ class AttributeConversionTest {
         val numId1 = NumericalFeatureId("bar", true)
         val numId2 = NumericalFeatureId("baz", false)
 
-        val ds = FeatureDataSet.build {
+        val ds = DataSet.build {
             addColumn(catId, listOf("a", "a"))
             addColumn(numId1, listOf(1.0, 2.0))
             addColumn(numId2, listOf(3.0, 4.0))

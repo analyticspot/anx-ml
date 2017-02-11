@@ -154,6 +154,13 @@ which transforms consume the output of this transform, etc.
 so that we can interoperate with other machine learning libraries and allows for injection. See the
 `SERIALIZATION.README.md` file for details.
 
+# ColumnId and FeatureId
+
+`FeatureId` is a subclass of `ColumnId` that contains additional meta-data and restricted subset of types. There are
+subclasses of `FeatureId` for all common machine learning types like categorical, boolean, and numeric features.
+Many machine learning algorithms require a `FeatureId` so, when possible, always create a `FeatureId` instead of a
+`ColumnId`.
+
 # ExecutorService
 
 Methods like `transform`, `trainTransform` and their counterparts from convenience classes like
