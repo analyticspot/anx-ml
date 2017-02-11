@@ -20,6 +20,7 @@ package com.analyticspot.ml.framework.testutils
 import com.analyticspot.ml.framework.datagraph.DataGraph
 import com.analyticspot.ml.framework.datagraph.GraphNode
 import com.analyticspot.ml.framework.description.ColumnId
+import com.analyticspot.ml.framework.feature.BooleanFeatureId
 
 /**
  * Functions that build big, complex [DataGraph] for testing.
@@ -42,7 +43,7 @@ class Graph1 {
     val graph: DataGraph
     val targetId = ColumnId.create<Boolean>("target")
     val wordId = ColumnId.create<String>("word")
-    val resultId = ColumnId.create<Boolean>("prediction")
+    val resultId = BooleanFeatureId("prediction", false)
 
     /**
      * The first Invert node. Handy to have a reference to it as it keeps track of how many times it was called.
