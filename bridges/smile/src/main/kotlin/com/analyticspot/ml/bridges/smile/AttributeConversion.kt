@@ -1,6 +1,7 @@
 package com.analyticspot.ml.bridges.smile
 
 import com.analyticspot.ml.framework.dataset.DataSet
+import com.analyticspot.ml.framework.feature.BooleanFeatureId
 import com.analyticspot.ml.framework.feature.CategoricalFeatureId
 import com.analyticspot.ml.framework.feature.NumericalFeatureId
 import smile.data.Attribute
@@ -27,6 +28,7 @@ object AttributeConversion {
             when (colId) {
                 is CategoricalFeatureId -> toAttribute(colId)
                 is NumericalFeatureId -> toAttribute(colId)
+                is BooleanFeatureId -> toAttribute(colId)
                 else -> throw IllegalArgumentException("Unknown feature type ${colId.javaClass}")
             }
         }
@@ -44,6 +46,14 @@ object AttributeConversion {
      */
     fun toAttribute(numId: NumericalFeatureId): NumericAttribute {
         return NumericAttribute(numId.name)
+    }
+
+    /**
+     * Converts one of our [BooleanFeatureId] instance to a smile `NominalAttribute`. Smile doesn't have a special type
+     * for boolean/binary variables; they just treat them as a nominal with only two possible values
+     */
+    fun toAttribute(boolId: BooleanFeatureId): NominalAttribute {
+        return NominalAttribute(boolId.name, arrayOf("false", "true"))
     }
 }
 
