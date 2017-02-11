@@ -1,6 +1,6 @@
 package com.analyticspot.ml.bridges.smile
 
-import com.analyticspot.ml.framework.dataset.FeatureDataSet
+import com.analyticspot.ml.framework.dataset.DataSet
 import com.analyticspot.ml.framework.feature.CategoricalFeatureId
 import com.analyticspot.ml.framework.feature.NumericalFeatureId
 import smile.data.NominalAttribute
@@ -11,7 +11,11 @@ import smile.data.NominalAttribute
  * smile encodes missing values as NaN so this conversion must happen as well.
  */
 object DataConversion {
-    fun fromDataSet(dataSet: FeatureDataSet): DataAndAttrs {
+    /**
+     * Converts all the data in the [DataSet] to [DataAndAttrs]. This requires that all the [ColumnId] instances in
+     * `dataSet` are instances of [FeatureId]; if not, this will throw an `IllegalArgumentException`.
+     */
+    fun fromDataSet(dataSet: DataSet): DataAndAttrs {
         // First get all the attributes
         val attrs = AttributeConversion.toSmileAttributes(dataSet)
 

@@ -1,6 +1,6 @@
 package com.analyticspot.ml.bridges.smile
 
-import com.analyticspot.ml.framework.dataset.FeatureDataSet
+import com.analyticspot.ml.framework.dataset.DataSet
 import com.analyticspot.ml.framework.feature.CategoricalFeatureId
 import com.analyticspot.ml.framework.feature.NumericalFeatureId
 import org.assertj.core.api.Assertions.assertThat
@@ -16,7 +16,7 @@ class DataConversionTest {
 
         // note that we add columns here in alphabetical order by column id so make it easier to understand how the data
         // will be converted since the converted columns go in order of ds.columnIds where are alphabetical order.
-        val ds = FeatureDataSet.build {
+        val ds = DataSet.build {
             addColumn(catId1, listOf("foo", "word"))
             addColumn(catId2, listOf("x", null))
             addColumn(numId1, listOf(1.0, 2.0))

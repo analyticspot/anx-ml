@@ -1,6 +1,6 @@
 package com.analyticspot.ml.bridges.smile
 
-import com.analyticspot.ml.framework.dataset.FeatureDataSet
+import com.analyticspot.ml.framework.dataset.DataSet
 import com.analyticspot.ml.framework.feature.CategoricalFeatureId
 import com.analyticspot.ml.framework.feature.NumericalFeatureId
 import smile.data.Attribute
@@ -15,10 +15,13 @@ import smile.data.NumericAttribute
  */
 object AttributeConversion {
     /**
-     * Converts all the [FeatureId] in the [FeatureDataSet] into a corresponding array of smile `Attribute`. The
+     * Converts all the [FeatureId] in the [DataSet] into a corresponding array of smile `Attribute`. The
      * returned array is guaranteed to be sorted lexicographically by feature/attribute name.
+     *
+     * This requires that all the [ColumnId] in the [DataSet] are [FeatureId] instances. If not, this will throw an
+     * illegal argument exception.
      */
-    fun toSmileAttributes(inData: FeatureDataSet): Array<Attribute> {
+    fun toSmileAttributes(inData: DataSet): Array<Attribute> {
         return Array<Attribute>(inData.numColumns) { colIdx ->
             val colId = inData.columnIds[colIdx]
             when (colId) {
