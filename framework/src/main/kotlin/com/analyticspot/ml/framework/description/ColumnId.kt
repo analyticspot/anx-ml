@@ -18,19 +18,17 @@
 package com.analyticspot.ml.framework.description
 
 import com.analyticspot.ml.framework.serialization.JsonMapper
-import com.fasterxml.jackson.annotation.JsonTypeInfo
 import kotlin.reflect.KClass
 
 /**
  * A value id allows the user to obtain data from a [DataSet] in a type safe way.
  *
  * By convention groups of related values are named with a prefix, a separator of `-` and a suffix. Thus, if you are
- * naming just a single feature/data item refrain from using the `-` character.
+ * naming just a single metadata/data item refrain from using the `-` character.
  *
  * Most machine learning algorithms require a limited set of types, usually with some meta-data. Thus, the learners
  * usually work only with subclasses of [FeatureId].
  */
-@JsonTypeInfo(use=JsonTypeInfo.Id.CLASS, include=JsonTypeInfo.As.PROPERTY, property="@class")
 open class ColumnId<DataT : Any>(val name: String, val clazz: KClass<DataT>) : Comparable<ColumnId<*>> {
     /**
      * Alternative constructor taking Java classes.

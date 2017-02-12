@@ -3,7 +3,8 @@ package com.analyticspot.ml.bridges.smile
 import com.analyticspot.ml.framework.dataset.Column
 import com.analyticspot.ml.framework.dataset.DataSet
 import com.analyticspot.ml.framework.datatransform.TargetSupervisedLearningTransform
-import com.analyticspot.ml.framework.feature.CategoricalFeatureId
+import com.analyticspot.ml.framework.description.ColumnId
+import com.analyticspot.ml.framework.metadata.CategoricalFeatureMetaData
 import org.slf4j.LoggerFactory
 import smile.classification.Classifier
 import smile.classification.ClassifierTrainer
@@ -17,7 +18,7 @@ import java.util.concurrent.ExecutorService
  * The returned data set contains the predictions. See [SmileSoftClassifier] if you would also like the posterior
  * probabilities in the output data set.
  */
-open class SmileClassifier(targetId: CategoricalFeatureId,
+open class SmileClassifier(targetId: ColumnId<String>,
         private val trainerFactory: (Array<Attribute>) -> ClassifierTrainer<DoubleArray>,
         val predictionColName: String = "predicted")
     : TargetSupervisedLearningTransform<String>(targetId) {
@@ -64,9 +65,10 @@ open class SmileClassifier(targetId: CategoricalFeatureId,
                     throw IllegalStateException("$intPred was predicted but isn't a known target value")
             predictions.add(prediction)
         }
-        val resultCol = CategoricalFeatureId(predictionColName, false, intToTarget.values.toSet())
+        val resultCol = ColumnId.create<String>(predictionColName)
+        val resultMeta = CategoricalFeatureMetaData(false, intToTarget.values.toSet())
         return DataSet.build {
-            addColumn(resultCol, predictions)
+            addColumn(resultCol, predictions, resultMeta)
         }
     }
 }

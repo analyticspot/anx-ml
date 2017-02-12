@@ -1,9 +1,8 @@
 package com.analyticspot.ml.bridges.smile
 
 import com.analyticspot.ml.framework.dataset.DataSet
-import com.analyticspot.ml.framework.feature.BooleanFeatureId
-import com.analyticspot.ml.framework.feature.CategoricalFeatureId
-import com.analyticspot.ml.framework.feature.NumericalFeatureId
+import com.analyticspot.ml.framework.description.ColumnId
+import com.analyticspot.ml.framework.metadata.CategoricalFeatureMetaData
 import org.assertj.core.api.Assertions.assertThat
 import org.testng.annotations.Test
 import smile.data.Attribute
@@ -12,13 +11,14 @@ import smile.data.NominalAttribute
 class AttributeConversionTest {
     @Test
     fun testCategoricalConversion() {
-        val catId = CategoricalFeatureId("foo", true, setOf("a", "b", "c"))
+        val catId = ColumnId.create<String>("foo")
+        val catMeta = CategoricalFeatureMetaData(true, setOf("a", "b", "c"))
 
-        val smileNominal = AttributeConversion.toAttribute(catId)
+        val smileNominal = AttributeConversion.toAttribute(catId, catMeta)
 
         assertThat(smileNominal.isOpen).isFalse()
-        assertThat(smileNominal.size()).isEqualTo(catId.possibleValues.size)
-        assertThat(smileNominal.values()).containsExactlyElementsOf(catId.possibleValues)
+        assertThat(smileNominal.size()).isEqualTo(catMeta.possibleValues.size)
+        assertThat(smileNominal.values()).containsExactlyElementsOf(catMeta.possibleValues)
         assertThat(smileNominal.name).isEqualTo(catId.name)
 
         // Converting categorical values to double (which is how they'll be encoded in the double arrays passed to
@@ -42,7 +42,7 @@ class AttributeConversionTest {
 
     @Test
     fun testBooleanConversion() {
-        val boolId = BooleanFeatureId("foo", true)
+        val boolId = ColumnId.create<Boolean>("bool")
 
         val smileBoolean = AttributeConversion.toAttribute(boolId)
 
@@ -63,14 +63,15 @@ class AttributeConversionTest {
 
     @Test
     fun testDataSetConversion() {
-        val catId = CategoricalFeatureId("foo", true, setOf("a", "b", "c"))
-        val numId1 = NumericalFeatureId("bar", true)
-        val numId2 = NumericalFeatureId("baz", false)
-        val boolId = BooleanFeatureId("zap", true)
+        val catId = ColumnId.create<String>("foo")
+        val catMeta = CategoricalFeatureMetaData(true, setOf("a", "b", "c"))
+        val numId1 = ColumnId.create<Int>("bar")
+        val numId2 = ColumnId.create<Double>("baz")
+        val boolId = ColumnId.create<Boolean>("zap")
 
         val ds = DataSet.build {
-            addColumn(catId, listOf("a", "a"))
-            addColumn(numId1, listOf(1.0, 2.0))
+            addColumn(catId, listOf("a", "a"), catMeta)
+            addColumn(numId1, listOf(1, 2))
             addColumn(numId2, listOf(3.0, 4.0))
             addColumn(boolId, listOf(true, false))
         }
@@ -92,7 +93,7 @@ class AttributeConversionTest {
         assertThat(attrs[2].name).isEqualTo("foo")
         assertThat(attrs[2].type).isEqualTo(Attribute.Type.NOMINAL)
         val nominalAttr = attrs[2] as NominalAttribute
-        assertThat(nominalAttr.values()).containsExactlyElementsOf(catId.possibleValues)
+        assertThat(nominalAttr.values()).containsExactlyElementsOf(catMeta.possibleValues)
 
         assertThat(attrs[3].name).isEqualTo("zap")
         assertThat(attrs[3].type).isEqualTo(Attribute.Type.NOMINAL)

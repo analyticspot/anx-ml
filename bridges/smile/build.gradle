@@ -3,6 +3,7 @@ apply plugin: 'anx-jar-publish'
 
 dependencies {
     compile project(':framework')
+    compile project(':utils')
     compile Deps.ktStdlib
     compile Deps.ktJava8
     compile Deps.slf4j
