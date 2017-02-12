@@ -26,10 +26,10 @@ import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ExecutorService
 
 /**
- * A very simple [SupervisedLearningTransform] that learns to predict a boolean target based on a single feature of type
- * `String`. During training it simply keeps track of all the unique values it has seen for the feature when the target
+ * A very simple [SupervisedLearningTransform] that learns to predict a boolean target based on a single metadata of type
+ * `String`. During training it simply keeps track of all the unique values it has seen for the metadata when the target
  * is `true` in [wordsForTrue]. To make a prediction it predicts `true` if and only if the observed value for the
- * feature in in [wordsForTrue].
+ * metadata in in [wordsForTrue].
  */
 class TrueIfSeenTransform(
         val srcColumn: ColumnId<String>, targetColumn: ColumnId<Boolean>?, val resultId: ColumnId<Boolean>)

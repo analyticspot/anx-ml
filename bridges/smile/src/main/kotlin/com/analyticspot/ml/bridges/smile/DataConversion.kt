@@ -2,9 +2,8 @@ package com.analyticspot.ml.bridges.smile
 
 import com.analyticspot.ml.framework.dataset.Column
 import com.analyticspot.ml.framework.dataset.DataSet
-import com.analyticspot.ml.framework.feature.BooleanFeatureId
-import com.analyticspot.ml.framework.feature.CategoricalFeatureId
-import com.analyticspot.ml.framework.feature.NumericalFeatureId
+// Lint disable as this is used but there's a ktlint bug.
+import com.analyticspot.ml.utils.isAssignableFrom // ktlint-disable no-unused-imports
 import smile.data.NominalAttribute
 
 /**
@@ -27,18 +26,29 @@ object DataConversion {
         val data = Array<DoubleArray>(dataSet.numRows) { rowIdx ->
             DoubleArray(dataSet.numColumns) { colIdx ->
                 val colId = dataSet.columnIds[colIdx]
-                when (colId) {
-                    is CategoricalFeatureId -> categoricalOrBooleanToDouble(dataSet.value(rowIdx, colId),
+                if (Number::class isAssignableFrom colId.clazz) {
+                    numberToDouble(dataSet.value(rowIdx, colId) as Number?)
+                } else if (String::class isAssignableFrom colId.clazz || Boolean::class isAssignableFrom colId.clazz) {
+                    categoricalOrBooleanToDouble(dataSet.value(rowIdx, colId)?.toString(),
                             attrs[colIdx] as NominalAttribute)
-                    is BooleanFeatureId -> categoricalOrBooleanToDouble(dataSet.value(rowIdx, colId)?.toString(),
-                            attrs[colIdx] as NominalAttribute)
-                    is NumericalFeatureId -> dataSet.value(rowIdx, colId) ?: Double.NaN
-                    else -> throw IllegalArgumentException("Unknown column type ${colId.javaClass}")
+                } else {
+                    throw IllegalArgumentException("Unknown column type ${colId.javaClass}")
                 }
             }
         }
 
         return DataAndAttrs(data, attrs)
+    }
+
+    /**
+     * Converts any type of number (Int, Long, etc.) to a double. If `input` is null returns `NaN`.
+     */
+    fun numberToDouble(input: Number?): Double {
+        if (input == null) {
+            return Double.NaN
+        } else {
+            return input.toDouble()
+        }
     }
 
     /**

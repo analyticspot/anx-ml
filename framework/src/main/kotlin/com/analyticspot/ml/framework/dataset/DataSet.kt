@@ -18,6 +18,7 @@
 package com.analyticspot.ml.framework.dataset
 
 import com.analyticspot.ml.framework.description.ColumnId
+import com.analyticspot.ml.framework.metadata.ColumnMetaData
 // Lint disable as this is used but there's a ktlint bug.
 import com.analyticspot.ml.utils.isAssignableFrom // ktlint-disable no-unused-imports
 import org.slf4j.LoggerFactory
@@ -43,6 +44,15 @@ class DataSet private constructor(idAndColumns: Array<IdAndColumn<*>>) {
     // the column ids and the columns. We can then binary search the ids to get the index into the columns. In the
     // future it might be worth combining these again and writing our own binary search.
     val columnIds: Array<ColumnId<*>> = idAndColumns.map { it.id }.toTypedArray()
+
+    /**
+     * A dataset may, optionally, contain metadata about one or more columns in the data set. This is a map from the
+     * name of the column (that is [ColumnId.name]) to the metadata about the column. Metadata is typical things like
+     * categorical features in which case it indicates the range of possible values for the feature.
+     */
+    val metaData: Map<String, ColumnMetaData> = idAndColumns
+            .filter { it.metaData != null }
+            .associate { it.id.name to it.metaData!! }
 
     /**
      * All of the columns in this [DataSet]
@@ -83,17 +93,17 @@ class DataSet private constructor(idAndColumns: Array<IdAndColumn<*>>) {
         /**
          * Creates a [DataSet] with a single column.
          */
-        fun <T : Any> create(colId: ColumnId<T>, column: Column<T?>): DataSet {
+        fun <T : Any> create(colId: ColumnId<T>, column: Column<T?>, metaData: ColumnMetaData? = null): DataSet {
             return build {
-                addColumn(colId, column)
+                addColumn(colId, column, metaData)
             }
         }
 
         /**
          * Creates a [DataSet] with a single column.
          */
-        fun <T : Any> create(colId: ColumnId<T>, column: List<T?>): DataSet {
-            return create(colId, ListColumn(column))
+        fun <T : Any> create(colId: ColumnId<T>, column: List<T?>, metaData: ColumnMetaData? = null): DataSet {
+            return create(colId, ListColumn(column), metaData)
         }
 
         /**
@@ -178,8 +188,26 @@ class DataSet private constructor(idAndColumns: Array<IdAndColumn<*>>) {
         return theCol as Column<T>
     }
 
-    private data class IdAndColumn<out ColumnT : Any>(val id: ColumnId<out ColumnT>, val column: Column<ColumnT?>)
-        : Comparable<IdAndColumn<*>> {
+    /**
+     * Returns the [ColumnId] with the given name. This method should be used sparingly because it is linear time.
+     */
+    inline fun <reified ColT : Any> columnIdWithName(name: String): ColumnId<ColT> {
+        val colId = columnIds.find { it.name == name }
+        if (colId == null) {
+            throw IllegalArgumentException("Column with name $name not found")
+        } else {
+            require(colId.clazz == ColT::class) {
+                "columIdWithName was called specifying a type of ${ColT::class} but actual type was ${colId.clazz}"
+            }
+            @Suppress("UNCHECKED_CAST")
+            return colId as ColumnId<ColT>
+        }
+    }
+
+    private data class IdAndColumn<out ColumnT : Any>(
+            val id: ColumnId<out ColumnT>,
+            val column: Column<ColumnT?>,
+            val metaData: ColumnMetaData? = null) : Comparable<IdAndColumn<*>> {
         override fun compareTo(other: IdAndColumn<*>): Int {
             return id.name.compareTo(other.id.name)
         }
@@ -188,20 +216,30 @@ class DataSet private constructor(idAndColumns: Array<IdAndColumn<*>>) {
     class Builder {
         private val columns = mutableListOf<IdAndColumn<*>>()
 
-        fun <ColT : Any> addColumn(id: ColumnId<ColT>, col: Column<ColT?>): Builder {
-            columns += IdAndColumn(id, col)
+        fun <ColT : Any> addColumn(
+                id: ColumnId<ColT>,
+                col: Column<ColT?>,
+                metaData: ColumnMetaData? = null): Builder {
+            columns += IdAndColumn(id, col, metaData)
             return this
         }
 
-        fun <ColT : Any> addColumn(id: ColumnId<ColT>, col: List<ColT?>): Builder {
-            return addColumn(id, ListColumn(col))
+        fun <ColT : Any> addColumn(
+                id: ColumnId<ColT>,
+                col: List<ColT?>,
+                metaData: ColumnMetaData? = null): Builder {
+            return addColumn(id, ListColumn(col), metaData)
         }
 
         /**
-         * Adds all the columns in `dataSet` to the new []DataSet].
+         * Adds all the columns in `dataSet` to the new [DataSet]. If the columns contained metadata that will be
+         * preserved.
          */
         fun addAll(dataSet: DataSet): Builder {
-            columns += dataSet.columns.zip(dataSet.columnIds).map { IdAndColumn(it.second, it.first) }
+            dataSet.columnIds.forEach {
+                val md = dataSet.metaData[it.name]
+                columns += IdAndColumn(it, dataSet.column(it), md)
+            }
             return this
         }
 

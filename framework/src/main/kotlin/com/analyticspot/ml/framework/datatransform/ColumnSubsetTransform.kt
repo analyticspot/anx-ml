@@ -27,7 +27,8 @@ import java.util.concurrent.ExecutorService
 
 /**
  * Takes in a source [DataSet] and returns a new [DataSet] that contains a subset of the columns in the source. There
- * is also an option to rename the columns that are retained.
+ * is also an option to rename the columns that are retained. If one of the retained columns has metadata that is
+ * retained as well.
  */
 class ColumnSubsetTransform : SingleDataTransform {
     @JsonProperty(access = Access.READ_ONLY)
@@ -54,8 +55,9 @@ class ColumnSubsetTransform : SingleDataTransform {
     override fun transform(dataSet: DataSet, exec: ExecutorService): CompletableFuture<DataSet> {
         val bldr = DataSet.builder()
         keepMap.forEach { entry ->
+            val md = dataSet.metaData[entry.key.name]
             @Suppress("UNCHECKED_CAST")
-            bldr.addColumn(entry.value as ColumnId<Any>, dataSet.column(entry.key))
+            bldr.addColumn(entry.value as ColumnId<Any>, dataSet.column(entry.key), md)
         }
         return CompletableFuture.completedFuture(bldr.build())
     }

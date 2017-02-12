@@ -1,27 +1,28 @@
 package com.analyticspot.ml.bridges.smile
 
 import com.analyticspot.ml.framework.dataset.DataSet
-import com.analyticspot.ml.framework.feature.BooleanFeatureId
-import com.analyticspot.ml.framework.feature.CategoricalFeatureId
-import com.analyticspot.ml.framework.feature.NumericalFeatureId
+import com.analyticspot.ml.framework.description.ColumnId
+import com.analyticspot.ml.framework.metadata.CategoricalFeatureMetaData
 import org.assertj.core.api.Assertions.assertThat
 import org.testng.annotations.Test
 
 class DataConversionTest {
     @Test
     fun testDataSetConvertsCorrectly() {
-        val catId1 = CategoricalFeatureId("c1", false, setOf("foo", "bar", "baz", "bizzle", "word"))
-        val catId2 = CategoricalFeatureId("c2", true, setOf("x", "y", "z"))
-        val numId1 = NumericalFeatureId("n1", false)
-        val numId2 = NumericalFeatureId("n2", true)
-        val boolId = BooleanFeatureId("pb", true)
+        val catId1 = ColumnId.create<String>("c1")
+        val catMeta1 = CategoricalFeatureMetaData(false, setOf("foo", "bar", "baz", "bizzle", "word"))
+        val catId2 = ColumnId.create<String>("c2")
+        val catMeta2 = CategoricalFeatureMetaData(true, setOf("x", "y", "z"))
+        val numId1 = ColumnId.create<Int>("n1")
+        val numId2 = ColumnId.create<Double>("n2")
+        val boolId = ColumnId.create<Boolean>("pb")
 
         // note that we add columns here in alphabetical order by column id so make it easier to understand how the data
         // will be converted since the converted columns go in order of ds.columnIds where are alphabetical order.
         val ds = DataSet.build {
-            addColumn(catId1, listOf("foo", "word"))
-            addColumn(catId2, listOf("x", null))
-            addColumn(numId1, listOf(1.0, 2.0))
+            addColumn(catId1, listOf("foo", "word"), catMeta1)
+            addColumn(catId2, listOf("x", null), catMeta2)
+            addColumn(numId1, listOf(1, 2))
             addColumn(numId2, listOf(null, 3.0))
             addColumn(boolId, listOf(true, null))
         }
