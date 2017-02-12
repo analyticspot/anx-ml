@@ -8,15 +8,20 @@ import com.analyticspot.ml.framework.feature.CategoricalFeatureId
 import org.slf4j.LoggerFactory
 import smile.classification.Classifier
 import smile.classification.ClassifierTrainer
+import smile.classification.SoftClassifier
 import smile.data.Attribute
+import java.util.ArrayList
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ExecutorService
 
 /**
- * Created by oliver on 2/10/17.
+ *
+ * The returned data set contains the predictions. See [SmileSoftClassifier] if you would also like the posterior
+ * probabilities in the output data set.
  */
-class SmileClassifier(targetId: CategoricalFeatureId,
-        private val trainerFactory: (Array<Attribute>) -> ClassifierTrainer<DoubleArray>)
+open class SmileClassifier(targetId: CategoricalFeatureId,
+        private val trainerFactory: (Array<Attribute>) -> ClassifierTrainer<DoubleArray>,
+        val predictionColName: String = "predicted")
     : TargetSupervisedLearningTransform<String>(targetId) {
     /**
      * This is the trained model. It won't be set until the training phase of trainTransform is complete.
@@ -35,7 +40,8 @@ class SmileClassifier(targetId: CategoricalFeatureId,
     }
 
     override fun transform(dataSet: DataSet, exec: ExecutorService): CompletableFuture<DataSet> {
-        throw UnsupportedOperationException("not implemented") //To change body of created functions use File | Settings | File Templates.
+        val dataAndAttrs = DataConversion.fromDataSet(dataSet)
+        return CompletableFuture.completedFuture(transformConvertedData(dataAndAttrs.data))
     }
 
 
@@ -55,6 +61,16 @@ class SmileClassifier(targetId: CategoricalFeatureId,
     }
 
     private fun transformConvertedData(data: Array<DoubleArray>): DataSet {
-
+        val predictions = ArrayList<String>(data.size)
+        for (row in data) {
+            val intPred = trainedModel.predict(row)
+            val prediction = intToTarget[intPred] ?:
+                    throw IllegalStateException("$intPred was predicted but isn't a known target value")
+            predictions.add(prediction)
+        }
+        val resultCol = CategoricalFeatureId(predictionColName, false, intToTarget.values.toSet())
+        return DataSet.build {
+            addColumn(resultCol, predictions)
+        }
     }
 }
