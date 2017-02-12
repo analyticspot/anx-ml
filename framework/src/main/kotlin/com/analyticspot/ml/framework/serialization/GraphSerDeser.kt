@@ -327,7 +327,7 @@ class GraphSerDeser {
             var trainOnlyColumnIds: List<ColumnId<*>> = listOf()
 
             fun fromNode(node: SourceGraphNode) {
-                columnIds = node.transformDescription.columns
+                columnIds = node.columnIds
                 trainOnlyColumnIds += node.trainOnlyColumnIds
                 super.fromNode(node)
             }

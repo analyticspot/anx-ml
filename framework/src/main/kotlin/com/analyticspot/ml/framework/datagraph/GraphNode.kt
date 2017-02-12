@@ -17,9 +17,6 @@
 
 package com.analyticspot.ml.framework.datagraph
 
-import com.analyticspot.ml.framework.description.ColumnId
-import com.analyticspot.ml.framework.description.ColumnIdGroup
-import com.analyticspot.ml.framework.description.TransformDescription
 import org.slf4j.LoggerFactory
 
 /**
@@ -33,11 +30,6 @@ abstract class GraphNode internal constructor(builder: Builder) {
     internal val subscribers: MutableList<Subscription> = mutableListOf()
     internal val trainOnlySubscribers: MutableList<Subscription> = mutableListOf()
     internal val id: Int = builder.id
-    abstract val transformDescription: TransformDescription
-    val columns: List<ColumnId<*>>
-        get() = transformDescription.columns
-    val columnGroups: List<ColumnIdGroup<*>>
-        get() = transformDescription.columnGroups
 
     /**
      * Labels are used for injection during deserialization. See SERIALIZATION.README.md for details.

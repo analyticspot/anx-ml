@@ -20,7 +20,6 @@ package com.analyticspot.ml.framework.testutils
 import com.analyticspot.ml.framework.dataset.DataSet
 import com.analyticspot.ml.framework.datatransform.SingleDataTransform
 import com.analyticspot.ml.framework.description.ColumnId
-import com.analyticspot.ml.framework.description.TransformDescription
 import com.analyticspot.ml.framework.feature.BooleanFeatureId
 import java.util.ArrayList
 import java.util.concurrent.CompletableFuture
@@ -31,8 +30,6 @@ import java.util.concurrent.ExecutorService
  * otherwise.
  */
 class AndTransform(val srcCols: List<ColumnId<Boolean>>, val resultId: BooleanFeatureId) : SingleDataTransform {
-    override val description: TransformDescription = TransformDescription(listOf(resultId))
-
     override fun transform(dataSet: DataSet, exec: ExecutorService): CompletableFuture<DataSet> {
         val resultList = ArrayList<Boolean>(dataSet.numRows)
         for (rowIdx in 0 until dataSet.numRows) {

@@ -5,7 +5,6 @@ import com.analyticspot.ml.framework.datagraph.HasTransformGraphNode
 import com.analyticspot.ml.framework.dataset.DataSet
 import com.analyticspot.ml.framework.datatransform.SingleDataTransform
 import com.analyticspot.ml.framework.description.ColumnId
-import com.analyticspot.ml.framework.description.TransformDescription
 import com.analyticspot.ml.framework.testutils.LowerCaseTransform
 import com.fasterxml.jackson.annotation.JacksonInject
 import com.fasterxml.jackson.annotation.JsonCreator
@@ -41,7 +40,7 @@ class MultiFileMixedFormatTest {
 
             val silly = addTransform(src, sillyNode)
 
-            val lc = addTransform(silly, LowerCaseTransform(silly.transformDescription))
+            val lc = addTransform(silly, LowerCaseTransform())
 
             result = lc
         }
@@ -72,7 +71,6 @@ class MultiFileMixedFormatTest {
 
     class SillyBinaryExample : SingleDataTransform, MultiFileMixedTransform {
         val outColumn = ColumnId.create<String>("foo")
-        override val description: TransformDescription = TransformDescription(listOf(outColumn))
         val randomBytes: Array<Byte>
         val transformOutput: String
 

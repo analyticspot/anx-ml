@@ -24,7 +24,6 @@ import com.analyticspot.ml.framework.datatransform.MultiTransform
 import com.analyticspot.ml.framework.datatransform.SingleDataTransform
 import com.analyticspot.ml.framework.datatransform.SupervisedLearningTransform
 import com.analyticspot.ml.framework.description.ColumnId
-import com.analyticspot.ml.framework.description.TransformDescription
 import org.slf4j.LoggerFactory
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ExecutorService
@@ -40,8 +39,6 @@ import java.util.concurrent.ExecutorService
  * Note: Unit tests for this are in `GraphExecutionTest`.
  */
 class DataGraph(builder: GraphBuilder) : LearningTransform {
-    override val description: TransformDescription
-        get() = result.transformDescription
     val source: SourceGraphNode
     val result: GraphNode
     // An array of all the GraphNodes such that a node `x` can be found at `allNodes[x.id]`. Can be null because when
@@ -120,14 +117,14 @@ class DataGraph(builder: GraphBuilder) : LearningTransform {
      * train-only columns.
      */
     fun createSource(vararg vals: Any?): DataSet {
-        return DataSet.fromMatrix(source.columns.minus(source.trainOnlyColumnIds), listOf(vals.asList()))
+        return DataSet.fromMatrix(source.columnIds.minus(source.trainOnlyColumnIds), listOf(vals.asList()))
     }
 
     /**
      * Like the other [createSource] overload but lets you pass an array of rows rather than just a single row.
      */
     fun createSource(data: List<List<Any?>>): DataSet {
-        return DataSet.fromMatrix(source.columns.minus(source.trainOnlyColumnIds), data)
+        return DataSet.fromMatrix(source.columnIds.minus(source.trainOnlyColumnIds), data)
     }
 
     /**
@@ -142,7 +139,7 @@ class DataGraph(builder: GraphBuilder) : LearningTransform {
      * Like [createSource] but includes train-only columns.
      */
     fun createTrainingSource(vararg vals: Any?): DataSet {
-        return DataSet.fromMatrix(source.columns, listOf(vals.asList()))
+        return DataSet.fromMatrix(source.columnIds, listOf(vals.asList()))
     }
 
     /**
@@ -157,7 +154,7 @@ class DataGraph(builder: GraphBuilder) : LearningTransform {
      * Like the other [createTrainingSource] overload but lets you pass an array of rows rather than just a single row.
      */
     fun createTrainingSource(data: List<List<Any?>>): DataSet {
-        return DataSet.fromMatrix(source.columns, data)
+        return DataSet.fromMatrix(source.columnIds, data)
     }
 
     /**

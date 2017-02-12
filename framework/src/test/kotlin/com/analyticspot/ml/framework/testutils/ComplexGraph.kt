@@ -70,7 +70,7 @@ class Graph1 {
         invert2 = InvertBoolean(targetId, targetId)
         invert2Node = bld.addTransform(invert1Node, invert2)
 
-        val lower = bld.addTransform(src, LowerCaseTransform(src.transformDescription))
+        val lower = bld.addTransform(src, LowerCaseTransform())
 
         val trueIfNotSeenId = ColumnId.create<Boolean>("trueIfNotSeen")
         val trueIfNotSeen = bld.addTransform(lower, invert1Node,

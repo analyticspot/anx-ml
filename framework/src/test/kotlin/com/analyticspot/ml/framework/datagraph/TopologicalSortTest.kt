@@ -74,11 +74,11 @@ class TopologicalSortTest {
                 columnIds += sourceIds
             }
 
-            val addC1 = addTransform(source, AddConstantTransform(11, source.transformDescription))
+            val addC1 = addTransform(source, AddConstantTransform(11))
 
-            val addC2 = addTransform(addC1, AddConstantTransform(12, addC1.transformDescription))
+            val addC2 = addTransform(addC1, AddConstantTransform(12))
 
-            val addC3 = addTransform(addC2, AddConstantTransform(88, addC2.transformDescription))
+            val addC3 = addTransform(addC2, AddConstantTransform(88))
 
             result = addC3
         }
@@ -99,15 +99,15 @@ class TopologicalSortTest {
                 columnIds += sourceIds
             }
 
-            val addC1 = addTransform(source, AddConstantTransform(11, source.transformDescription))
+            val addC1 = addTransform(source, AddConstantTransform(11))
 
-            val addC2 = addTransform(source, AddConstantTransform(12, source.transformDescription))
+            val addC2 = addTransform(source, AddConstantTransform(12))
 
-            val addC3 = addTransform(source, AddConstantTransform(12, source.transformDescription))
+            val addC3 = addTransform(source, AddConstantTransform(12))
 
             val merged = merge(addC1, addC2, addC3)
 
-            val addC4 = addTransform(merged, AddConstantTransform(88, addC3.transformDescription))
+            val addC4 = addTransform(merged, AddConstantTransform(88))
 
             result = addC4
         }
@@ -129,19 +129,19 @@ class TopologicalSortTest {
                 columnIds += sourceIds
             }
 
-            val addC1 = addTransform(source, AddConstantTransform(11, source.transformDescription))
+            val addC1 = addTransform(source, AddConstantTransform(11))
 
-            val addC2 = addTransform(source, AddConstantTransform(12, source.transformDescription))
+            val addC2 = addTransform(source, AddConstantTransform(12))
 
-            val addC3 = addTransform(source, AddConstantTransform(12, source.transformDescription))
+            val addC3 = addTransform(source, AddConstantTransform(12))
 
             // Two transforms in a pipeline from the output of c1
-            val addC11 = addTransform(addC1, AddConstantTransform(19, addC1.transformDescription))
+            val addC11 = addTransform(addC1, AddConstantTransform(19))
 
-            val addC12 = addTransform(addC11, AddConstantTransform(19, addC11.transformDescription))
+            val addC12 = addTransform(addC11, AddConstantTransform(19))
 
             // One transform from the output of c2
-            val addC21 = addTransform(addC2, AddConstantTransform(37, addC2.transformDescription))
+            val addC21 = addTransform(addC2, AddConstantTransform(37))
 
             // Now combine c3 and the results of the 2 other pipelines
             val merged = merge(addC3, addC12, addC21)

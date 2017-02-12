@@ -20,8 +20,6 @@ package com.analyticspot.ml.framework.datatransform
 import com.analyticspot.ml.framework.dataset.Column
 import com.analyticspot.ml.framework.dataset.DataSet
 import com.analyticspot.ml.framework.description.ColumnId
-import com.analyticspot.ml.framework.description.ColumnIdGroup
-import com.analyticspot.ml.framework.description.TransformDescription
 // Lint disable as this is used but there's a ktlint bug.
 import com.analyticspot.ml.utils.isAssignableFrom // ktlint-disable no-unused-imports
 import org.slf4j.LoggerFactory
@@ -33,7 +31,8 @@ import kotlin.reflect.KClass
  * An abstract base class for [DataTransform] instances that can work on a single item at a time. Subclasses indicate
  * the data type they can work with. The base class will then operate on all columns such that the data in that column
  * is compatible with (as per `Class.isAssignableFrom`) the requested data type. For each such column [transformItem]
- * will be called.
+ * will be called. Note that for classes like `String` this will work with both `ColumnId<String>` and compatible
+ * [FeatureId] subclasses like `CategoricalFeatureId`.
  *
  * This will generate a [DataSet] with one column for each column that was in the original data set. If the column is
  * compatible with the requested data type the column will be transformed and the new column will have the same name but
@@ -42,36 +41,15 @@ import kotlin.reflect.KClass
  * @param <InputT> The type of the data the transform can process
  * @param <OutputT> The type of the data the transform produces
  *
- * @param srcTransDescription the [TransformDescription] for the source data.
  * @param inType the type of the input data this transform can handle.
  * @param outType the type of the output this will produce.
  */
 abstract class SingleItemDataTransform<InputT : Any, OutputT : Any>(
-        val srcTransDescription: TransformDescription,
         private val inType: KClass<InputT>,
         private val outType: KClass<OutputT>) : SingleDataTransform {
 
     companion object {
         private val log = LoggerFactory.getLogger(SingleItemDataTransform::class.java)
-    }
-
-    override final val description: TransformDescription by lazy {
-        val newCols = srcTransDescription.columns.map {
-            if (inType isAssignableFrom it.clazz) {
-                ColumnId(it.name, outType)
-            } else {
-                it
-            }
-        }
-        val newColGroups = srcTransDescription.columnGroups.map {
-            if (inType isAssignableFrom it.clazz) {
-                ColumnIdGroup(it.prefix, outType)
-            } else {
-                it
-            }
-        }
-
-        TransformDescription(newCols, newColGroups)
     }
 
     final override fun transform(dataSet: DataSet, exec: ExecutorService): CompletableFuture<DataSet> {

@@ -21,7 +21,6 @@ import com.analyticspot.ml.framework.dataset.DataSet
 import com.analyticspot.ml.framework.dataset.ListColumn
 import com.analyticspot.ml.framework.datatransform.LearningTransform
 import com.analyticspot.ml.framework.description.ColumnId
-import com.analyticspot.ml.framework.description.TransformDescription
 import org.slf4j.LoggerFactory
 import java.util.Collections
 import java.util.concurrent.CompletableFuture
@@ -33,8 +32,6 @@ import java.util.concurrent.ExecutorService
  */
 class LearnMinTransform(private val srcColumn: ColumnId<Int>, val resultId: ColumnId<Int>) : LearningTransform {
     private var minValue: Int = Int.MAX_VALUE
-    override val description: TransformDescription
-        get() = TransformDescription(listOf(resultId))
 
     companion object {
         private val log = LoggerFactory.getLogger(LearnMinTransform::class.java)
