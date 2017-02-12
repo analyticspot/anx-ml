@@ -31,7 +31,9 @@ ext.Deps = [
         'deepLearning4jNlp': 'org.deeplearning4j:deeplearning4j-nlp:0.7.2',
         'smile': [
                 'com.github.haifengl:smile-core:1.2.2',
-                'com.github.haifengl:smile-data:1.2.2'
+                'com.github.haifengl:smile-data:1.2.2',
+                // This is required to serialize Smile models
+                'com.thoughtworks.xstream:xstream:1.4.8'
         ],
 
 

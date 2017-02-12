@@ -197,7 +197,7 @@ class DataGraph(builder: GraphBuilder) : LearningTransform {
 
         internal var nextId = 0
 
-        fun setSource(init: SourceGraphNode.Builder.() -> Unit): GraphNode {
+        fun setSource(init: SourceGraphNode.Builder.() -> Unit): SourceGraphNode {
             val sourceNode = SourceGraphNode.build(nextId++, init)
             return setSource(sourceNode)
         }
@@ -207,7 +207,7 @@ class DataGraph(builder: GraphBuilder) : LearningTransform {
          */
         fun source(): SourceBuilder = SourceBuilder(nextId++)
 
-        internal fun setSource(node: SourceGraphNode): GraphNode {
+        internal fun setSource(node: SourceGraphNode): SourceGraphNode {
             source = node
             check(!nodesById.containsKey(node.id))
             nodesById[node.id] = node
