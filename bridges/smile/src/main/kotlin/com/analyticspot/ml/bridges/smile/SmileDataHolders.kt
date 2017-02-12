@@ -9,3 +9,12 @@ import smile.data.Attribute
  * array resizing, etc.)
  */
 data class DataAndAttrs(val data: Array<DoubleArray>, val attributes: Array<Attribute>)
+
+/**
+ * Simple wrapper for holding an array of target data.
+ */
+data class CategoricalTarget(val target: IntArray, val stringToIntMapping: Map<String, Int>) {
+    val intToStringMapping: Map<Int, String> by lazy {
+        stringToIntMapping.asSequence().associate { it.value to it.key }
+    }
+}

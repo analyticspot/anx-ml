@@ -1,5 +1,6 @@
 package com.analyticspot.ml.bridges.smile
 
+import com.analyticspot.ml.framework.dataset.Column
 import com.analyticspot.ml.framework.dataset.DataSet
 import com.analyticspot.ml.framework.feature.BooleanFeatureId
 import com.analyticspot.ml.framework.feature.CategoricalFeatureId
@@ -40,12 +41,39 @@ object DataConversion {
         return DataAndAttrs(data, attrs)
     }
 
-    private fun categoricalOrBooleanToDouble(value: String?, attr: NominalAttribute): Double {
+    /**
+     * Converts a single categorical or boolean value (Smile treats both as Nominal) to the correct Double.
+     */
+    fun categoricalOrBooleanToDouble(value: String?, attr: NominalAttribute): Double {
         if (value == null) {
             return Double.NaN
         } else {
             // Let smile do the conversion from String to double so it's consistent in how it's done.
             return attr.valueOf(value)
         }
+    }
+
+    /**
+     * Converts a [Column] of type String to a `IntArray` for use as a target with smile Classifier instances. Also
+     * returns the mapping from string values to integers so we can reverse the conversion. Since this is to be a target
+     * variable this will throw if any of the values are missing.
+     */
+    fun toCategoricalTarget(col: Column<String?>): CategoricalTarget {
+        val mapping = mutableMapOf<String, Int>()
+        val targetData = IntArray(col.size) { idx ->
+            val item = col[idx]
+            if (item == null) {
+                throw IllegalArgumentException("Target data cannot contain any missing values.")
+            } else {
+                if (item in mapping) {
+                    mapping[item]!!
+                } else {
+                    val newVal = mapping.size
+                    mapping[item] = newVal
+                    newVal
+                }
+            }
+        }
+        return CategoricalTarget(targetData, mapping)
     }
 }
