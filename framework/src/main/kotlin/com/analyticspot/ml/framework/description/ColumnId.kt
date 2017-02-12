@@ -18,6 +18,7 @@
 package com.analyticspot.ml.framework.description
 
 import com.analyticspot.ml.framework.serialization.JsonMapper
+import com.fasterxml.jackson.annotation.JsonTypeInfo
 import kotlin.reflect.KClass
 
 /**
@@ -27,8 +28,9 @@ import kotlin.reflect.KClass
  * naming just a single feature/data item refrain from using the `-` character.
  *
  * Most machine learning algorithms require a limited set of types, usually with some meta-data. Thus, the learners
- * usually work only with subclasses of [Feature].
+ * usually work only with subclasses of [FeatureId].
  */
+@JsonTypeInfo(use=JsonTypeInfo.Id.CLASS, include=JsonTypeInfo.As.PROPERTY, property="@class")
 open class ColumnId<DataT : Any>(val name: String, val clazz: KClass<DataT>) : Comparable<ColumnId<*>> {
     /**
      * Alternative constructor taking Java classes.
