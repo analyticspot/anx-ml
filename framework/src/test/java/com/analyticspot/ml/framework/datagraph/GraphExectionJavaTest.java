@@ -31,7 +31,7 @@ public class GraphExectionJavaTest {
         .build();
 
     GraphNode toLower = graphBuilder.addTransform(source,
-        new LowerCaseTransform(source.getTransformDescription()));
+        new LowerCaseTransform());
 
     GraphNode trueIfSeen = graphBuilder.addTransform(toLower, source,
         new TrueIfSeenTransform(wordsId, targetId, predictionId));

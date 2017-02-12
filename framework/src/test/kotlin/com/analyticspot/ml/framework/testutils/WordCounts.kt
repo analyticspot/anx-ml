@@ -22,7 +22,6 @@ import com.analyticspot.ml.framework.dataset.ListColumn
 import com.analyticspot.ml.framework.datatransform.LearningTransform
 import com.analyticspot.ml.framework.description.ColumnId
 import com.analyticspot.ml.framework.description.ColumnIdGroup
-import com.analyticspot.ml.framework.description.TransformDescription
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize
 import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder
 import org.slf4j.LoggerFactory
@@ -46,8 +45,6 @@ class WordCounts private constructor(
         val sourceColumn: ColumnId<List<String>>,
         val resultId: ColumnIdGroup<Int>,
         val wordSet: MutableSet<String>) : LearningTransform {
-
-    override val description = TransformDescription(listOf(), columnGroups = listOf(resultId))
 
     constructor(sourceColumn: ColumnId<List<String>>, resultId: ColumnIdGroup<Int>)
             : this(sourceColumn, resultId, mutableSetOf())

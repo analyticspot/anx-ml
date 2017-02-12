@@ -19,7 +19,6 @@ package com.analyticspot.ml.framework.datagraph
 
 import com.analyticspot.ml.framework.dataset.DataSet
 import com.analyticspot.ml.framework.description.ColumnId
-import com.analyticspot.ml.framework.description.TransformDescription
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ExecutorService
 
@@ -32,9 +31,11 @@ import java.util.concurrent.ExecutorService
  * something like [DataGraph.buildSourceObservation].
  */
 class SourceGraphNode private constructor(builder: Builder) : GraphNode(builder.gnBuilder) {
-    internal val trainOnlyColumnIds = builder.trainOnlyColumnIds
-    override val transformDescription: TransformDescription = TransformDescription(
-            builder.columnIds + builder.trainOnlyColumnIds)
+    val trainOnlyColumnIds = builder.trainOnlyColumnIds
+    /**
+     * This is **all** columnIds, **including** the trainOnlyColumnIds
+     */
+    val columnIds = builder.columnIds.plus(trainOnlyColumnIds)
 
     companion object {
         /**

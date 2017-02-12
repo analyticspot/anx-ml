@@ -21,7 +21,6 @@ import com.analyticspot.ml.framework.dataset.Column
 import com.analyticspot.ml.framework.dataset.DataSet
 import com.analyticspot.ml.framework.datatransform.TargetSupervisedLearningTransform
 import com.analyticspot.ml.framework.description.ColumnId
-import com.analyticspot.ml.framework.description.TransformDescription
 import com.fasterxml.jackson.annotation.JsonCreator
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ExecutorService
@@ -35,7 +34,6 @@ import java.util.concurrent.ExecutorService
 class TrueIfSeenTransform(
         val srcColumn: ColumnId<String>, targetColumn: ColumnId<Boolean>?, val resultId: ColumnId<Boolean>)
     : TargetSupervisedLearningTransform<Boolean>(targetColumn) {
-    override val description: TransformDescription = TransformDescription(listOf(resultId))
     val wordsForTrue = mutableSetOf<String>()
 
     @JsonCreator

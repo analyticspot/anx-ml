@@ -19,7 +19,6 @@ package com.analyticspot.ml.framework.datatransform
 
 import com.analyticspot.ml.framework.dataset.DataSet
 import com.analyticspot.ml.framework.description.ColumnId
-import com.analyticspot.ml.framework.description.TransformDescription
 import com.fasterxml.jackson.annotation.JsonCreator
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.annotation.JsonProperty.Access
@@ -31,15 +30,12 @@ import java.util.concurrent.ExecutorService
  * is also an option to rename the columns that are retained.
  */
 class ColumnSubsetTransform : SingleDataTransform {
-    override val description: TransformDescription
-
     @JsonProperty(access = Access.READ_ONLY)
     val keepMap: Map<ColumnId<*>, ColumnId<*>>
 
     @JsonCreator
     private constructor(@JsonProperty("keepMap") keepMap: Map<ColumnId<*>, ColumnId<*>>) {
         this.keepMap = keepMap
-        description = TransformDescription(keepMap.values.toList())
     }
 
     private constructor(builder: Builder) : this(builder.keepMap)

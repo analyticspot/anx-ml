@@ -47,13 +47,10 @@ class GraphSerDeserTest {
     fun testCanSerializeAndDeserializeSimpleTransform() {
         // Create a source with two valueIds, the 2nd is in the input to our transform
         val valIdToTransform = ColumnId.create<Int>("val2")
-        val source = SourceGraphNode.build(0) {
-            columnIds += listOf(ColumnId.create<Int>("val1"), valIdToTransform)
-        }
 
         // Construct the transform
         val amountToAdd = 11
-        val trans = AddConstantTransform(amountToAdd, source.transformDescription)
+        val trans = AddConstantTransform(amountToAdd)
 
         val serDeser = GraphSerDeser()
 
@@ -107,8 +104,6 @@ class GraphSerDeserTest {
                 null, StandardJsonFormat.MetaData(merge), listOf(s1, s2), input)
 
         assertThat(deserialized).isInstanceOf(MergeTransform::class.java)
-        val deserMerge = deserialized as MergeTransform
-        assertThat(deserMerge.description.columns.map { it.name }).isEqualTo(listOf("v1", "v2"))
     }
 
     @Test
@@ -121,7 +116,7 @@ class GraphSerDeserTest {
             }
 
             val trans = addTransform(
-                    source, AddConstantTransform(amountToAdd, source.transformDescription))
+                    source, AddConstantTransform(amountToAdd))
             result = trans
         }
 
@@ -133,8 +128,8 @@ class GraphSerDeserTest {
         val inStream = ByteArrayInputStream(outStream.toByteArray())
         val deserGraph = serDeser.deserialize(inStream)
 
-        assertThat(deserGraph.source.columns).hasSize(1)
-        assertThat(deserGraph.source.columns[0]).isEqualTo(sourceColId)
+        assertThat(deserGraph.source.columnIds).hasSize(1)
+        assertThat(deserGraph.source.columnIds[0]).isEqualTo(sourceColId)
 
         val sourceValue = 18
         val sourceData = deserGraph.createSource(sourceValue)
@@ -170,7 +165,7 @@ class GraphSerDeserTest {
         val inStream = ByteArrayInputStream(outStream.toByteArray())
         val deserGraph = serDeser.deserialize(inStream)
 
-        assertThat(deserGraph.source.columns).isEqualTo(sourceColIds.plus(trainOnlySourceColIds))
+        assertThat(deserGraph.source.columnIds).isEqualTo(sourceColIds.plus(trainOnlySourceColIds))
         assertThat(deserGraph.source.trainOnlyColumnIds).isEqualTo(trainOnlySourceColIds)
     }
 
@@ -223,7 +218,7 @@ class GraphSerDeserTest {
         val source = SourceGraphNode.build(0) {
             columnIds += sourceCol
         }
-        val toLower = LowerCaseTransform(source.transformDescription)
+        val toLower = LowerCaseTransform()
 
         val serDeser = GraphSerDeser()
         val output = ByteArrayOutputStream()
@@ -233,7 +228,7 @@ class GraphSerDeserTest {
 
         val deserialized = serDeser.deserializeTransform(
                 null, StandardJsonFormat.MetaData(toLower), listOf(source), input)
-        assertThat(deserialized.description).isEqualToComparingFieldByField(toLower.description)
+        assertThat(deserialized).isInstanceOf(LowerCaseTransform::class.java)
     }
 
     // See comments in GraphExecutionTest.testComplexTrainOnlyGraphExecution
@@ -293,11 +288,11 @@ class GraphSerDeserTest {
             }
 
             val trans1 = addTransform(
-                    source, AddConstantTransform(amountToAdd1, source.transformDescription))
+                    source, AddConstantTransform(amountToAdd1))
             trans1.label = injectionLabel
 
             val trans2 = addTransform(
-                    trans1, AddConstantTransform(amountToAdd2, source.transformDescription))
+                    trans1, AddConstantTransform(amountToAdd2))
             result = trans2
         }
 
@@ -318,7 +313,7 @@ class GraphSerDeserTest {
                 assertThat(theData.findValue("toAdd").intValue()).isEqualTo(amountToAdd1)
                 assertThat(sources).hasSize(1)
 
-                return AddConstantTransform(amountToAddAfterInjection, sources[0].transformDescription)
+                return AddConstantTransform(amountToAddAfterInjection)
             }
         }
 

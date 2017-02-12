@@ -19,9 +19,7 @@ package com.analyticspot.ml.framework.datatransform
 
 import com.analyticspot.ml.framework.datagraph.GraphNode
 import com.analyticspot.ml.framework.dataset.DataSet
-import com.analyticspot.ml.framework.description.TransformDescription
 import com.fasterxml.jackson.annotation.JacksonInject
-import com.fasterxml.jackson.annotation.JsonIgnore
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.annotation.JsonProperty.Access
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize
@@ -33,13 +31,6 @@ import java.util.concurrent.CompletableFuture
  */
 @JsonDeserialize(builder = MergeTransform.DeserBuilder::class)
 class MergeTransform (builder: Builder) : MultiTransform {
-    @get:JsonIgnore
-    override val description: TransformDescription by lazy {
-        val allColumns = builder.sources.flatMap { it.transformDescription.columns }
-        val allColGroups = builder.sources.flatMap { it.transformDescription.columnGroups }
-        TransformDescription(allColumns, allColGroups)
-    }
-
     private val sources: List<GraphNode> = builder.sources
 
     @get:JsonProperty(access = Access.READ_ONLY)

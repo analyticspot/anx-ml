@@ -21,7 +21,6 @@ import com.analyticspot.ml.framework.dataset.DataSet
 import com.analyticspot.ml.framework.datatransform.ColumnSubsetTransform
 import com.analyticspot.ml.framework.datatransform.SingleDataTransform
 import com.analyticspot.ml.framework.description.ColumnId
-import com.analyticspot.ml.framework.description.TransformDescription
 import com.analyticspot.ml.framework.testutils.Graph1
 import com.analyticspot.ml.framework.testutils.InvertBoolean
 import com.analyticspot.ml.framework.testutils.TrueIfSeenTransform
@@ -57,7 +56,7 @@ class GraphExecutionTest {
                 columnIds += listOf(notUsedInput, usedInput)
             }
 
-            val trans = addTransform(src, AddConstantTransform(toAdd, src.transformDescription))
+            val trans = addTransform(src, AddConstantTransform(toAdd))
             result = trans
         }
 
@@ -264,17 +263,17 @@ class GraphExecutionTest {
             }
 
             // 3 parallel transforms that add 1, 2 and 3 respectively
-            val t1Temp = addTransform(src, AddConstantTransform(1, src))
+            val t1Temp = addTransform(src, AddConstantTransform(1))
             val t1 = addTransform(t1Temp, ColumnSubsetTransform.build {
                 keepAndRename(srcColId, resultColumns[0])
             })
 
-            val t2Temp = addTransform(src, AddConstantTransform(2, src))
+            val t2Temp = addTransform(src, AddConstantTransform(2))
             val t2 = addTransform(t2Temp, ColumnSubsetTransform.build {
                 keepAndRename(srcColId, resultColumns[1])
             })
 
-            val t3Temp = addTransform(src, AddConstantTransform(3, src))
+            val t3Temp = addTransform(src, AddConstantTransform(3))
             val t3 = addTransform(t3Temp, ColumnSubsetTransform.build {
                 keepAndRename(srcColId, resultColumns[2])
             })
@@ -283,9 +282,6 @@ class GraphExecutionTest {
 
             result = mergeDs
         }
-
-        assertThat(dg.result.columns).hasSize(3)
-        // assertThat(nnMergeDs.tokens.map { it.name }.toSet()).isEqualTo(resultValIds.map { it.name }.toSet())
 
         val resultF = dg.transform(dg.createSource(0), Executors.newFixedThreadPool(3))
         val resultData = resultF.get()
@@ -340,8 +336,6 @@ class GraphExecutionTest {
         companion object {
             const val ERROR_MESSAGE = "Pretending bad things happened."
         }
-        override val description: TransformDescription
-            get() = TransformDescription(listOf(resultId))
 
         override fun transform(dataSet: DataSet, exec: ExecutorService): CompletableFuture<DataSet> {
             throw RuntimeException(ERROR_MESSAGE)
@@ -352,8 +346,6 @@ class GraphExecutionTest {
         companion object {
             const val ERROR_MESSAGE = "Pretending bad things happened."
         }
-        override val description: TransformDescription
-            get() = TransformDescription(listOf(resultId))
 
         override fun transform(dataSet: DataSet, exec: ExecutorService): CompletableFuture<DataSet> {
             val result = CompletableFuture<DataSet>()
