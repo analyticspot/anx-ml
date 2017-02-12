@@ -2,13 +2,11 @@ package com.analyticspot.ml.bridges.smile
 
 import com.analyticspot.ml.framework.dataset.Column
 import com.analyticspot.ml.framework.dataset.DataSet
-import com.analyticspot.ml.framework.datatransform.SupervisedLearningTransform
 import com.analyticspot.ml.framework.datatransform.TargetSupervisedLearningTransform
 import com.analyticspot.ml.framework.feature.CategoricalFeatureId
 import org.slf4j.LoggerFactory
 import smile.classification.Classifier
 import smile.classification.ClassifierTrainer
-import smile.classification.SoftClassifier
 import smile.data.Attribute
 import java.util.ArrayList
 import java.util.concurrent.CompletableFuture
@@ -34,7 +32,6 @@ open class SmileClassifier(targetId: CategoricalFeatureId,
      */
     lateinit var intToTarget: Map<Int, String>
 
-
     companion object {
         private val log = LoggerFactory.getLogger(SmileClassifier::class.java)
     }
@@ -43,7 +40,6 @@ open class SmileClassifier(targetId: CategoricalFeatureId,
         val dataAndAttrs = DataConversion.fromDataSet(dataSet)
         return CompletableFuture.completedFuture(transformConvertedData(dataAndAttrs.data))
     }
-
 
     override fun trainTransform(dataSet: DataSet, target: Column<String?>, exec: ExecutorService)
             : CompletableFuture<DataSet> {
