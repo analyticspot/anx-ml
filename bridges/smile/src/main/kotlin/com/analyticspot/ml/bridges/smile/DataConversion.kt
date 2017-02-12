@@ -2,7 +2,8 @@ package com.analyticspot.ml.bridges.smile
 
 import com.analyticspot.ml.framework.dataset.Column
 import com.analyticspot.ml.framework.dataset.DataSet
-import com.analyticspot.ml.utils.isAssignableFrom
+// Lint disable as this is used but there's a ktlint bug.
+import com.analyticspot.ml.utils.isAssignableFrom // ktlint-disable no-unused-imports
 import smile.data.NominalAttribute
 
 /**

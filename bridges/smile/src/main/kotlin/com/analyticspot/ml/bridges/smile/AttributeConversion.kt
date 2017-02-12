@@ -3,11 +3,11 @@ package com.analyticspot.ml.bridges.smile
 import com.analyticspot.ml.framework.dataset.DataSet
 import com.analyticspot.ml.framework.description.ColumnId
 import com.analyticspot.ml.framework.metadata.CategoricalFeatureMetaData
-import com.analyticspot.ml.utils.isAssignableFrom
+// Lint disable as this is used but there's a ktlint bug.
+import com.analyticspot.ml.utils.isAssignableFrom // ktlint-disable no-unused-imports
 import smile.data.Attribute
 import smile.data.NominalAttribute
 import smile.data.NumericAttribute
-import kotlin.reflect.KClass
 
 /**
  * Smile has an `AttributeDataSet` but they don't ever pass that directly to classifiers, clusterers, etc. Instead
@@ -29,7 +29,7 @@ object AttributeConversion {
     fun toSmileAttributes(inData: DataSet): Array<Attribute> {
         return Array<Attribute>(inData.numColumns) { colIdx ->
             val colId = inData.columnIds[colIdx]
-            if (Number::class isAssignableFrom  colId.clazz) {
+            if (Number::class isAssignableFrom colId.clazz) {
                 toAttribute(colId as ColumnId<in Number>)
             } else if (String::class isAssignableFrom colId.clazz) {
                 val md = inData.metaData[colId.name]
