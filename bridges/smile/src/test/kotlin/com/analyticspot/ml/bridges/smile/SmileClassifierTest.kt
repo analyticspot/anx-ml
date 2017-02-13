@@ -4,12 +4,16 @@ import com.analyticspot.ml.framework.datagraph.DataGraph
 import com.analyticspot.ml.framework.dataset.DataSet
 import com.analyticspot.ml.framework.description.ColumnId
 import com.analyticspot.ml.framework.metadata.CategoricalFeatureMetaData
+import com.analyticspot.ml.framework.serialization.GraphSerDeser
+import com.analyticspot.ml.framework.serialization.MultiFileMixedFormat
 import kotlinx.support.jdk8.streams.toList
 import org.assertj.core.api.Assertions.assertThat
 import org.slf4j.LoggerFactory
 import org.testng.annotations.Test
 import smile.classification.DecisionTree
 import smile.data.Attribute
+import java.io.ByteArrayInputStream
+import java.io.ByteArrayOutputStream
 import java.util.Random
 import java.util.concurrent.Executors
 
@@ -71,6 +75,58 @@ class SmileClassifierTest {
         assertThat(wrongResult.numColumns).isEqualTo(1)
         // We followed the T1 rule so that should have been the prediction even though we passed in a target of T3
         assertThat(wrongResult.value(0, predColumn)).isEqualTo("T1")
+    }
+
+    @Test
+    fun testCanSerDeser() {
+        val maxNodes = 20
+        val dtTrainerFactory = { attrs: Array<Attribute> -> DecisionTree.Trainer(attrs, maxNodes) }
+        // 400 rows of data. The 2nd argument is just a random seed
+        val trainData = generateDtData(400, 0)
+
+        val treeTransform = SmileClassifier(trainData.targetId, dtTrainerFactory)
+
+        val dg = DataGraph.build {
+            val src = setSource {
+                columnIds += trainData.data.columnIds.filter { it.name != trainData.targetId.name }
+                trainOnlyColumnIds += trainData.targetId
+            }
+
+            val inputSet = removeColumns(src, trainData.targetId)
+
+            val targetSet = keepColumns(src, trainData.targetId)
+
+            val tree = addTransform(inputSet, targetSet, treeTransform)
+
+            result = tree
+        }
+
+        val exec = Executors.newFixedThreadPool(2)
+
+        dg.trainTransform(trainData.data, exec).get()
+
+        // Now serialize it
+        val output = ByteArrayOutputStream()
+        val serDeser = GraphSerDeser()
+        serDeser.registerFormat(MultiFileMixedFormat())
+        serDeser.serialize(dg, output)
+
+        // And now deserialize it
+        val deserDg = serDeser.deserialize(ByteArrayInputStream(output.toByteArray()))
+
+        // And make sure it can make correct predictions on the training data
+        val deserResult = deserDg.transform(trainData.data, exec).get()
+
+        assertThat(deserResult.numColumns).isEqualTo(1)
+        assertThat(deserResult.numRows).isEqualTo(trainData.data.numRows)
+
+        val predColumn = deserResult.columnIds.first()
+
+        for (i in 0 until trainData.data.numRows) {
+            val prediction = deserResult.value(i, predColumn)
+            val target = trainData.data.value(i, trainData.targetId)
+            assertThat(prediction).isEqualTo(target)
+        }
     }
 
     // Return type for generateDtData below
