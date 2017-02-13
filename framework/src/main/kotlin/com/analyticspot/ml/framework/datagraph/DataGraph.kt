@@ -18,6 +18,8 @@
 package com.analyticspot.ml.framework.datagraph
 
 import com.analyticspot.ml.framework.dataset.DataSet
+import com.analyticspot.ml.framework.datatransform.AllColumnsExceptTransform
+import com.analyticspot.ml.framework.datatransform.ColumnSubsetTransform
 import com.analyticspot.ml.framework.datatransform.LearningTransform
 import com.analyticspot.ml.framework.datatransform.MergeTransform
 import com.analyticspot.ml.framework.datatransform.MultiTransform
@@ -249,6 +251,45 @@ class DataGraph(builder: GraphBuilder) : LearningTransform {
                 this.sources += sources
             }
             return addTransform(sources.asList(), transform)
+        }
+
+        /**
+         * Adds a node to the graph that when run will produce a new data set by removing the given columns from its
+         * input.
+         */
+        fun removeColumns(src: GraphNode, vararg toRemove: String): GraphNode {
+            val transform = AllColumnsExceptTransform(toRemove.toSet())
+            return addTransform(src, transform)
+        }
+
+        /**
+         * Like the other [removeColumns] overload but takes [ColumnId] as input.
+         */
+        fun removeColumns(src: GraphNode, vararg toRemove: ColumnId<*>): GraphNode {
+            return removeColumns(src, *toRemove.map { it.name }.toTypedArray())
+        }
+
+        /**
+         * Adds a node to the graph that will return only a subsetColumns of the columns in it's input. Note that you can
+         * also rename columns using this transform.
+         */
+        fun subsetColumns(src: GraphNode, init: ColumnSubsetTransform.Builder.() -> Unit): GraphNode {
+            val transform = ColumnSubsetTransform.build {
+                init()
+            }
+            return addTransform(src, transform)
+        }
+
+        /**
+         * The inverse of [keepColumns], this drops all columns except those specified.
+         */
+        fun keepColumns(src: GraphNode, vararg column: ColumnId<*>): GraphNode {
+            val transform = ColumnSubsetTransform.build {
+                column.forEach {
+                    keep(it)
+                }
+            }
+            return addTransform(src, transform)
         }
 
         fun addTransform(sources: List<GraphNode>, transform: MultiTransform): GraphNode {
