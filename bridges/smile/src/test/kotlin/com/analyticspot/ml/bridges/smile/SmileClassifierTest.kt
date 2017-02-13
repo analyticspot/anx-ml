@@ -2,7 +2,6 @@ package com.analyticspot.ml.bridges.smile
 
 import com.analyticspot.ml.framework.datagraph.DataGraph
 import com.analyticspot.ml.framework.dataset.DataSet
-import com.analyticspot.ml.framework.datatransform.ColumnSubsetTransform
 import com.analyticspot.ml.framework.description.ColumnId
 import com.analyticspot.ml.framework.metadata.CategoricalFeatureMetaData
 import kotlinx.support.jdk8.streams.toList
@@ -34,11 +33,9 @@ class SmileClassifierTest {
                 trainOnlyColumnIds += trainData.targetId
             }
 
-            val inputSet = addTransform(src, ColumnSubsetTransform.build {
-                src.columnIds.filter { it.name != trainData.targetId.name }.forEach { keep(it) }
-            })
+            val inputSet = removeColumns(src, trainData.targetId)
 
-            val targetSet = addTransform(src, ColumnSubsetTransform.build { keep(trainData.targetId) })
+            val targetSet = keepColumns(src, trainData.targetId)
 
             val tree = addTransform(inputSet, targetSet, treeTransform)
 

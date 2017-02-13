@@ -64,7 +64,7 @@ class ColumnSubsetTransform : SingleDataTransform {
 
     class Builder {
         // Maps from the id of a column to keep to a new id for that column.
-        internal val keepMap = mutableMapOf< ColumnId<*>, ColumnId<*>>()
+        internal val keepMap = mutableMapOf<ColumnId<*>, ColumnId<*>>()
 
         /**
          * The result should contain the given column.
