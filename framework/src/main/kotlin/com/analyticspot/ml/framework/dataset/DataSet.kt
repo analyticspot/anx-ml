@@ -22,6 +22,7 @@ import com.analyticspot.ml.framework.metadata.ColumnMetaData
 // Lint disable as this is used but there's a ktlint bug.
 import com.analyticspot.ml.utils.isAssignableFrom // ktlint-disable no-unused-imports
 import org.slf4j.LoggerFactory
+import java.io.OutputStream
 
 /**
  * This is what holds the data that is passed through the [DataGraph]. It is column-oriented so that creating a
@@ -186,6 +187,33 @@ class DataSet private constructor(idAndColumns: Array<IdAndColumn<*>>) {
         }
         @Suppress("UNCHECKED_CAST")
         return theCol as Column<T>
+    }
+
+    /**
+     * Saves the [DataSet] to the passed `OutputStream` as CSV (or you can specify another delimiter via the `delimiter`
+     * parameter). For this to work all column values must support `toString`. It is the responsibility of the caller to
+     * close the `OutputStream`.
+     *
+     * @param output the `OutputStream` to which the data should be saved.
+     * @param header if true a header row will be written before the data. The header will contain the [ColumnId.name]
+     *     for each column. If false there will be no header row.
+     * @param nullVal the value to write for missing values
+     * @param delimiter the value to be written between the values. If it's a `,` you get a CSV file, if it's a `\t` you
+     *     get a TSV file, etc.
+     */
+    fun toDelimited(output: OutputStream, header: Boolean = true, nullVal: String = "null", delimiter: String = ",") {
+        val writer = output.writer()
+        if (header) {
+            writer.write(columnIds.map { it.name }.joinToString(delimiter))
+            writer.write("\n")
+        }
+
+        for (row in 0 until numRows) {
+            val strValues = columnIds.map { value(row, it)?.toString() ?: nullVal }
+            writer.write(strValues.joinToString(delimiter))
+            writer.write("\n")
+        }
+        writer.flush()
     }
 
     /**
