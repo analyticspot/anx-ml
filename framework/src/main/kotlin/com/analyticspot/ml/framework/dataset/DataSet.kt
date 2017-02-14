@@ -22,6 +22,7 @@ import com.analyticspot.ml.framework.metadata.ColumnMetaData
 // Lint disable as this is used but there's a ktlint bug.
 import com.analyticspot.ml.utils.isAssignableFrom // ktlint-disable no-unused-imports
 import org.slf4j.LoggerFactory
+import java.io.File
 import java.io.OutputStream
 
 /**
@@ -214,6 +215,22 @@ class DataSet private constructor(idAndColumns: Array<IdAndColumn<*>>) {
             writer.write("\n")
         }
         writer.flush()
+    }
+
+    /**
+     * The same as the other [toDelimited] overload but writes to a file `File` and closes the file when done.
+     */
+    fun toDelimited(output: File, header: Boolean = true, nullVal: String = "null", delimiter: String = ",") {
+        val outStream = output.outputStream()
+        toDelimited(outStream, header, nullVal, delimiter)
+        outStream.close()
+    }
+
+    /**
+     * The same as the other [toDelimited] overload but writes to a file at `filePath` and closes the file when done.
+     */
+    fun toDelimited(filePath: String, header: Boolean = true, nullVal: String = "null", delimiter: String = ",") {
+        toDelimited(File(filePath), header, nullVal, delimiter)
     }
 
     /**
