@@ -4,7 +4,6 @@ import com.analyticspot.ml.framework.description.ColumnId
 import org.assertj.core.api.Assertions.assertThat
 import org.testng.annotations.Test
 import java.io.ByteArrayOutputStream
-import java.nio.charset.Charset
 
 class DataSetTest {
     @Test
@@ -55,7 +54,6 @@ class DataSetTest {
         val writer = output.writer()
         writer.write("\n$finalLine")
         writer.close()
-
 
         val outputStr = String(output.toByteArray())
         assertThat(outputStr).endsWith(finalLine)
