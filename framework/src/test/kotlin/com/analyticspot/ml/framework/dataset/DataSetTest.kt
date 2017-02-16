@@ -1,6 +1,7 @@
 package com.analyticspot.ml.framework.dataset
 
 import com.analyticspot.ml.framework.description.ColumnId
+import com.analyticspot.ml.framework.description.ColumnIdGroup
 import org.assertj.core.api.Assertions.assertThat
 import org.testng.annotations.Test
 import java.io.ByteArrayOutputStream
@@ -58,4 +59,68 @@ class DataSetTest {
         val outputStr = String(output.toByteArray())
         assertThat(outputStr).endsWith(finalLine)
     }
+
+    @Test
+    fun testColumnIdsInGroupReturnsCorrectColumns() {
+        val col1 = ColumnId.create<String>("aaa")
+        val col2 = ColumnId.create<String>("bbb")
+        // Should be OK that this has the name prefix as col2
+        val colGroup = ColumnIdGroup.create<String>("bbb")
+        val col3 = ColumnId.create<String>("ccc")
+        val col4 = ColumnId.create<String>("ddd")
+
+        val suffixesInGroup = listOf("foo", "bar", "baz", "bip", "bumble")
+
+        val ds = DataSet.build {
+            addColumn(col1, listOf("foo"))
+            addColumn(col2, listOf("foo"))
+            addColumn(col3, listOf("foo"))
+            addColumn(col4, listOf("foo"))
+
+            suffixesInGroup.forEach {
+                addColumn(colGroup.generateId(it), listOf("hello"))
+            }
+        }
+
+        val colsInGroup = ds.colIdsInGroup(colGroup)
+
+        assertThat(colsInGroup.toSet()).isEqualTo(suffixesInGroup.map { colGroup.generateId(it) }.toSet())
+    }
+
+    @Test
+    fun testColumnIdsInGroupOkWithEmptyGroup() {
+        val col1 = ColumnId.create<String>("aaa")
+        val col2 = ColumnId.create<String>("bbb")
+        val col3 = ColumnId.create<String>("ccc")
+        val col4 = ColumnId.create<String>("ddd")
+
+        val colGroup = ColumnIdGroup.create<String>("bbb")
+
+        val ds = DataSet.build {
+            addColumn(col1, listOf("foo"))
+            addColumn(col2, listOf("foo"))
+            addColumn(col3, listOf("foo"))
+            addColumn(col4, listOf("foo"))
+        }
+
+        val colsInGroup = ds.colIdsInGroup(colGroup)
+
+        assertThat(colsInGroup).isEmpty()
+    }
+
+    @Test
+    fun testColumnIdsInGroupOkWithOnlyGroup() {
+        val colGroup = ColumnIdGroup.create<String>("group")
+
+        val suffixesInGroup = listOf("foo", "bar", "baz", "bip", "bumble")
+        val ds = DataSet.build {
+            suffixesInGroup.forEach {
+                addColumn(colGroup.generateId(it), listOf("hello"))
+            }
+        }
+
+        val colsInGroup = ds.colIdsInGroup(colGroup)
+        assertThat(colsInGroup.toSet()).isEqualTo(suffixesInGroup.map { colGroup.generateId(it) }.toSet())
+    }
 }
+
