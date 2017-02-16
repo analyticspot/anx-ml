@@ -198,7 +198,7 @@ class DataSet private constructor(idAndColumns: Array<IdAndColumn<*>>) {
         val fullPrefix = group.prefix + ColumnId.GROUP_SEPARATOR
         // Create a fake ColumnId that will sort to the very beginning of the ColumnId array. We don't expect the actual
         // value to be found but `binarySearch` returns (-insertion point - 1) when the value is not found where
-        // insertion point is defined as the index at which the element should be inserted,/ so that the list remains
+        // insertion point is defined as the index at which the element should be inserted, so that the list remains
         // sorted.
         val searchResult = columnIds.binarySearch(ColumnId(fullPrefix, Any::class))
         check(searchResult < 0) {
