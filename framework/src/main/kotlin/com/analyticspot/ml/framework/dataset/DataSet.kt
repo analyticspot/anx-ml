@@ -18,6 +18,7 @@
 package com.analyticspot.ml.framework.dataset
 
 import com.analyticspot.ml.framework.description.ColumnId
+import com.analyticspot.ml.framework.description.ColumnIdGroup
 import com.analyticspot.ml.framework.metadata.ColumnMetaData
 // Lint disable as this is used but there's a ktlint bug.
 import com.analyticspot.ml.utils.isAssignableFrom // ktlint-disable no-unused-imports
@@ -40,7 +41,7 @@ class DataSet private constructor(idAndColumns: Array<IdAndColumn<*>>) {
     /**
      * All of the columns ids in this [DataSet].
      */
-    // Note: We want a very compact and iteratble format for the columns and their ids with fast random access and the
+    // Note: We want a very compact and iterable format for the columns and their ids with fast random access and the
     // ability to do binary search by ColumnId. The built-in binarySearch methods don't allow you to compare two
     // different types so we can't have an array of IdAndColumn and search by ColumnId. So we break it apart into
     // the column ids and the columns. We can then binary search the ids to get the index into the columns. In the
@@ -188,6 +189,41 @@ class DataSet private constructor(idAndColumns: Array<IdAndColumn<*>>) {
         }
         @Suppress("UNCHECKED_CAST")
         return theCol as Column<T>
+    }
+
+    /**
+     * Returns all [ColumnIds] instances for the given group.
+     */
+    fun <ColT : Any> colIdsInGroup(group: ColumnIdGroup<ColT>, clazz: Class<ColT>): List<ColumnId<ColT>> {
+        val fullPrefix = group.prefix + ColumnId.GROUP_SEPARATOR
+        // Create a fake ColumnId that will sort to the very beginning of the ColumnId array. We don't expect the actual
+        // value to be found but `binarySearch` returns (-insertion point - 1) when the value is not found where
+        // insertion point is defined as the index at which the element should be inserted,/ so that the list remains
+        // sorted.
+        val searchResult = columnIds.binarySearch(ColumnId(fullPrefix, Any::class))
+        check(searchResult < 0) {
+            "Did not expect to find a columnId whose name is the group prefix"
+        }
+        val firstMatchIdx = -1 * searchResult - 1
+        val result = mutableListOf<ColumnId<ColT>>()
+        for (colIdx in firstMatchIdx until columnIds.size) {
+            val colId = columnIds[colIdx]
+            if (colId.name.startsWith(fullPrefix)) {
+                check(clazz.isAssignableFrom(colId.clazz))
+                @Suppress("UNCHECKED_CAST")
+                result.add(colId as ColumnId<ColT>)
+            } else {
+                break
+            }
+        }
+        return result
+    }
+
+    /**
+     * Convenience overload with reified type parameter.
+     */
+    inline fun <reified ColT : Any> colIdsInGroup(group: ColumnIdGroup<ColT>): List<ColumnId<ColT>> {
+        return colIdsInGroup(group, ColT::class.java)
     }
 
     /**
