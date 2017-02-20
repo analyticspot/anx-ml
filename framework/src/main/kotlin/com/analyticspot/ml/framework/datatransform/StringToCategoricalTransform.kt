@@ -53,7 +53,8 @@ class StringToCategoricalTransform(val columnsToConvert: List<ColumnId<String>>)
         val metaMap = mutableMapOf<String, CategoricalFeatureMetaData>()
         columnsToConvert.forEach {
             val column = dataSet.column(it)
-            val metaData = CategoricalFeatureMetaData.fromStringColumn(column)
+            // We have to allow missing as the transform step can create data with missing values
+            val metaData = CategoricalFeatureMetaData.fromStringColumn(column).copyWithMissingAllowed()
             metaMap[it.name] = metaData
             resultBldr.addColumn(it, column, metaData)
         }
