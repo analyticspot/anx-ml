@@ -39,7 +39,7 @@ class CategoricalFeatureMetaData(maybeMissing: Boolean, val possibleValues: Set<
 
     /**
      * Given a [Column] of `String` values this returns a `Boolean` indicating if the column conforms to the metadata.
-     * Sepcfically, the column should contain only values in [possibleValues]. To replace unknown values with `null` you
+     * Specifically, the column should contain only values in [possibleValues]. To replace unknown values with `null` you
      * can call [makeColumnConformToMetaData] instead.
      */
     fun doesColumnConformToMetaData(column: Column<String?>): Boolean {
