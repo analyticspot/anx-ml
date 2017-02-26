@@ -2,11 +2,18 @@ package com.analyticspot.ml.framework.dataset
 
 import com.analyticspot.ml.framework.description.ColumnId
 import com.analyticspot.ml.framework.description.ColumnIdGroup
+import com.analyticspot.ml.framework.metadata.CategoricalFeatureMetaData
+import com.analyticspot.ml.framework.metadata.MaybeMissingMetaData
 import org.assertj.core.api.Assertions.assertThat
+import org.slf4j.LoggerFactory
 import org.testng.annotations.Test
 import java.io.ByteArrayOutputStream
 
 class DataSetTest {
+    companion object {
+        private val log = LoggerFactory.getLogger(DataSetTest::class.java)
+    }
+
     @Test
     fun testToDelimited() {
         val col1 = ColumnId.create<Int>("c1")
@@ -121,6 +128,29 @@ class DataSetTest {
 
         val colsInGroup = ds.colIdsInGroup(colGroup)
         assertThat(colsInGroup.toSet()).isEqualTo(suffixesInGroup.map { colGroup.generateId(it) }.toSet())
+    }
+
+    @Test
+    fun testCanSerializeAndDeserialize() {
+        val ds = DataSet.build {
+            addColumn(ColumnId.create<String>("c1"), listOf("a", "b", "c"),
+                    CategoricalFeatureMetaData(false, setOf("a", "b", "c", "d")))
+            addColumn(ColumnId.create<Int>("c2"), listOf(4, 5, 6))
+            addColumn(ColumnId.create<Int>("c3"), listOf(7, null, 8), MaybeMissingMetaData(true))
+        }
+
+        val serialized = ds.saveToString()
+        log.debug("DataSet serialized as: {}", serialized)
+
+        val deserDs = DataSet.fromSaved(serialized)
+
+        assertThat(deserDs.numColumns).isEqualTo(ds.numColumns)
+        assertThat(deserDs.numRows).isEqualTo(ds.numRows)
+        assertThat(deserDs.columnIds).isEqualTo(ds.columnIds)
+        for (cid in deserDs.columnIds) {
+            assertThat(deserDs.column(cid).toList()).isEqualTo(ds.column(cid).toList())
+        }
+
     }
 }
 

@@ -17,6 +17,13 @@
 
 package com.analyticspot.ml.framework.dataset
 
+import com.fasterxml.jackson.annotation.JsonCreator
+import com.fasterxml.jackson.annotation.JsonIgnore
+import com.fasterxml.jackson.annotation.JsonProperty
+import com.fasterxml.jackson.annotation.JsonProperty.Access
+import com.fasterxml.jackson.annotation.JsonTypeInfo
+import com.fasterxml.jackson.annotation.JsonTypeInfo.As
+import com.fasterxml.jackson.annotation.JsonTypeInfo.Id
 import kotlinx.support.jdk8.collections.spliterator
 import java.util.stream.Stream
 import java.util.stream.StreamSupport
@@ -24,8 +31,11 @@ import java.util.stream.StreamSupport
 /**
  * The interface for all the columns in a [DataSet]. Different subtypes may use different storage.
  */
+@JsonTypeInfo(use= Id.CLASS, include= As.PROPERTY, property="class")
 interface Column<out T : Any?> : Iterable<T> {
+    @get:JsonIgnore
     val size: Int
+
     operator fun get(rowIndex: Int): T
 
     /**
@@ -49,7 +59,8 @@ interface Column<out T : Any?> : Iterable<T> {
 /**
  * A [Column] that stores its data in an `Array`.
  */
-class ListColumn<T>(private val data: List<T>) : Column<T> {
+class ListColumn<T> @JsonCreator constructor(
+        @JsonProperty("data", access = Access.READ_WRITE) private val data: List<T>) : Column<T> {
     override val size: Int
         get() = data.size
 
