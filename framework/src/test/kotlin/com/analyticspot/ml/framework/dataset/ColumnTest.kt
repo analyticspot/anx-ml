@@ -5,7 +5,6 @@ import com.fasterxml.jackson.core.type.TypeReference
 import org.assertj.core.api.Assertions.assertThat
 import org.slf4j.LoggerFactory
 import org.testng.annotations.Test
-import java.io.ByteArrayOutputStream
 
 class ColumnTest {
     companion object {

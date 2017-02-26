@@ -28,6 +28,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore
 import com.fasterxml.jackson.annotation.JsonProperty
 import org.slf4j.LoggerFactory
 import java.io.File
+import java.io.InputStream
 import java.io.OutputStream
 
 /**
@@ -152,16 +153,28 @@ class DataSet private constructor(idAndColumns: Array<IdAndColumn<*>>) {
         }
 
         /**
-         * Constructs a [DataSet] from data previously saved via [saveToString].
+         * Constructs a [DataSet] from data previously saved via [saveToString]. Note that there is minimal type
+         * checking or other validation here: this should only be used when you trust that the serialized data is
+         * valid.
          */
         @JvmStatic
         fun fromSaved(data: String): DataSet {
             return JsonMapper.mapper.readValue(data, DataSet::class.java)
         }
 
+        /**
+         * Like the other [fromSaved] overload but used an `InputStream`.
+         */
+        @JvmStatic
+        fun fromSaved(input: InputStream): DataSet {
+            return JsonMapper.mapper.readValue(input, DataSet::class.java)
+        }
+
+        // This is just for Jackson to use as a constructor function.
         @JsonCreator
         @JvmStatic
-        private fun fromSerialized(@JsonProperty("columnIds") columnIds: List<ColumnId<*>>,
+        private fun fromSerialized(
+                @JsonProperty("columnIds") columnIds: List<ColumnId<*>>,
                 @JsonProperty("metaData") metaData: Map<String, ColumnMetaData>,
                 @JsonProperty("columns") columns: List<Column<*>>): DataSet {
             require(columnIds.size == columns.size)
