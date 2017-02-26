@@ -161,7 +161,7 @@ class DataSet private constructor(idAndColumns: Array<IdAndColumn<*>>) {
 
         @JsonCreator
         @JvmStatic
-        fun fromSerialized(@JsonProperty("columnIds") columnIds: List<ColumnId<*>>,
+        private fun fromSerialized(@JsonProperty("columnIds") columnIds: List<ColumnId<*>>,
                 @JsonProperty("metaData") metaData: Map<String, ColumnMetaData>,
                 @JsonProperty("columns") columns: List<Column<*>>): DataSet {
             require(columnIds.size == columns.size)
