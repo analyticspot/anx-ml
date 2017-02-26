@@ -212,7 +212,7 @@ class DataGraph(builder: GraphBuilder) : LearningTransform {
      * order to call [DataGraph.transform].
      */
     class GraphBuilder {
-        internal lateinit var source: SourceGraphNode
+        internal lateinit var source: SourceGraphNodeBase
 
         lateinit var result: GraphNode
 
@@ -238,6 +238,17 @@ class DataGraph(builder: GraphBuilder) : LearningTransform {
             source = node
             check(!nodesById.containsKey(node.id))
             nodesById[node.id] = node
+            return node
+        }
+
+        /**
+         * Specify that the source for this graph is a [DataSetSourceGraphNode].
+         */
+        fun dataSetSource(): DataSetSourceGraphNode {
+            val node = DataSetSourceGraphNode(nextId++)
+            source = node
+            check(!nodesById.containsKey(source.id))
+            nodesById[source.id] = source
             return node
         }
 
