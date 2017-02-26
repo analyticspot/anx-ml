@@ -1,5 +1,6 @@
 package publish
 
+import org.gradle.api.InvalidUserDataException
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.publish.maven.MavenPublication
@@ -61,6 +62,21 @@ class JavaPublishPlugin implements Plugin<Project> {
                     sign = true
                 }
             }
+
+            // Make sure the right environment variables have been defined for pushing artifacts and fail if not.
+            task('ensureBintrayEnv') {
+                doLast {
+                    def env1 = System.env.BINTRAY_KEY
+                    def env2 = System.env.BINTRAY_USER
+                    if (env1 == null || env1.isEmpty() || env2 == null || env2.isEmpty()) {
+                        throw new InvalidUserDataException(
+                                "You must provide environment variables BINTRAY_KEY and BINTRAY_USER in order to run" +
+                                "the bintrayUpload task: https://github.com/bintray/gradle-bintray-plugin")
+                    }
+                }
+            }
+
+            tasks.bintrayUpload.dependsOn tasks.ensureBintrayEnv
         }
     }
 }
