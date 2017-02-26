@@ -122,5 +122,10 @@ class DataSetTest {
         val colsInGroup = ds.colIdsInGroup(colGroup)
         assertThat(colsInGroup.toSet()).isEqualTo(suffixesInGroup.map { colGroup.generateId(it) }.toSet())
     }
+
+    @Test
+    fun testCanSerializeAndDeserialize() {
+
+    }
 }
 

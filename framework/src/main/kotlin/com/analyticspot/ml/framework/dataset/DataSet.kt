@@ -20,6 +20,7 @@ package com.analyticspot.ml.framework.dataset
 import com.analyticspot.ml.framework.description.ColumnId
 import com.analyticspot.ml.framework.description.ColumnIdGroup
 import com.analyticspot.ml.framework.metadata.ColumnMetaData
+import com.analyticspot.ml.framework.serialization.JsonMapper
 // Lint disable as this is used but there's a ktlint bug.
 import com.analyticspot.ml.utils.isAssignableFrom // ktlint-disable no-unused-imports
 import org.slf4j.LoggerFactory
@@ -224,6 +225,16 @@ class DataSet private constructor(idAndColumns: Array<IdAndColumn<*>>) {
      */
     inline fun <reified ColT : Any> colIdsInGroup(group: ColumnIdGroup<ColT>): List<ColumnId<ColT>> {
         return colIdsInGroup(group, ColT::class.java)
+    }
+
+    /**
+     * Saves the [DataSet] as JSON to the given `output`. Unlike the [toDelimited] methods this also preserves the
+     * column names, metadata, etc. You can use the corresponding [fromSaved] method to load a [DataSet] saved via this
+     * method.
+     */
+    fun save(output: OutputStream) {
+        val mapper = JsonMapper.mapper
+
     }
 
     /**
