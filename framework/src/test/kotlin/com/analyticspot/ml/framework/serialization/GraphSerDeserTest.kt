@@ -128,8 +128,10 @@ class GraphSerDeserTest {
         val inStream = ByteArrayInputStream(outStream.toByteArray())
         val deserGraph = serDeser.deserialize(inStream)
 
-        assertThat(deserGraph.source.columnIds).hasSize(1)
-        assertThat(deserGraph.source.columnIds[0]).isEqualTo(sourceColId)
+        assertThat(deserGraph.source).isInstanceOf(SourceGraphNode::class.java)
+        val dss = deserGraph.source as SourceGraphNode
+        assertThat(dss.columnIds).hasSize(1)
+        assertThat(dss.columnIds[0]).isEqualTo(sourceColId)
 
         val sourceValue = 18
         val sourceData = deserGraph.createSource(sourceValue)
@@ -165,8 +167,10 @@ class GraphSerDeserTest {
         val inStream = ByteArrayInputStream(outStream.toByteArray())
         val deserGraph = serDeser.deserialize(inStream)
 
-        assertThat(deserGraph.source.columnIds).isEqualTo(sourceColIds.plus(trainOnlySourceColIds))
-        assertThat(deserGraph.source.trainOnlyColumnIds).isEqualTo(trainOnlySourceColIds)
+        assertThat(deserGraph.source).isInstanceOf(SourceGraphNode::class.java)
+        val dss = deserGraph.source as SourceGraphNode
+        assertThat(dss.columnIds).isEqualTo(sourceColIds.plus(trainOnlySourceColIds))
+        assertThat(dss.trainOnlyColumnIds).isEqualTo(trainOnlySourceColIds)
     }
 
     @Test
