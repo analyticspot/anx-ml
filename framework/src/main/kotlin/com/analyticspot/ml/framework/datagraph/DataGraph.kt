@@ -245,7 +245,10 @@ class DataGraph(builder: GraphBuilder) : LearningTransform {
          * Specify that the source for this graph is a [DataSetSourceGraphNode].
          */
         fun dataSetSource(): DataSetSourceGraphNode {
-            val node = DataSetSourceGraphNode(nextId++)
+            return setDataSetSource(DataSetSourceGraphNode(nextId++))
+        }
+
+        internal fun setDataSetSource(node: DataSetSourceGraphNode): DataSetSourceGraphNode {
             source = node
             check(!nodesById.containsKey(source.id))
             nodesById[source.id] = source

@@ -18,6 +18,7 @@
 package com.analyticspot.ml.framework.serialization
 
 import com.analyticspot.ml.framework.datagraph.DataGraph
+import com.analyticspot.ml.framework.datagraph.DataSetSourceGraphNode
 import com.analyticspot.ml.framework.datagraph.GraphNode
 import com.analyticspot.ml.framework.datagraph.HasTransformGraphNode
 import com.analyticspot.ml.framework.datagraph.SourceGraphNode
@@ -77,6 +78,7 @@ class GraphSerDeser {
         topoOrder.forEach {
             val serNode: SerGraphNode = when (it) {
                 is SourceGraphNode -> SourceSerGraphNode.create(it)
+                is DataSetSourceGraphNode -> DataSetSourceSerGraphNode.create(it)
                 // Note that we only serialize what's necessary to apply a model, not train one so we can treat
                 // learning and non-learning transforms the same way.
                 is HasTransformGraphNode<*> -> {
@@ -184,6 +186,11 @@ class GraphSerDeser {
                         trainOnlyColumnIds += graphDataNode.trainOnlyColumnIds
                     }
                     newNode = graphBuilder.setSource(sourceNode)
+                }
+
+                is DataSetSourceSerGraphNode -> {
+                    check(nodeId == graphData.sourceId)
+                    newNode = graphBuilder.setDataSetSource(DataSetSourceGraphNode(nodeId))
                 }
             }
 
@@ -298,6 +305,22 @@ class GraphSerDeser {
                 id = node.id
                 label = node.label
             }
+        }
+    }
+
+    @JsonDeserialize(builder = DataSetSourceSerGraphNode.Builder::class)
+    class DataSetSourceSerGraphNode(builder: Builder) : SerGraphNode(builder) {
+        companion object {
+            fun create(node: DataSetSourceGraphNode): DataSetSourceSerGraphNode {
+                val bldr = Builder()
+                bldr.fromNode(node)
+                return DataSetSourceSerGraphNode(bldr)
+            }
+        }
+
+        @JsonPOJOBuilder(withPrefix = "set")
+        class Builder : SerGraphNode.Builder() {
+            fun build(): DataSetSourceSerGraphNode = DataSetSourceSerGraphNode(this)
         }
     }
 
