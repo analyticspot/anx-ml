@@ -23,6 +23,9 @@ import com.analyticspot.ml.framework.metadata.ColumnMetaData
 import com.analyticspot.ml.framework.serialization.JsonMapper
 // Lint disable as this is used but there's a ktlint bug.
 import com.analyticspot.ml.utils.isAssignableFrom // ktlint-disable no-unused-imports
+import com.fasterxml.jackson.annotation.JsonCreator
+import com.fasterxml.jackson.annotation.JsonIgnore
+import com.fasterxml.jackson.annotation.JsonProperty
 import org.slf4j.LoggerFactory
 import java.io.File
 import java.io.OutputStream
@@ -63,6 +66,7 @@ class DataSet private constructor(idAndColumns: Array<IdAndColumn<*>>) {
      */
     val columns: Array<Column<*>> = idAndColumns.map { it.column }.toTypedArray()
 
+    @get:JsonIgnore
     val numRows: Int
         get() {
             if (columns.size == 0) {
@@ -72,6 +76,7 @@ class DataSet private constructor(idAndColumns: Array<IdAndColumn<*>>) {
             }
         }
 
+    @get:JsonIgnore
     val numColumns: Int
         get() = columnIds.size
 
@@ -144,6 +149,26 @@ class DataSet private constructor(idAndColumns: Array<IdAndColumn<*>>) {
                     addColumn(it.first as ColumnId<Any>, ListColumn(it.second))
                 }
             }
+        }
+
+        /**
+         * Constructs a [DataSet] from data previously saved via [saveToString].
+         */
+        @JvmStatic
+        fun fromSaved(data: String): DataSet {
+            return JsonMapper.mapper.readValue(data, DataSet::class.java)
+        }
+
+        @JsonCreator
+        @JvmStatic
+        fun fromSerialized(@JsonProperty("columnIds") columnIds: List<ColumnId<*>>,
+                @JsonProperty("metaData") metaData: Map<String, ColumnMetaData>,
+                @JsonProperty("columns") columns: List<Column<*>>): DataSet {
+            require(columnIds.size == columns.size)
+            val idAndColumn = Array<IdAndColumn<*>>(columnIds.size) { idx ->
+                IdAndColumn(columnIds[idx], columns[idx], metaData[columnIds[idx].name])
+            }
+            return DataSet(idAndColumn)
         }
     }
 
@@ -234,7 +259,14 @@ class DataSet private constructor(idAndColumns: Array<IdAndColumn<*>>) {
      */
     fun save(output: OutputStream) {
         val mapper = JsonMapper.mapper
+        mapper.writeValue(output, this)
+    }
 
+    /**
+     * Identical to [save] but instead of writing the JSON data to a file it returns it as a String.
+     */
+    fun saveToString(): String {
+        return JsonMapper.mapper.writeValueAsString(this)
     }
 
     /**
