@@ -104,6 +104,34 @@ class GraphExecutionTest {
         assertThat(outValues.size).isEqualTo(srcMatrix.size)
     }
 
+    @Test
+    fun testDataSetSourceWorks() {
+        val notUsedInput = ColumnId.create<String>("notUsed")
+        val usedInput = ColumnId.create<Int>("used")
+        val resultId = ColumnId.create<Int>("finalResult")
+
+        val dg = DataGraph.build {
+            val src = dataSetSource()
+
+            val trans = addTransform(src, LearnMinTransform(usedInput, resultId))
+            result = trans
+        }
+
+        val srcDataSet = DataSet.build {
+            addColumn(usedInput, listOf(11, 22, 8, 4, 107))
+            addColumn(notUsedInput, listOf("Hello", "There", "Foo", "Bar", "Baz"))
+        }
+
+        val transformF = dg.trainTransform(srcDataSet, Executors.newSingleThreadExecutor())
+        val resultData = transformF.get()
+        assertThat(resultData.numRows).isEqualTo(srcDataSet.numRows)
+        assertThat(resultData.numColumns).isEqualTo(1)
+        val outValues = resultData.column(resultId).map { it ?: throw AssertionError("Should be non-null") }
+        assertThat(outValues.min()).isEqualTo(4)
+        assertThat(outValues.max()).isEqualTo(4)
+        assertThat(outValues.size).isEqualTo(srcDataSet.numRows)
+    }
+
     // Tests a supervised learning algorithm where the main and target data sets are the same
     @Test
     fun testSupervisedLearningTransformWithSingleSourceExecution() {

@@ -19,8 +19,10 @@ package com.analyticspot.ml.framework.serialization
 
 import com.analyticspot.ml.framework.datagraph.AddConstantTransform
 import com.analyticspot.ml.framework.datagraph.DataGraph
+import com.analyticspot.ml.framework.datagraph.DataSetSourceGraphNode
 import com.analyticspot.ml.framework.datagraph.GraphNode
 import com.analyticspot.ml.framework.datagraph.SourceGraphNode
+import com.analyticspot.ml.framework.dataset.DataSet
 import com.analyticspot.ml.framework.datatransform.DataTransform
 import com.analyticspot.ml.framework.datatransform.MergeTransform
 import com.analyticspot.ml.framework.description.ColumnId
@@ -128,11 +130,41 @@ class GraphSerDeserTest {
         val inStream = ByteArrayInputStream(outStream.toByteArray())
         val deserGraph = serDeser.deserialize(inStream)
 
-        assertThat(deserGraph.source.columnIds).hasSize(1)
-        assertThat(deserGraph.source.columnIds[0]).isEqualTo(sourceColId)
+        assertThat(deserGraph.source).isInstanceOf(SourceGraphNode::class.java)
+        val dss = deserGraph.source as SourceGraphNode
+        assertThat(dss.columnIds).hasSize(1)
+        assertThat(dss.columnIds[0]).isEqualTo(sourceColId)
 
         val sourceValue = 18
         val sourceData = deserGraph.createSource(sourceValue)
+        val result = deserGraph.transform(sourceData, Executors.newSingleThreadExecutor()).get()
+
+        assertThat(result.value(0, sourceColId)).isEqualTo(sourceValue + amountToAdd)
+    }
+
+    @Test
+    fun testCanSerializeAndDeserializeDataSetSource() {
+        val sourceColId = ColumnId.create<Int>("src")
+        val amountToAdd = 1232
+        val dg = DataGraph.build {
+            val source = dataSetSource()
+
+            val trans = addTransform(source, AddConstantTransform(amountToAdd))
+            result = trans
+        }
+
+        val serDeser = GraphSerDeser()
+        val outStream = ByteArrayOutputStream(0)
+        serDeser.serialize(dg, outStream)
+
+        // Now deserialize the thing....
+        val inStream = ByteArrayInputStream(outStream.toByteArray())
+        val deserGraph = serDeser.deserialize(inStream)
+
+        assertThat(deserGraph.source).isInstanceOf(DataSetSourceGraphNode::class.java)
+
+        val sourceValue = 18
+        val sourceData = DataSet.create(sourceColId, listOf(sourceValue))
         val result = deserGraph.transform(sourceData, Executors.newSingleThreadExecutor()).get()
 
         assertThat(result.value(0, sourceColId)).isEqualTo(sourceValue + amountToAdd)
@@ -165,8 +197,10 @@ class GraphSerDeserTest {
         val inStream = ByteArrayInputStream(outStream.toByteArray())
         val deserGraph = serDeser.deserialize(inStream)
 
-        assertThat(deserGraph.source.columnIds).isEqualTo(sourceColIds.plus(trainOnlySourceColIds))
-        assertThat(deserGraph.source.trainOnlyColumnIds).isEqualTo(trainOnlySourceColIds)
+        assertThat(deserGraph.source).isInstanceOf(SourceGraphNode::class.java)
+        val dss = deserGraph.source as SourceGraphNode
+        assertThat(dss.columnIds).isEqualTo(sourceColIds.plus(trainOnlySourceColIds))
+        assertThat(dss.trainOnlyColumnIds).isEqualTo(trainOnlySourceColIds)
     }
 
     @Test

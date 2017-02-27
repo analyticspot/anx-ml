@@ -41,7 +41,7 @@ import java.util.concurrent.ExecutorService
  * Note: Unit tests for this are in `GraphExecutionTest`.
  */
 class DataGraph(builder: GraphBuilder) : LearningTransform {
-    val source: SourceGraphNode
+    val source: SourceGraphNodeBase
     val result: GraphNode
     // An array of all the GraphNodes such that a node `x` can be found at `allNodes[x.id]`. Can be null because when
     // we deserialize a graph it won't contain nodes that were only required for training.
@@ -119,44 +119,70 @@ class DataGraph(builder: GraphBuilder) : LearningTransform {
      * train-only columns.
      */
     fun createSource(vararg vals: Any?): DataSet {
-        return DataSet.fromMatrix(source.columnIds.minus(source.trainOnlyColumnIds), listOf(vals.asList()))
+        return ensureSourceGraphNodeAndRun {
+            DataSet.fromMatrix(it.columnIds.minus(it.trainOnlyColumnIds), listOf(vals.asList()))
+        }
     }
 
     /**
      * Like the other [createSource] overload but lets you pass an array of rows rather than just a single row.
      */
     fun createSource(data: List<List<Any?>>): DataSet {
-        return DataSet.fromMatrix(source.columnIds.minus(source.trainOnlyColumnIds), data)
+        return ensureSourceGraphNodeAndRun {
+            DataSet.fromMatrix(it.columnIds.minus(it.trainOnlyColumnIds), data)
+        }
     }
 
     /**
      * Like the other [createSource] methods but lets you pass an array of arrays.
      */
     fun createSource(matrix: Array<Array<Any?>>): DataSet {
-        val asLists = matrix.map { it.asList() }
-        return createSource(asLists)
+        return ensureSourceGraphNodeAndRun {
+            val asLists = matrix.map { it.asList() }
+            createSource(asLists)
+        }
     }
 
     /**
      * Like [createSource] but includes train-only columns.
      */
     fun createTrainingSource(vararg vals: Any?): DataSet {
-        return DataSet.fromMatrix(source.columnIds, listOf(vals.asList()))
+        return ensureSourceGraphNodeAndRun {
+            DataSet.fromMatrix(it.columnIds, listOf(vals.asList()))
+        }
     }
 
     /**
      * Like the other [createTrainingSource] methods but lets you pass an array of arrays.
      */
     fun createTrainingSource(matrix: Array<Array<Any?>>): DataSet {
-        val asLists = matrix.map { it.asList() }
-        return createTrainingSource(asLists)
+        return ensureSourceGraphNodeAndRun {
+            val asLists = matrix.map { it.asList() }
+            createTrainingSource(asLists)
+        }
+    }
+
+    // Makes sure the type of [source] is `SourceGraphNode`. If it's not, it throws. If it is, it runs the passed
+    // function.
+    private fun <R> ensureSourceGraphNodeAndRun(toRun: (SourceGraphNode) -> R): R {
+        if (source is SourceGraphNode) {
+            return toRun(source)
+        } else {
+            throw IllegalStateException("This only works if the graph's source is a SourceGraphNode. Source for " +
+                    "this graph is ${source.javaClass}")
+        }
     }
 
     /**
      * Like the other [createTrainingSource] overload but lets you pass an array of rows rather than just a single row.
      */
     fun createTrainingSource(data: List<List<Any?>>): DataSet {
-        return DataSet.fromMatrix(source.columnIds, data)
+        if (source is SourceGraphNode) {
+            return DataSet.fromMatrix(source.columnIds, data)
+        } else {
+            throw IllegalStateException("You can't call the createSource method if the graph's source is a " +
+                    "DataSetSourceGraphNode")
+        }
     }
 
     /**
@@ -187,7 +213,7 @@ class DataGraph(builder: GraphBuilder) : LearningTransform {
      * order to call [DataGraph.transform].
      */
     class GraphBuilder {
-        internal lateinit var source: SourceGraphNode
+        internal lateinit var source: SourceGraphNodeBase
 
         lateinit var result: GraphNode
 
@@ -213,6 +239,20 @@ class DataGraph(builder: GraphBuilder) : LearningTransform {
             source = node
             check(!nodesById.containsKey(node.id))
             nodesById[node.id] = node
+            return node
+        }
+
+        /**
+         * Specify that the source for this graph is a [DataSetSourceGraphNode].
+         */
+        fun dataSetSource(): DataSetSourceGraphNode {
+            return setDataSetSource(DataSetSourceGraphNode(nextId++))
+        }
+
+        internal fun setDataSetSource(node: DataSetSourceGraphNode): DataSetSourceGraphNode {
+            source = node
+            check(!nodesById.containsKey(source.id))
+            nodesById[source.id] = source
             return node
         }
 
