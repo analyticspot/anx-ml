@@ -20,6 +20,7 @@ package com.analyticspot.ml.framework.datatransform
 import com.analyticspot.ml.framework.dataset.DataSet
 import com.analyticspot.ml.framework.description.ColumnId
 import com.fasterxml.jackson.annotation.JsonCreator
+import com.fasterxml.jackson.annotation.JsonIgnore
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.annotation.JsonProperty.Access
 import java.util.concurrent.CompletableFuture
@@ -31,12 +32,22 @@ import java.util.concurrent.ExecutorService
  * retained as well.
  */
 class ColumnSubsetTransform : SingleDataTransform {
-    @JsonProperty(access = Access.READ_ONLY)
+    @JsonIgnore
     val keepMap: Map<ColumnId<*>, ColumnId<*>>
 
-    @JsonCreator
-    private constructor(@JsonProperty("keepMap") keepMap: Map<ColumnId<*>, ColumnId<*>>) {
+    // Jackson doesn't like to deserialize key's that aren't String (because it serializes Map instances as JSON objects
+    // with plain string keys) so we have this method just for serialization.
+    @get:JsonProperty("keepMap", access = Access.READ_ONLY)
+    private val keepMapAsListPair: List<Pair<ColumnId<*>, ColumnId<*>>>
+        get() = keepMap.map { Pair(it.key, it.value) }
+
+    private constructor(keepMap: Map<ColumnId<*>, ColumnId<*>>) {
         this.keepMap = keepMap
+    }
+
+    @JsonCreator
+    private constructor(@JsonProperty("keepMap") keepMapPairs: List<Pair<ColumnId<*>, ColumnId<*>>>) {
+        keepMap = keepMapPairs.associate { it }
     }
 
     private constructor(builder: Builder) : this(builder.keepMap)
