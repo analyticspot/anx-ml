@@ -119,11 +119,8 @@ class DataGraph(builder: GraphBuilder) : LearningTransform {
      * train-only columns.
      */
     fun createSource(vararg vals: Any?): DataSet {
-        if (source is SourceGraphNode) {
-            return DataSet.fromMatrix(source.columnIds.minus(source.trainOnlyColumnIds), listOf(vals.asList()))
-        } else {
-            throw IllegalStateException("You can't call the createSource method if the graph's source is a " +
-                "DataSetSourceGraphNode")
+        return ensureSourceGraphNodeAndRun {
+            DataSet.fromMatrix(it.columnIds.minus(it.trainOnlyColumnIds), listOf(vals.asList()))
         }
     }
 
@@ -131,11 +128,8 @@ class DataGraph(builder: GraphBuilder) : LearningTransform {
      * Like the other [createSource] overload but lets you pass an array of rows rather than just a single row.
      */
     fun createSource(data: List<List<Any?>>): DataSet {
-        if (source is SourceGraphNode) {
-            return DataSet.fromMatrix(source.columnIds.minus(source.trainOnlyColumnIds), data)
-        } else {
-            throw IllegalStateException("You can't call the createSource method if the graph's source is a " +
-                    "DataSetSourceGraphNode")
+        return ensureSourceGraphNodeAndRun {
+            DataSet.fromMatrix(it.columnIds.minus(it.trainOnlyColumnIds), data)
         }
     }
 
@@ -143,19 +137,18 @@ class DataGraph(builder: GraphBuilder) : LearningTransform {
      * Like the other [createSource] methods but lets you pass an array of arrays.
      */
     fun createSource(matrix: Array<Array<Any?>>): DataSet {
-        val asLists = matrix.map { it.asList() }
-        return createSource(asLists)
+        return ensureSourceGraphNodeAndRun {
+            val asLists = matrix.map { it.asList() }
+            createSource(asLists)
+        }
     }
 
     /**
      * Like [createSource] but includes train-only columns.
      */
     fun createTrainingSource(vararg vals: Any?): DataSet {
-        if (source is SourceGraphNode) {
-            return DataSet.fromMatrix(source.columnIds, listOf(vals.asList()))
-        } else {
-            throw IllegalStateException("You can't call the createSource method if the graph's source is a " +
-                    "DataSetSourceGraphNode")
+        return ensureSourceGraphNodeAndRun {
+            DataSet.fromMatrix(it.columnIds, listOf(vals.asList()))
         }
     }
 
@@ -163,12 +156,20 @@ class DataGraph(builder: GraphBuilder) : LearningTransform {
      * Like the other [createTrainingSource] methods but lets you pass an array of arrays.
      */
     fun createTrainingSource(matrix: Array<Array<Any?>>): DataSet {
-        if (source is SourceGraphNode) {
+        return ensureSourceGraphNodeAndRun {
             val asLists = matrix.map { it.asList() }
-            return createTrainingSource(asLists)
+            createTrainingSource(asLists)
+        }
+    }
+
+    // Makes sure the type of [source] is `SourceGraphNode`. If it's not, it throws. If it is, it runs the passed
+    // function.
+    private fun <R> ensureSourceGraphNodeAndRun(toRun: (SourceGraphNode) -> R): R {
+        if (source is SourceGraphNode) {
+            return toRun(source)
         } else {
-            throw IllegalStateException("You can't call the createSource method if the graph's source is a " +
-                    "DataSetSourceGraphNode")
+            throw IllegalStateException("This only works if the graph's source is a SourceGraphNode. Source for " +
+                    "this graph is ${source.javaClass}")
         }
     }
 
