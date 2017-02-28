@@ -17,9 +17,11 @@
 
 package com.analyticspot.ml.framework.serialization
 
+import com.analyticspot.ml.framework.description.ColumnId
 import com.fasterxml.jackson.core.JsonGenerator
 import com.fasterxml.jackson.core.JsonParser
 import com.fasterxml.jackson.databind.DeserializationContext
+import com.fasterxml.jackson.databind.KeyDeserializer
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.SerializerProvider
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer
@@ -51,6 +53,7 @@ object JsonMapper {
         init {
             addSerializer(KClass::class.java, kClassSer)
             addDeserializer(KClass::class.java, kClassDeser)
+            addKeyDeserializer(ColumnId::class.java, ColumnIdKeyDeserializer())
         }
     }
 
@@ -82,6 +85,15 @@ object JsonMapper {
         override fun deserialize(parser: JsonParser, ctxt: DeserializationContext): KClass<*> {
             val classStr = parser.readValueAs(String::class.java)
             return kotlinTypesMap[classStr] ?: Class.forName(classStr).kotlin
+        }
+    }
+
+    class ColumnIdKeyDeserializer : KeyDeserializer() {
+        override fun deserializeKey(key: String, ctxt: DeserializationContext): ColumnId<*> {
+            // Seems odd to use an ObjectMapper in the middle of deserializing stuff but I've seen this in several
+            // KeyDeserializer examples and other options don't seem to work. Waiting on a response to
+            // http://stackoverflow.com/questions/42497513/custom-keydeserializer
+            return JsonMapper.mapper.readValue(key, ColumnId::class.java)
         }
     }
 }

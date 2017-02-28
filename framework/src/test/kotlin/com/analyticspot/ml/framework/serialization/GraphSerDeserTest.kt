@@ -143,6 +143,38 @@ class GraphSerDeserTest {
     }
 
     @Test
+    fun testCanSerAndDeserColumnSubset() {
+        val c1 = ColumnId.create<String>("c1")
+        val c2 = ColumnId.create<String>("c2")
+        val c3 = ColumnId.create<String>("c3")
+
+        val dg = DataGraph.build {
+            val src = setSource {
+                columnIds += listOf(c1, c2, c3)
+            }
+
+            val sub = subsetColumns(src) {
+                keep(c1)
+                keepAndRename(c3, "renamed")
+            }
+
+            result = sub
+        }
+
+        val serDeser = GraphSerDeser()
+        val outStream = ByteArrayOutputStream()
+        serDeser.serialize(dg, outStream)
+
+        val deser = serDeser.deserialize(ByteArrayInputStream(outStream.toByteArray()))
+
+        val testDs = dg.createSource("foo", "bar", "baz")
+
+        val result = deser.transform(testDs, Executors.newSingleThreadExecutor()).get()
+
+        assertThat(result.columnIds).containsExactly(c1, ColumnId.create<String>("renamed"))
+    }
+
+    @Test
     fun testCanSerializeAndDeserializeDataSetSource() {
         val sourceColId = ColumnId.create<Int>("src")
         val amountToAdd = 1232

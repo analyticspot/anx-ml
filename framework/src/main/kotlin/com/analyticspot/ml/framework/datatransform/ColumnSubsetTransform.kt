@@ -20,8 +20,8 @@ package com.analyticspot.ml.framework.datatransform
 import com.analyticspot.ml.framework.dataset.DataSet
 import com.analyticspot.ml.framework.description.ColumnId
 import com.fasterxml.jackson.annotation.JsonCreator
+import com.fasterxml.jackson.annotation.JsonIgnore
 import com.fasterxml.jackson.annotation.JsonProperty
-import com.fasterxml.jackson.annotation.JsonProperty.Access
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ExecutorService
 
@@ -31,11 +31,12 @@ import java.util.concurrent.ExecutorService
  * retained as well.
  */
 class ColumnSubsetTransform : SingleDataTransform {
-    @JsonProperty(access = Access.READ_ONLY)
+    @JsonIgnore
     val keepMap: Map<ColumnId<*>, ColumnId<*>>
 
     @JsonCreator
-    private constructor(@JsonProperty("keepMap") keepMap: Map<ColumnId<*>, ColumnId<*>>) {
+    private constructor(
+            @JsonProperty("keepMap") keepMap: Map<ColumnId<*>, ColumnId<*>>) {
         this.keepMap = keepMap
     }
 
