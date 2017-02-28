@@ -19,13 +19,9 @@ package com.analyticspot.ml.framework.datatransform
 
 import com.analyticspot.ml.framework.dataset.DataSet
 import com.analyticspot.ml.framework.description.ColumnId
-import com.analyticspot.ml.framework.serialization.JsonMapper
 import com.fasterxml.jackson.annotation.JsonCreator
 import com.fasterxml.jackson.annotation.JsonIgnore
 import com.fasterxml.jackson.annotation.JsonProperty
-import com.fasterxml.jackson.databind.DeserializationContext
-import com.fasterxml.jackson.databind.KeyDeserializer
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ExecutorService
 
@@ -40,8 +36,7 @@ class ColumnSubsetTransform : SingleDataTransform {
 
     @JsonCreator
     private constructor(
-            @JsonProperty("keepMap")
-            @JsonDeserialize(keyUsing = KeepMapKeyDeserializer::class) keepMap: Map<ColumnId<*>, ColumnId<*>>) {
+            @JsonProperty("keepMap") keepMap: Map<ColumnId<*>, ColumnId<*>>) {
         this.keepMap = keepMap
     }
 
@@ -107,15 +102,6 @@ class ColumnSubsetTransform : SingleDataTransform {
 
         fun build(): ColumnSubsetTransform {
             return ColumnSubsetTransform(this)
-        }
-    }
-
-    class KeepMapKeyDeserializer : KeyDeserializer() {
-        override fun deserializeKey(key: String, ctxt: DeserializationContext): ColumnId<*> {
-            // Seems odd to use an ObjectMapper in the middle of deserializing stuff but I've seen this in several
-            // KeyDeserializer examples and other options don't seem to work. Waiting on a response to
-            // http://stackoverflow.com/questions/42497513/custom-keydeserializer
-            return JsonMapper.mapper.readValue(key, ColumnId::class.java)
         }
     }
 }
