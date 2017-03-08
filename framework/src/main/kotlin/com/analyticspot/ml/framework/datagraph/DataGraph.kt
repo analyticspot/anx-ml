@@ -47,6 +47,13 @@ class DataGraph(builder: GraphBuilder) : LearningTransform {
     // we deserialize a graph it won't contain nodes that were only required for training.
     internal val allNodes: Array<GraphNode?>
 
+    /**
+     * Users may optionally attach a `String` to a graph that holds arbitrary metadata. The string could be anything but
+     * will often be a JSON serialized object of some kind. This allows users to serialize metadata along with the graph
+     * that contains information like hyper-parameter settings, etc.
+     */
+    var metaData: String? = builder.metaData
+
     init {
         source = builder.source
         result = builder.result
@@ -216,6 +223,8 @@ class DataGraph(builder: GraphBuilder) : LearningTransform {
         internal lateinit var source: SourceGraphNodeBase
 
         lateinit var result: GraphNode
+
+        var metaData: String? = null
 
         // When we're deserializing a graph the train-only nodes will be missing and this will be true
         internal var missingTrainNodes: Boolean = false
