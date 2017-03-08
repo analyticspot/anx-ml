@@ -74,7 +74,7 @@ class GraphSerDeser {
         zipOut.putNextEntry(graphJsonEntry)
 
         val topoOrder = sort(graph)
-        val outObj = GraphStucture(graph.source.id, graph.result.id)
+        val outObj = GraphStucture(graph.source.id, graph.result.id, graph.metaData)
         topoOrder.forEach {
             val serNode: SerGraphNode = when (it) {
                 is SourceGraphNode -> SourceSerGraphNode.create(it)
@@ -148,6 +148,7 @@ class GraphSerDeser {
         zipIn.closeEntry()
 
         val graphBuilder = DataGraph.GraphBuilder()
+        graphBuilder.metaData = graphData.metaData
 
         for (graphDataNode in graphData.graph) {
             val nodeId = graphDataNode.id
@@ -268,7 +269,7 @@ class GraphSerDeser {
     //
     // `topoOrder` is a list of graph ids in a valid topological order. We need this because the graph is otherwise
     // just ordered by node id.
-    private class GraphStucture(val sourceId: Int, val resultId: Int) {
+    private class GraphStucture(val sourceId: Int, val resultId: Int, val metaData: String?) {
         val graph = mutableListOf<SerGraphNode>()
     }
 

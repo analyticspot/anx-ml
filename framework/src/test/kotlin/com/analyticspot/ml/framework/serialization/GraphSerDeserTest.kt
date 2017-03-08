@@ -131,6 +131,7 @@ class GraphSerDeserTest {
         val deserGraph = serDeser.deserialize(inStream)
 
         assertThat(deserGraph.source).isInstanceOf(SourceGraphNode::class.java)
+        assertThat(deserGraph.metaData).isNull()
         val dss = deserGraph.source as SourceGraphNode
         assertThat(dss.columnIds).hasSize(1)
         assertThat(dss.columnIds[0]).isEqualTo(sourceColId)
@@ -140,6 +141,33 @@ class GraphSerDeserTest {
         val result = deserGraph.transform(sourceData, Executors.newSingleThreadExecutor()).get()
 
         assertThat(result.value(0, sourceColId)).isEqualTo(sourceValue + amountToAdd)
+    }
+
+    @Test
+    fun testMetaDataIsSerialized() {
+        val sourceColId = ColumnId.create<Int>("src")
+        val amountToAdd = 1232
+        val metaData = "some random metadata"
+        val dg = DataGraph.build {
+            val source = setSource {
+                columnIds += sourceColId
+            }
+
+            val trans = addTransform(
+                    source, AddConstantTransform(amountToAdd))
+            result = trans
+        }
+        dg.metaData = metaData
+
+        val serDeser = GraphSerDeser()
+        val outStream = ByteArrayOutputStream(0)
+        serDeser.serialize(dg, outStream)
+
+        // Now deserialize the thing....
+        val inStream = ByteArrayInputStream(outStream.toByteArray())
+        val deserGraph = serDeser.deserialize(inStream)
+
+        assertThat(deserGraph.metaData).isEqualTo(metaData)
     }
 
     @Test
