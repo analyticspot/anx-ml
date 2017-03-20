@@ -14,7 +14,7 @@ public class KotlinLint {
         }
 
         project.dependencies {
-            ktlint 'com.github.shyiko:ktlint:0.2.2'
+            ktlint 'com.github.shyiko:ktlint:0.6.1'
         }
 
         def lintOutputFile = "${project.buildDir}/ktlint.out"
