@@ -330,9 +330,22 @@ class DataGraph(builder: GraphBuilder) : LearningTransform {
         }
 
         /**
-         * The inverse of [keepColumns], this drops all columns except those specified.
+         * The inverse of [removeColumns], this drops all columns except those specified.
          */
         fun keepColumns(src: GraphNode, vararg column: ColumnId<*>): GraphNode {
+            val transform = ColumnSubsetTransform.build {
+                column.forEach {
+                    keep(it)
+                }
+            }
+            return addTransform(src, transform)
+        }
+
+        /**
+         * A convenience overload of [keepColumns] that allows you to specify column names instead of requiring
+         * [ColumnId] instances.
+         */
+        fun keepColumns(src: GraphNode, vararg column: String): GraphNode {
             val transform = ColumnSubsetTransform.build {
                 column.forEach {
                     keep(it)
