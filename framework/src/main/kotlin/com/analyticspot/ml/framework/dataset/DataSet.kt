@@ -329,15 +329,23 @@ class DataSet private constructor(idAndColumns: Array<IdAndColumn<*>>) {
      * Returns the [ColumnId] with the given name. This method should be used sparingly because it is linear time.
      */
     inline fun <reified ColT : Any> columnIdWithName(name: String): ColumnId<ColT> {
+        val colId = columnIdWithNameUntyped(name)
+        require(colId.clazz == ColT::class) {
+            "columIdWithName was called specifying a type of ${ColT::class} but actual type was ${colId.clazz}"
+        }
+        @Suppress("UNCHECKED_CAST")
+        return colId as ColumnId<ColT>
+    }
+
+    /**
+     * Returns the columId with the given name. No type information about the column will be available.
+     */
+    fun columnIdWithNameUntyped(name: String): ColumnId<*> {
         val colId = columnIds.find { it.name == name }
         if (colId == null) {
             throw IllegalArgumentException("Column with name $name not found")
         } else {
-            require(colId.clazz == ColT::class) {
-                "columIdWithName was called specifying a type of ${ColT::class} but actual type was ${colId.clazz}"
-            }
-            @Suppress("UNCHECKED_CAST")
-            return colId as ColumnId<ColT>
+            return colId
         }
     }
 
