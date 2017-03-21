@@ -77,6 +77,7 @@ class JavaPublishPlugin implements Plugin<Project> {
             }
 
             tasks.bintrayUpload.dependsOn tasks.ensureBintrayEnv
+            tasks.bintrayUpload.dependsOn tasks.publishToMavenLocal
         }
     }
 }
