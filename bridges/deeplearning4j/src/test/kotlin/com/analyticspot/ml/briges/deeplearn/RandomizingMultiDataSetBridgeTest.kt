@@ -8,6 +8,7 @@ import org.datavec.api.records.reader.impl.csv.CSVRecordReader
 import org.datavec.api.split.FileSplit
 import org.datavec.api.util.ClassPathResource
 import org.deeplearning4j.datasets.datavec.RecordReaderMultiDataSetIterator
+import org.nd4j.linalg.dataset.api.MultiDataSet
 import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator
 import org.slf4j.LoggerFactory
 import org.testng.annotations.Test
@@ -78,11 +79,22 @@ class RandomizingMultiDataSetBridgeTest {
                 .addOutputOneHot("fazzle", 5, 4)
                 .build()
 
+        // Both iterators randomize the rows so we can't directly compare the data returned by the iterators.
+        // However, they should return the same **set** of rows so we'll save all the rows we get in a map keyed by the
+        // first value in the first data set (which is unique). We do this for our iterator and the dl4j one and we then
+        // check that the maps are equal.
+
+        val ourRows = mutableMapOf<Double, MutableList<Double>>()
+        val dl4jRows = mutableMapOf<Double, MutableList<Double>>()
+
         while (ourIter.hasNext()) {
             log.debug("Checking a batch")
             assertThat(dl4jIter.hasNext())
             val ourMds = ourIter.next()
+            addRowsToMap(ourMds, ourRows)
+
             val dl4jMds = dl4jIter.next()
+            addRowsToMap(dl4jMds, dl4jRows)
 
             val ourFeatures = ourMds.features
             val dl4jFeatures = dl4jMds.features
@@ -97,6 +109,27 @@ class RandomizingMultiDataSetBridgeTest {
             for (tidx in ourTargets.indices) {
                 assertThat(ourTargets[tidx].shape()).isEqualTo(dl4jTargets[tidx].shape())
             }
+        }
+
+        assertThat(ourRows).isEqualTo(dl4jRows)
+    }
+
+    private fun addRowsToMap(data: MultiDataSet, map: MutableMap<Double, MutableList<Double>>) {
+        for (i in 0 until data.features[0].rows()) {
+            val key = data.features[0].getDouble(i, 0)
+            val completeRow = mutableListOf<Double>()
+            for (feat in data.features) {
+                for (col in 0 until feat.columns()) {
+                    completeRow.add(feat.getDouble(i, col))
+                }
+            }
+
+            for (targ in data.labels) {
+                for (col in 0 until targ.columns()) {
+                    completeRow.add(targ.getDouble(i, col))
+                }
+            }
+            map.put(key, completeRow)
         }
     }
 }
