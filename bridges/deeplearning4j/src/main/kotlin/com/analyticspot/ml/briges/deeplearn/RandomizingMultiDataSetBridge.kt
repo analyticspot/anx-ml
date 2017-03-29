@@ -79,24 +79,32 @@ internal class RandomizingMultiDataSetBridge(val batchSize: Int,
 
     override fun next(num: Int): MultiDataSet {
         check(hasNext())
-        val batchEndIdx = Math.min(nextBatchStartIdx + num, numRows - 1)
+        val batchEndIdx = Math.min(nextBatchStartIdx + num, numRows)
+        val numInThisBatch = batchEndIdx - nextBatchStartIdx
         val batchFeatures = Array<INDArray>(subsets.size) { idx ->
-            Nd4j.zeros(numRows, subsets[idx].numColumns)
+            Nd4j.zeros(numInThisBatch, subsets[idx].numColumns)
         }
         val batchTargets = Array<INDArray>(subsets.size) { targIdx ->
-            Nd4j.zeros(numRows, targetSizes[targIdx])
+            Nd4j.zeros(numInThisBatch, targetSizes[targIdx])
         }
 
-        // In this loop rowIdx is the index of the row in the MultiDataSet we'll return. However, since we randomize our
-        // batches it is also the index into batchIndices but it is **not** the index into the targets or the subsets.
-        // dataRowIdx is the index into the targets and subsets.
-        for (rowIdx in nextBatchStartIdx until batchEndIdx) {
-            val dataRowIdx = batchIndices[rowIdx]
+        // Lots of indexes here:
+        // i: 0 to number of items in this batch
+        // batchIdxIdx: Index into batchIdx that lets us look up the shuffled/randomized index into the data sets from
+        //     which we should pull data for this batch.
+        // dataRowIdx: the index we found in batchIdx. This is the row in the underlying data we'll use
+        // subsetIdx: a MultiDataSet is composed of multiple subsets of data. This is the subset we're currently
+        //     working on
+        // colIdx: this is the column in the current subset we're wroking on
+        // targetIdx: a MultiDataSet is also composed of multiple targets. This is the target we're working on
+        for (i in 0 until numInThisBatch) {
+            val batchIdxIdx = nextBatchStartIdx + i
+            val dataRowIdx = batchIndices[batchIdxIdx]
             for (subsetIdx in subsets.indices) {
                 val subset = subsets[subsetIdx]
                 for (colIdx in subset.columnIds.indices) {
                     val curValue: Double = subset.value(dataRowIdx, subset.columnIds[colIdx]) as Double
-                    batchFeatures[subsetIdx].put(rowIdx, colIdx, curValue)
+                    batchFeatures[subsetIdx].put(i, colIdx, curValue)
                 }
             }
 
@@ -105,9 +113,8 @@ internal class RandomizingMultiDataSetBridge(val batchSize: Int,
                 val curColId = targets.columnIds[targetIdx] as ColumnId<Int>
                 val curValue: Int = targets.value(dataRowIdx, curColId)!!
                 // Put a 1 in the column corresponding to curValue so we can 1-hot encode the correct value
-                batchTargets[targetIdx].put(rowIdx, curValue, 1)
+                batchTargets[targetIdx].put(i, curValue, 1)
             }
-
         }
 
         nextBatchStartIdx = batchEndIdx
@@ -133,6 +140,7 @@ internal class RandomizingMultiDataSetBridge(val batchSize: Int,
 
     override fun reset() {
         Collections.shuffle(batchIndices, rng)
+        nextBatchStartIdx = 0
     }
 
     override fun hasNext(): Boolean {
