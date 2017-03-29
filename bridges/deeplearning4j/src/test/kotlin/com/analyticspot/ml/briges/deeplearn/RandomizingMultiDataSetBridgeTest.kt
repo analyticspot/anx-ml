@@ -3,16 +3,13 @@ package com.analyticspot.ml.briges.deeplearn
 import com.analyticspot.ml.framework.dataset.DataSet
 import com.analyticspot.ml.framework.description.ColumnId
 import org.assertj.core.api.Assertions.assertThat
-import org.datavec.api.conf.Configuration
 import org.datavec.api.records.reader.impl.csv.CSVRecordReader
 import org.datavec.api.split.FileSplit
 import org.datavec.api.util.ClassPathResource
 import org.deeplearning4j.datasets.datavec.RecordReaderMultiDataSetIterator
 import org.nd4j.linalg.dataset.api.MultiDataSet
-import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator
 import org.slf4j.LoggerFactory
 import org.testng.annotations.Test
-import java.util.Random
 
 class RandomizingMultiDataSetBridgeTest {
     companion object {
@@ -110,8 +107,16 @@ class RandomizingMultiDataSetBridgeTest {
                 assertThat(ourTargets[tidx].shape()).isEqualTo(dl4jTargets[tidx].shape())
             }
         }
+        assertThat(ourIter.hasNext()).isFalse()
+        assertThat(dl4jIter.hasNext()).isFalse()
 
         assertThat(ourRows).isEqualTo(dl4jRows)
+
+        // And make sure they both reset the same way
+        dl4jIter.reset()
+        ourIter.reset()
+        assertThat(dl4jIter.hasNext()).isTrue()
+        assertThat(ourIter.hasNext()).isTrue()
     }
 
     private fun addRowsToMap(data: MultiDataSet, map: MutableMap<Double, MutableList<Double>>) {
