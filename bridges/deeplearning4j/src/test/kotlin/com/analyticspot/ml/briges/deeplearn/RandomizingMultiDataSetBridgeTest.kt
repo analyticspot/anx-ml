@@ -74,8 +74,8 @@ class RandomizingMultiDataSetBridgeTest {
                 .addReader("fazzle", dl4jReader)
                 .addInput("fazzle", 0, 1)
                 .addInput("fazzle", 2, 3)
-                .addOutput("fazzle", 4, 4)
-                .addOutput("fazzle", 5, 5)
+                .addOutputOneHot("fazzle", 4, 4)
+                .addOutputOneHot("fazzle", 5, 4)
                 .build()
 
         while (ourIter.hasNext()) {
@@ -87,7 +87,16 @@ class RandomizingMultiDataSetBridgeTest {
             val ourFeatures = ourMds.features
             val dl4jFeatures = dl4jMds.features
             assertThat(ourFeatures).hasSameSizeAs(dl4jFeatures)
-            assertThat(ourFeatures[0].shape()).isEqualTo(dl4jFeatures[0].shape())
+            for (fidx in ourFeatures.indices) {
+                assertThat(ourFeatures[fidx].shape()).isEqualTo(dl4jFeatures[fidx].shape())
+            }
+
+            val ourTargets = ourMds.labels
+            val dl4jTargets = dl4jMds.labels
+            assertThat(ourTargets).hasSameSizeAs(dl4jTargets)
+            for (tidx in ourTargets.indices) {
+                assertThat(ourTargets[tidx].shape()).isEqualTo(dl4jTargets[tidx].shape())
+            }
         }
     }
 }
