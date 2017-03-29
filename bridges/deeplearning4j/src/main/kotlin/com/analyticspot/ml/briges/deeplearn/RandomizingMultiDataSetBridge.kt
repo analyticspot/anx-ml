@@ -8,6 +8,7 @@ import org.nd4j.linalg.dataset.api.MultiDataSet
 import org.nd4j.linalg.dataset.api.MultiDataSetPreProcessor
 import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator
 import org.nd4j.linalg.factory.Nd4j
+import org.slf4j.LoggerFactory
 import java.util.ArrayList
 import java.util.Collections
 import java.util.Random
@@ -56,9 +57,13 @@ internal class RandomizingMultiDataSetBridge(val batchSize: Int,
         }
 
         targetSizes = Array<Int>(targets.numColumns) { colIdx ->
+            @Suppress("UNCHECKED_CAST")
             val colId = targets.columnIds[colIdx] as ColumnId<Int>
-            targets.column(colId).asSequence().maxBy { it!! }!!
+            // We add 1 here because we assume the targets are 0 indexed - thus the number of target values is 1 more
+            // than the largest observed target.
+            targets.column(colId).asSequence().maxBy { it!! }!! + 1
         }
+        log.debug("Target sizes are: {}", targetSizes)
 
         batchIndices = ArrayList(numRows)
         for (idx in 0 until numRows) {
@@ -68,6 +73,9 @@ internal class RandomizingMultiDataSetBridge(val batchSize: Int,
         reset()
     }
 
+    companion object {
+        private val log = LoggerFactory.getLogger(RandomizingMultiDataSetBridge::class.java)
+    }
 
     override fun next(num: Int): MultiDataSet {
         check(hasNext())

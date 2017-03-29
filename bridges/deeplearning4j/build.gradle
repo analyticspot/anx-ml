@@ -8,6 +8,7 @@ dependencies {
     compile Deps.slf4j
     compile Deps.deepLearning4jCore
     compile Deps.deepLearning4jNlp
+    compile Deps.nd4j
 
     testCompile Deps.standardTest
     testCompile Deps.logback
