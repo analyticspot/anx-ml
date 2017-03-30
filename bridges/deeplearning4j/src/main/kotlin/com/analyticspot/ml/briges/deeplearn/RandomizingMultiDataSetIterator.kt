@@ -32,8 +32,8 @@ import java.util.Random
  *
  * @param batchSize the number of items in each mini-batch
  * @param subsets a list of [DataSet] instances. Each [DataSet] will correspond to a single set of inputs to the
- *     network. As the network requires doubles as inputs all columns must be of double type (e.g. `String` columns
- *     should be one-hot encoded before being used here. Similarly, `Int` columns should be converted to double, etc.)
+ *     network. As the network requires doubles as inputs all columns must be of `java.lang.Number` type (e.g. `String`
+ *     columns should be one-hot encoded before being used here.)
  * @param targets a [DataSet] that contains only integer columns. There will be one target for each column here but
  *     the target will be one-hot encoded.
  * @param rng: The random number generator to use to shuffle the rows.
@@ -64,8 +64,8 @@ internal class RandomizingMultiDataSetIterator(val batchSize: Int,
         require(subsets.all { it.numRows == numRows }) {
             "All subsets must have the same number of rows."
         }
-        require(subsets.all { subset -> subset.columnIds.all { Double::class isAssignableFrom it.clazz } }) {
-            "It must be possible to assign all columns to a Double."
+        require(subsets.all { subset -> subset.columnIds.all { Number::class isAssignableFrom it.clazz } }) {
+            "All columns must be of type java.lang.Number (or a subclass or it)."
         }
 
         require(targets.numRows == numRows) {
@@ -117,7 +117,7 @@ internal class RandomizingMultiDataSetIterator(val batchSize: Int,
         // dataRowIdx: the index we found in batchIdx. This is the row in the underlying data we'll use
         // subsetIdx: a MultiDataSet is composed of multiple subsets of data. This is the subset we're currently
         //     working on
-        // colIdx: this is the column in the current subset we're wroking on
+        // colIdx: this is the column in the current subset we're working on
         // targetIdx: a MultiDataSet is also composed of multiple targets. This is the target we're working on
         for (i in 0 until numInThisBatch) {
             val batchIdxIdx = nextBatchStartIdx + i
@@ -125,7 +125,7 @@ internal class RandomizingMultiDataSetIterator(val batchSize: Int,
             for (subsetIdx in subsets.indices) {
                 val subset = subsets[subsetIdx]
                 for (colIdx in subset.columnIds.indices) {
-                    val curValue: Double = subset.value(dataRowIdx, subset.columnIds[colIdx]) as Double
+                    val curValue: Number = subset.value(dataRowIdx, subset.columnIds[colIdx]) as Number
                     batchFeatures[subsetIdx].put(i, colIdx, curValue)
                 }
             }
@@ -166,7 +166,7 @@ internal class RandomizingMultiDataSetIterator(val batchSize: Int,
     }
 
     override fun hasNext(): Boolean {
-        return nextBatchStartIdx < numRows - 1
+        return nextBatchStartIdx < numRows
     }
 
     override fun asyncSupported(): Boolean = false

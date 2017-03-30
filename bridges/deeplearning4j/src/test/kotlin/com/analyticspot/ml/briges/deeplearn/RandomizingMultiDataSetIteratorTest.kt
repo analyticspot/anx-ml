@@ -3,6 +3,7 @@ package com.analyticspot.ml.briges.deeplearn
 import com.analyticspot.ml.framework.dataset.DataSet
 import com.analyticspot.ml.framework.description.ColumnId
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.data.Percentage
 import org.datavec.api.records.reader.impl.csv.CSVRecordReader
 import org.datavec.api.split.FileSplit
 import org.datavec.api.util.ClassPathResource
@@ -147,6 +148,73 @@ class RandomizingMultiDataSetIteratorTest {
         assertThat(beforeReset).hasSameElementsAs(afterReset)
         val sameOrder = beforeReset.zip(afterReset).all { it.first == it.second }
         assertThat(sameOrder).isFalse()
+    }
+
+    // We should be able to pass DataSet instances with Int, Float, etc. columns and they should be automatically
+    // converted to Double for us.
+    @Test
+    fun testIteratorWorksWithNonDoubleTypes() {
+        val ds = DataSet.build {
+            addColumn(ColumnId.create<Float>("floatCol"), listOf(18.2f))
+            addColumn(ColumnId.create<Int>("intCol"), listOf(11))
+        }
+
+        val targetDs = DataSet.build {
+            addColumn(ColumnId.create<Int>("target"), listOf(1))
+        }
+
+        val iter = RandomizingMultiDataSetIterator(10, listOf(ds), targetDs)
+        assertThat(iter.hasNext()).isTrue()
+
+        val mds = iter.next()
+        assertThat(mds.features).hasSize(1)
+        assertThat(mds.features[0].rows()).isEqualTo(1)
+        assertThat(mds.features[0].columns()).isEqualTo(2)
+        assertThat(mds.features[0].getDouble(0, 0)).isCloseTo(18.2, Percentage.withPercentage(0.001))
+        assertThat(mds.features[0].getDouble(0, 1)).isCloseTo(11.0, Percentage.withPercentage(0.001))
+
+        assertThat(iter.hasNext()).isFalse()
+    }
+
+    // Regardless of how many elements there are in the final block or how many blocks there are we should always get
+    // all rows. However, if there's various kinds of bugs something like `hasNext` might incorrectly return false when
+    // the final block has only 1 element or might return `true` if the blocks evenly divide into the number of rows.
+    // This is simply testing various edge cases to ensure that's not the case.
+    @Test
+    fun testIteratorReturnsFinalElement() {
+        var ds = buildDataSetWithRows(1)
+        var iter = RandomizingMultiDataSetIterator(10, listOf(ds), ds)
+        assertThat(iterToList(iter)).hasSize(1)
+
+        iter = RandomizingMultiDataSetIterator(1, listOf(ds), ds)
+        assertThat(iterToList(iter)).hasSize(1)
+
+        ds = buildDataSetWithRows(8)
+        iter = RandomizingMultiDataSetIterator(8, listOf(ds), ds)
+        assertThat(iterToList(iter)).hasSize(8)
+
+        iter = RandomizingMultiDataSetIterator(9, listOf(ds), ds)
+        assertThat(iterToList(iter)).hasSize(8)
+
+        iter = RandomizingMultiDataSetIterator(7, listOf(ds), ds)
+        assertThat(iterToList(iter)).hasSize(8)
+
+        ds = buildDataSetWithRows(16)
+        iter = RandomizingMultiDataSetIterator(8, listOf(ds), ds)
+        assertThat(iterToList(iter)).hasSize(16)
+
+        iter = RandomizingMultiDataSetIterator(7, listOf(ds), ds)
+        assertThat(iterToList(iter)).hasSize(16)
+
+        iter = RandomizingMultiDataSetIterator(9, listOf(ds), ds)
+        assertThat(iterToList(iter)).hasSize(16)
+    }
+
+    // Builds a data set with the requested number of rows and a single Int column.
+    private fun buildDataSetWithRows(numRows: Int): DataSet {
+        return DataSet.build {
+            addColumn(ColumnId.create<Int>("col"), 0.until(numRows).toList())
+        }
     }
 
     private fun addRowsToMap(data: MultiDataSet, map: MutableMap<Double, List<Double>>) {
