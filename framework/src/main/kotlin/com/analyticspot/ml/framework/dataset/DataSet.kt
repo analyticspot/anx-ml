@@ -30,6 +30,8 @@ import org.slf4j.LoggerFactory
 import java.io.File
 import java.io.InputStream
 import java.io.OutputStream
+import java.util.Collections
+import java.util.Random
 
 /**
  * This is what holds the data that is passed through the [DataGraph]. It is column-oriented so that creating a
@@ -285,6 +287,46 @@ class DataSet private constructor(idAndColumns: Array<IdAndColumn<*>>) {
     fun columnSubset(vararg columnNames: String): DataSet {
         val colIds = columnNames.map { columnIdWithNameUntyped(it) }
         return columnSubset(colIds)
+    }
+
+    /**
+     * Randomly divides the [DataSet] into 2 smaller [DataSet]s. The first contains a randomly selected set of `n` rows
+     * and the 2nd contains all the rows that aren't in the first. Note that rows are sample **and** permuted and so are
+     * not in the same order as the original data.
+     */
+    fun randomSubsets(n: Int, rng: Random = Random()): Pair<DataSet, DataSet> {
+        val indices = 0.until(numRows).toList()
+        Collections.shuffle(indices, rng)
+        val firstSubsetIndices = indices.subList(0, n).toSet()
+        check(firstSubsetIndices.size == n)
+        val secondSubsetIndices = indices.subList(n, indices.size).toSet()
+        check(secondSubsetIndices.size == numRows - n)
+
+        return Pair(rowsSubset(firstSubsetIndices), rowsSubset(secondSubsetIndices))
+    }
+
+    /**
+     * The same as the other [randomSubsets] overload but you specify the **fraction** of rows you want in the first
+     * [DataSet] rather than the number. The actual number of rows in the first set will be `floor(frac * numRows)`.
+     */
+    fun randomSubsets(frac: Float, rng: Random = Random()): Pair<DataSet, DataSet> {
+        val n = (frac * numRows.toFloat()).toInt()
+        return randomSubsets(n, rng)
+    }
+
+    /**
+     * Returns a new [DataSet] that contains all the columns and metadata in this [DataSet] but only a subset of the
+     * rows (the ones specified by `indices`).
+     */
+    fun rowsSubset(indices: Set<Int>): DataSet {
+        return DataSet.build {
+            columnIds.forEach {
+                val md = metaData[it.name]
+                val colData = column(it).filterIndexed { idx, item -> idx in indices }
+                @Suppress("UNCHECKED_CAST")
+                addColumn(it as ColumnId<Any>, colData, md)
+            }
+        }
     }
 
     /**

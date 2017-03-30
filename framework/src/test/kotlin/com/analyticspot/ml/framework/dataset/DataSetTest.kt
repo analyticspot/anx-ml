@@ -108,6 +108,49 @@ class DataSetTest {
     }
 
     @Test
+    fun testRowSubset() {
+        val cid1 = ColumnId.create<Int>("c1")
+        val cid2 = ColumnId.create<String>("c2")
+
+        val ds = DataSet.build {
+            addColumn(cid1, listOf(1, 2, 3, 4, 5), MaybeMissingMetaData(false))
+            addColumn(cid2, listOf("a", "b", "c", "d", "e"), MaybeMissingMetaData(true))
+        }
+
+        val rowsToKeep = setOf(0, 3, 4)
+        val rowSub = ds.rowsSubset(rowsToKeep)
+        assertThat(rowSub.numColumns).isEqualTo(2)
+        assertThat(rowSub.numRows).isEqualTo(rowsToKeep.size)
+        assertThat(rowSub.metaData[cid1.name]).isEqualTo(ds.metaData[cid1.name])
+        assertThat(rowSub.metaData[cid2.name]).isEqualTo(ds.metaData[cid2.name])
+
+        assertThat(rowSub.value(0, cid1)).isEqualTo(1)
+        assertThat(rowSub.value(1, cid1)).isEqualTo(4)
+        assertThat(rowSub.value(2, cid1)).isEqualTo(5)
+
+        assertThat(rowSub.value(0, cid2)).isEqualTo("a")
+        assertThat(rowSub.value(1, cid2)).isEqualTo("d")
+        assertThat(rowSub.value(2, cid2)).isEqualTo("e")
+    }
+
+    @Test
+    fun testRandomSubsets() {
+        val cid1 = ColumnId.create<Int>("c1")
+        val cid2 = ColumnId.create<String>("c2")
+
+        val ds = DataSet.build {
+            addColumn(cid1, listOf(1, 2, 3, 4, 5), MaybeMissingMetaData(false))
+            addColumn(cid2, listOf("a", "b", "c", "d", "e"), MaybeMissingMetaData(true))
+        }
+
+        val (sub1, sub2) = ds.randomSubsets(2)
+        assertThat(sub1.numRows).isEqualTo(2)
+        assertThat(sub2.numRows).isEqualTo(3)
+        assertThat(sub1.column(cid1)).doesNotContainAnyElementsOf(sub2.column(cid1))
+        assertThat(sub1.column(cid2)).doesNotContainAnyElementsOf(sub2.column(cid2))
+    }
+
+    @Test
     fun testColumnIdsInGroupReturnsCorrectColumns() {
         val col1 = ColumnId.create<String>("aaa")
         val col2 = ColumnId.create<String>("bbb")
