@@ -27,15 +27,15 @@ ext.Deps = [
         ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
         // Other ML Tools
         ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
-        'deepLearning4jCore': 'org.deeplearning4j:deeplearning4j-core:0.7.2',
-        'deepLearning4jNlp': 'org.deeplearning4j:deeplearning4j-nlp:0.7.2',
+        'deepLearning4jCore': 'org.deeplearning4j:deeplearning4j-core:0.8.0',
+        'deepLearning4jNlp': 'org.deeplearning4j:deeplearning4j-nlp:0.8.0',
+        'nd4j': 'org.nd4j:nd4j-native-platform:0.8.0',
         'smile': [
                 'com.github.haifengl:smile-core:1.2.2',
                 'com.github.haifengl:smile-data:1.2.2',
                 // This is required to serialize Smile models
                 'com.thoughtworks.xstream:xstream:1.4.8'
         ],
-
 
         ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
         // Testing
