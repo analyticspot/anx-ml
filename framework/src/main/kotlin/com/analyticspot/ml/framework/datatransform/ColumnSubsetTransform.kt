@@ -21,7 +21,6 @@ import com.analyticspot.ml.framework.dataset.DataSet
 import com.analyticspot.ml.framework.description.ColumnId
 import com.analyticspot.ml.utils.isAssignableFrom
 import com.fasterxml.jackson.annotation.JsonCreator
-import com.fasterxml.jackson.annotation.JsonIgnore
 import com.fasterxml.jackson.annotation.JsonProperty
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ExecutorService
@@ -36,7 +35,6 @@ class ColumnSubsetTransform : SingleDataTransform {
      * The keys in this map are the columns that will be retained. The values are new names for the columns. If the
      * column isn't going to be renamed then the value is the same as the key.
      */
-    @JsonIgnore
     val keepMap: Map<String, String>
 
     @JsonCreator

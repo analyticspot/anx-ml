@@ -68,6 +68,46 @@ class DataSetTest {
     }
 
     @Test
+    fun testColumnSubsets() {
+        val col1 = ColumnId.create<Int>("c1")
+        val metaData1 = MaybeMissingMetaData(true)
+        val col2 = ColumnId.create<String>("c2")
+        val metaData2 = CategoricalFeatureMetaData(true, setOf("foo", "bar"))
+        val col3 = ColumnId.create<Double>("c3")
+        val ds = DataSet.build {
+            addColumn(col1, listOf(1, 2, null), metaData1)
+            addColumn(col2, listOf("foo", null, "bar"), metaData2)
+            addColumn(col3, listOf(17.0, 1.002, 0.0004))
+        }
+
+        val ds2 = ds.columnSubset(col1, col3)
+        assertThat(ds2.numColumns).isEqualTo(2)
+        assertThat(ds2.columnIds).containsExactly(col1, col3)
+        assertThat(ds2.metaData["c1"]).isEqualTo(metaData1)
+        assertThat(ds2.metaData["c3"]).isNull()
+        assertThat(ds2.column(col1)).containsExactlyElementsOf(ds.column(col1))
+        assertThat(ds2.column(col3)).containsExactlyElementsOf(ds.column(col3))
+
+        // Similar to the above, but pass a list of columns instead
+        val ds3 = ds.columnSubset(listOf(col1, col3))
+        assertThat(ds3.numColumns).isEqualTo(2)
+        assertThat(ds3.columnIds).containsExactly(col1, col3)
+        assertThat(ds3.metaData["c1"]).isEqualTo(metaData1)
+        assertThat(ds3.metaData["c3"]).isNull()
+        assertThat(ds3.column(col1)).containsExactlyElementsOf(ds.column(col1))
+        assertThat(ds3.column(col3)).containsExactlyElementsOf(ds.column(col3))
+
+        // Try the overload where we pass just the column names
+        val ds4 = ds.columnSubset("c1", "c3")
+        assertThat(ds4.numColumns).isEqualTo(2)
+        assertThat(ds4.columnIds).containsExactly(col1, col3)
+        assertThat(ds4.metaData["c1"]).isEqualTo(metaData1)
+        assertThat(ds4.metaData["c3"]).isNull()
+        assertThat(ds4.column(col1)).containsExactlyElementsOf(ds.column(col1))
+        assertThat(ds4.column(col3)).containsExactlyElementsOf(ds.column(col3))
+    }
+
+    @Test
     fun testColumnIdsInGroupReturnsCorrectColumns() {
         val col1 = ColumnId.create<String>("aaa")
         val col2 = ColumnId.create<String>("bbb")
