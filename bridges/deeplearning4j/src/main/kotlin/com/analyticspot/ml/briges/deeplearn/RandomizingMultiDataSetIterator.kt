@@ -14,9 +14,31 @@ import java.util.Collections
 import java.util.Random
 
 /**
+ * DeepLearning4j requires a `MultiDataSetIterator` in order to work with nets that can have multiple inputs and
+ * outputs (see https://deeplearning4j.org/compgraph#multidataset-and-the-multidatasetiterator). Unfortunately, they
+ * all the implementations of that interface they provide simply read data from files or some kind but we have our
+ * data in memory and want to use it from there. We also want to be able to convert one or more [DataSet] instances into
+ * a `MultiDataSetIterator`. This class allows us to do that.
  *
+ * Dl4j also relies on the iterator to provide the batches for stochastic gradient descent (SGD) so we want to be able
+ * to convert a big [DataSet] into many smaller batches, each of which is a `MultiDataSet`. Furthermore, we'd like to
+ * shuffle all the data into new/different batches when [reset] is called so that it's useful for SGD. This also handles
+ * that for us.
+ *
+ * To use, pass in a list of data sets. Each data set will be one set of features that can be used as input to our net.
+ * You also pass a single data set that contains multiple columns to serve as the targets, one target per column. The
+ * target data sets should be integers in the range [0, numTargetValues) and they will be one-hot encoded by this
+ * class.
+ *
+ * @param batchSize the number of items in each mini-batch
+ * @param subsets a list of [DataSet] instances. Each [DataSet] will correspond to a single set of inputs to the
+ *     network. As the network requires doubles as inputs all columns must be of double type (e.g. `String` columns
+ *     should be one-hot encoded before being used here. Similarly, `Int` columns should be converted to double, etc.)
+ * @param targets a [DataSet] that contains only integer columns. There will be one target for each column here but
+ *     the target will be one-hot encoded.
+ * @param rng: The random number generator to use to shuffle the rows.
  */
-internal class RandomizingMultiDataSetBridge(val batchSize: Int,
+internal class RandomizingMultiDataSetIterator(val batchSize: Int,
         val subsets: List<DataSet>, val targets: DataSet,
         val rng: Random = Random()) : MultiDataSetIterator {
     // An array of indices into the data (subsets and targets). This is randomly shuffled on each call to reset so that
@@ -74,7 +96,7 @@ internal class RandomizingMultiDataSetBridge(val batchSize: Int,
     }
 
     companion object {
-        private val log = LoggerFactory.getLogger(RandomizingMultiDataSetBridge::class.java)
+        private val log = LoggerFactory.getLogger(RandomizingMultiDataSetIterator::class.java)
     }
 
     override fun next(num: Int): MultiDataSet {

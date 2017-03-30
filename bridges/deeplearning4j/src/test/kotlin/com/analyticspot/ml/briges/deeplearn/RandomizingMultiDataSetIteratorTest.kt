@@ -13,9 +13,9 @@ import org.slf4j.LoggerFactory
 import org.testng.annotations.Test
 import java.util.Random
 
-class RandomizingMultiDataSetBridgeTest {
+class RandomizingMultiDataSetIteratorTest {
     companion object {
-        private val log = LoggerFactory.getLogger(RandomizingMultiDataSetBridgeTest::class.java)
+        private val log = LoggerFactory.getLogger(RandomizingMultiDataSetIteratorTest::class.java)
 
         val SAMPLE_DATA_RESOURCE = "/DataSetIteratorData.csv"
     }
@@ -66,7 +66,7 @@ class RandomizingMultiDataSetBridgeTest {
 
         check(ds1.numRows == numRows)
 
-        val ourIter = RandomizingMultiDataSetBridge(batchSize, listOf(ds1, ds2), dsTargets)
+        val ourIter = RandomizingMultiDataSetIterator(batchSize, listOf(ds1, ds2), dsTargets)
 
         val dl4jReader = CSVRecordReader(0, ",")
         dl4jReader.initialize(FileSplit(ClassPathResource(SAMPLE_DATA_RESOURCE).file))
@@ -135,7 +135,7 @@ class RandomizingMultiDataSetBridgeTest {
             addColumn(ColumnId.create<Int>("t"), (0 until numRows).map { rng.nextInt(maxTargetVal) })
         }
 
-        val iter = RandomizingMultiDataSetBridge(10, listOf(ds1), targs, rng)
+        val iter = RandomizingMultiDataSetIterator(10, listOf(ds1), targs, rng)
 
         val beforeReset = iterToList(iter)
 
