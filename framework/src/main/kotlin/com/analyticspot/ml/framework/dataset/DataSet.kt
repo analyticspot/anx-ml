@@ -306,6 +306,15 @@ class DataSet private constructor(idAndColumns: Array<IdAndColumn<*>>) {
     }
 
     /**
+     * The same as the other [randomSubsets] overload but you specify the **fraction** of rows you want in the first
+     * [DataSet] rather than the number. The actual number of rows in the first set will be `floor(frac * numRows)`.
+     */
+    fun randomSubsets(frac: Float, rng: Random = Random()): Pair<DataSet, DataSet> {
+        val n = (frac * numRows.toFloat()).toInt()
+        return randomSubsets(n, rng)
+    }
+
+    /**
      * Returns a new [DataSet] that contains all the columns and metadata in this [DataSet] but only a subset of the
      * rows (the ones specified by `indices`).
      */
