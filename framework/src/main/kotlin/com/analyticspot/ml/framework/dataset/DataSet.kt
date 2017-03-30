@@ -259,6 +259,35 @@ class DataSet private constructor(idAndColumns: Array<IdAndColumn<*>>) {
     }
 
     /**
+     * Returns a **new** [DataSet] that contains only the given columns. All metadata will be preserved.
+     */
+    fun columnSubset(vararg columns: ColumnId<*>): DataSet {
+        val resultDs = DataSet.build {
+            for (col in columns) {
+                val meta = metaData[col.name]
+                @Suppress("UNCHECKED_CAST")
+                addColumn(col as ColumnId<Any>, column(col), meta)
+            }
+        }
+        return resultDs
+    }
+
+    /**
+     * Like the other [columnSubset] overload by takes a list of column ids.
+     */
+    fun columnSubset(columns: List<ColumnId<*>>): DataSet {
+        return columnSubset(*columns.toTypedArray())
+    }
+
+    /**
+     * Like the other [columnSubset] overload but takes just the column names instead of their full ids.
+     */
+    fun columnSubset(vararg columnNames: String): DataSet {
+        val colIds = columnNames.map { columnIdWithNameUntyped(it) }
+        return columnSubset(colIds)
+    }
+
+    /**
      * Convenience overload with reified type parameter.
      */
     inline fun <reified ColT : Any> colIdsInGroup(group: ColumnIdGroup<ColT>): List<ColumnId<ColT>> {
