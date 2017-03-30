@@ -8,8 +8,10 @@ import org.datavec.api.split.FileSplit
 import org.datavec.api.util.ClassPathResource
 import org.deeplearning4j.datasets.datavec.RecordReaderMultiDataSetIterator
 import org.nd4j.linalg.dataset.api.MultiDataSet
+import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator
 import org.slf4j.LoggerFactory
 import org.testng.annotations.Test
+import java.util.Random
 
 class RandomizingMultiDataSetBridgeTest {
     companion object {
@@ -81,8 +83,8 @@ class RandomizingMultiDataSetBridgeTest {
         // first value in the first data set (which is unique). We do this for our iterator and the dl4j one and we then
         // check that the maps are equal.
 
-        val ourRows = mutableMapOf<Double, MutableList<Double>>()
-        val dl4jRows = mutableMapOf<Double, MutableList<Double>>()
+        val ourRows = mutableMapOf<Double, List<Double>>()
+        val dl4jRows = mutableMapOf<Double, List<Double>>()
 
         while (ourIter.hasNext()) {
             log.debug("Checking a batch")
@@ -119,9 +121,46 @@ class RandomizingMultiDataSetBridgeTest {
         assertThat(ourIter.hasNext()).isTrue()
     }
 
-    private fun addRowsToMap(data: MultiDataSet, map: MutableMap<Double, MutableList<Double>>) {
+    @Test
+    fun testIteratorRandomizesOnReset() {
+        val rng = Random(12345)
+        val numRows = 100
+        val maxTargetVal = 7
+
+        val ds1 = DataSet.build {
+            addColumn(ColumnId.create<Double>("c"), (0 until numRows).map { rng.nextDouble() })
+        }
+
+        val targs = DataSet.build {
+            addColumn(ColumnId.create<Int>("t"), (0 until numRows).map { rng.nextInt(maxTargetVal) })
+        }
+
+        val iter = RandomizingMultiDataSetBridge(10, listOf(ds1), targs, rng)
+
+        val beforeReset = iterToList(iter)
+
+        iter.reset()
+
+        val afterReset = iterToList(iter)
+
+        // Now both should hold exactly the same contents but in different orders
+        assertThat(beforeReset).hasSameElementsAs(afterReset)
+        val sameOrder = beforeReset.zip(afterReset).all { it.first == it.second }
+        assertThat(sameOrder).isFalse()
+    }
+
+    private fun addRowsToMap(data: MultiDataSet, map: MutableMap<Double, List<Double>>) {
+        val dataList = dataToList(data)
+        dataList.forEach {
+            val key: Double = it[0]
+            map.put(key, it)
+        }
+    }
+
+    // Concatenate all the feature data sets and all the target data sets to list of lists.
+    private fun dataToList(data: MultiDataSet): List<List<Double>> {
+        val result = mutableListOf<List<Double>>()
         for (i in 0 until data.features[0].rows()) {
-            val key = data.features[0].getDouble(i, 0)
             val completeRow = mutableListOf<Double>()
             for (feat in data.features) {
                 for (col in 0 until feat.columns()) {
@@ -134,7 +173,18 @@ class RandomizingMultiDataSetBridgeTest {
                     completeRow.add(targ.getDouble(i, col))
                 }
             }
-            map.put(key, completeRow)
+            result.add(completeRow)
         }
+        return result
+    }
+
+    // Like dataToList but for all the data sets returned by the iterator
+    private fun iterToList(iter: MultiDataSetIterator): List<List<Double>> {
+        val result = mutableListOf<List<Double>>()
+        for (mds in iter) {
+            val dataList = dataToList(mds)
+            result.addAll(dataList)
+        }
+        return result
     }
 }
