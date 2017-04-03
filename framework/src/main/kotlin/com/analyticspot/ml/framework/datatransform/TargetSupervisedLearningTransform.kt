@@ -35,9 +35,9 @@ import java.util.concurrent.ExecutorService
  */
 abstract class TargetSupervisedLearningTransform<TargetT : Any>(@JsonIgnore val targetColumn: ColumnId<TargetT>?)
     : SupervisedLearningTransform {
-    override final fun trainTransform(dataSet: DataSet, trainDs: DataSet, exec: ExecutorService): CompletableFuture<DataSet> {
+    override final fun trainTransform(dataSet: DataSet, targetDs: DataSet, exec: ExecutorService): CompletableFuture<DataSet> {
         // targetColumn must be non-null for training but could be null for transform.
-        return trainTransform(dataSet, trainDs.column(targetColumn!!), exec)
+        return trainTransform(dataSet, targetDs.column(targetColumn!!), exec)
     }
 
     abstract fun trainTransform(dataSet: DataSet, target: Column<TargetT?>, exec: ExecutorService)

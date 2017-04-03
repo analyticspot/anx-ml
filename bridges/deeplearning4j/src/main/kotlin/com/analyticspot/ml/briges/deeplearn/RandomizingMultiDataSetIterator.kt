@@ -3,11 +3,11 @@ package com.analyticspot.ml.briges.deeplearn
 import com.analyticspot.ml.framework.dataset.DataSet
 import com.analyticspot.ml.framework.description.ColumnId
 import com.analyticspot.ml.utils.isAssignableFrom
-import org.nd4j.linalg.api.ndarray.INDArray
 import org.nd4j.linalg.dataset.api.MultiDataSet
 import org.nd4j.linalg.dataset.api.MultiDataSetPreProcessor
 import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator
 import org.nd4j.linalg.factory.Nd4j
+import org.nd4j.linalg.indexing.NDArrayIndex
 import org.slf4j.LoggerFactory
 import java.util.ArrayList
 import java.util.Collections
@@ -16,18 +16,18 @@ import java.util.Random
 /**
  * DeepLearning4j requires a `MultiDataSetIterator` in order to work with nets that can have multiple inputs and
  * outputs (see https://deeplearning4j.org/compgraph#multidataset-and-the-multidatasetiterator). Unfortunately, they
- * all the implementations of that interface they provide simply read data from files or some kind but we have our
- * data in memory and want to use it from there. We also want to be able to convert one or more [DataSet] instances into
+ * all the implementations of that interface they provide simply read allData from files or some kind but we have our
+ * allData in memory and want to use it from there. We also want to be able to convert one or more [DataSet] instances into
  * a `MultiDataSetIterator`. This class allows us to do that.
  *
  * Dl4j also relies on the iterator to provide the batches for stochastic gradient descent (SGD) so we want to be able
  * to convert a big [DataSet] into many smaller batches, each of which is a `MultiDataSet`. Furthermore, we'd like to
- * shuffle all the data into new/different batches when [reset] is called so that it's useful for SGD. This also handles
+ * shuffle all the allData into new/different batches when [reset] is called so that it's useful for SGD. This also handles
  * that for us.
  *
- * To use, pass in a list of data sets. Each data set will be one set of features that can be used as input to our net.
- * You also pass a single data set that contains multiple columns to serve as the targets, one target per column. The
- * target data sets should be integers in the range [0, numTargetValues) and they will be one-hot encoded by this
+ * To use, pass in a list of allData sets. Each allData set will be one set of features that can be used as input to our net.
+ * You also pass a single allData set that contains multiple columns to serve as the targets, one target per column. The
+ * target allData sets should be integers in the range [0, numTargetValues) and they will be one-hot encoded by this
  * class.
  *
  * @param batchSize the number of items in each mini-batch
@@ -38,60 +38,30 @@ import java.util.Random
  *     the target will be one-hot encoded.
  * @param rng: The random number generator to use to shuffle the rows.
  */
-internal class RandomizingMultiDataSetIterator(val batchSize: Int,
-        val subsets: List<DataSet>, val targets: DataSet,
-        val rng: Random = Random()) : MultiDataSetIterator {
-    // An array of indices into the data (subsets and targets). This is randomly shuffled on each call to reset so that
-    // our batches are random.
-    private val batchIndices: ArrayList<Int>
+internal class RandomizingMultiDataSetIterator : MultiDataSetIterator {
+    private val allData: MultiDataSet
     private val numRows: Int
+        get() = allData.features[0].rows()
+
+    private val batchSize: Int
+    private val rng: Random
+    // The next batch will contain rows [nextBatchStartIdx, nextBatchStartIdx + batchSize) (or fewer if we have to
+    // truncate because the final batch doesn't contain enough rows).
     private var nextBatchStartIdx = 0
-    // We have to 1-hot encode all the targets. The targets are integers indicating the unique target value so this
-    // tells us the largest value for each target so we know how big the 1-hot array needs to be.
-    private val targetSizes: Array<Int>
 
-    private var preprocessor: MultiDataSetPreProcessor? = null
+    constructor(batchSize: Int, subsets: List<DataSet>, targets: DataSet, rng: Random = Random())
+            : this(batchSize, Utils.toMultiDataSet(subsets, targets), rng) {
+    }
 
-    init {
-        require(subsets.size > 0) {
-            "There must be at least one subset of data."
-        }
-        numRows = subsets[0].numRows
-        require(numRows > 0) {
-            "Data set is empty."
-        }
+    constructor(batchSize: Int, srcData: DataSet, featureSubsets: List<List<ColumnId<*>>>,
+            targetCols: List<ColumnId<Int>>, rng: Random = Random())
+            : this(batchSize, Utils.toMultiDataSet(srcData, featureSubsets, targetCols), rng) {
+    }
 
-        require(subsets.all { it.numRows == numRows }) {
-            "All subsets must have the same number of rows."
-        }
-        require(subsets.all { subset -> subset.columnIds.all { Number::class isAssignableFrom it.clazz } }) {
-            "All columns must be of type java.lang.Number (or a subclass or it)."
-        }
-
-        require(targets.numRows == numRows) {
-            "The targets must have exactly one entry per row in the subsets."
-        }
-        require(targets.columnIds.all { Int::class isAssignableFrom it.clazz }) {
-            "The targets must be integers with each unique value indicating a target class."
-        }
-        require(targets.columnIds.all { targets.column(it).asSequence().all { it != null } }) {
-            "The targets must all be non-null."
-        }
-
-        targetSizes = Array<Int>(targets.numColumns) { colIdx ->
-            @Suppress("UNCHECKED_CAST")
-            val colId = targets.columnIds[colIdx] as ColumnId<Int>
-            // We add 1 here because we assume the targets are 0 indexed - thus the number of target values is 1 more
-            // than the largest observed target.
-            targets.column(colId).asSequence().maxBy { it!! }!! + 1
-        }
-        log.debug("Target sizes are: {}", targetSizes)
-
-        batchIndices = ArrayList(numRows)
-        for (idx in 0 until numRows) {
-            batchIndices.add(idx)
-        }
-
+    private constructor(batchSize: Int, allData: MultiDataSet, rng: Random) {
+        this.batchSize = batchSize
+        this.allData = allData
+        this.rng = rng
         reset()
     }
 
@@ -102,47 +72,10 @@ internal class RandomizingMultiDataSetIterator(val batchSize: Int,
     override fun next(num: Int): MultiDataSet {
         check(hasNext())
         val batchEndIdx = Math.min(nextBatchStartIdx + num, numRows)
-        val numInThisBatch = batchEndIdx - nextBatchStartIdx
-        val batchFeatures = Array<INDArray>(subsets.size) { idx ->
-            Nd4j.zeros(numInThisBatch, subsets[idx].numColumns)
-        }
-        val batchTargets = Array<INDArray>(subsets.size) { targIdx ->
-            Nd4j.zeros(numInThisBatch, targetSizes[targIdx])
-        }
 
-        // Lots of indexes here:
-        // i: 0 to number of items in this batch
-        // batchIdxIdx: Index into batchIdx that lets us look up the shuffled/randomized index into the data sets from
-        //     which we should pull data for this batch.
-        // dataRowIdx: the index we found in batchIdx. This is the row in the underlying data we'll use
-        // subsetIdx: a MultiDataSet is composed of multiple subsets of data. This is the subset we're currently
-        //     working on
-        // colIdx: this is the column in the current subset we're working on
-        // targetIdx: a MultiDataSet is also composed of multiple targets. This is the target we're working on
-        for (i in 0 until numInThisBatch) {
-            val batchIdxIdx = nextBatchStartIdx + i
-            val dataRowIdx = batchIndices[batchIdxIdx]
-            for (subsetIdx in subsets.indices) {
-                val subset = subsets[subsetIdx]
-                for (colIdx in subset.columnIds.indices) {
-                    val curValue: Number = subset.value(dataRowIdx, subset.columnIds[colIdx]) as Number
-                    batchFeatures[subsetIdx].put(i, colIdx, curValue)
-                }
-            }
-
-            for (targetIdx in targets.columnIds.indices) {
-                @Suppress("UNCHECKED_CAST")
-                val curColId = targets.columnIds[targetIdx] as ColumnId<Int>
-                val curValue: Int = targets.value(dataRowIdx, curColId)!!
-                // Put a 1 in the column corresponding to curValue so we can 1-hot encode the correct value
-                batchTargets[targetIdx].put(i, curValue, 1)
-            }
-        }
+        val resultDs = Utils.subsetRows(allData, nextBatchStartIdx, batchEndIdx)
 
         nextBatchStartIdx = batchEndIdx
-        // Yes, Nd4j really did give the class the same name as the interface!
-        val resultDs = org.nd4j.linalg.dataset.MultiDataSet(batchFeatures, batchTargets)
-        preprocessor?.preProcess(resultDs)
         return resultDs
     }
 
@@ -153,7 +86,11 @@ internal class RandomizingMultiDataSetIterator(val batchSize: Int,
     override fun resetSupported(): Boolean = true
 
     override fun setPreProcessor(preprocessor: MultiDataSetPreProcessor?) {
-        this.preprocessor = preprocessor
+        // The semantics of this are very unclear: it is supposed to be run on each mini-batch, even after reset, or run
+        // only once on the base data? Is it supposed to modify the underlying data or produce a copy? Since I don't
+        // think we currently need this we simply won't support it. If we ever need this we're going to have to either
+        // look at nd4j source code or ask some questions online.
+        throw UnsupportedOperationException()
     }
 
     override fun remove() {
@@ -161,8 +98,8 @@ internal class RandomizingMultiDataSetIterator(val batchSize: Int,
     }
 
     override fun reset() {
-        Collections.shuffle(batchIndices, rng)
         nextBatchStartIdx = 0
+        Utils.shuffle(allData, rng)
     }
 
     override fun hasNext(): Boolean {

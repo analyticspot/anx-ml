@@ -134,6 +134,30 @@ class DataSetTest {
     }
 
     @Test
+    fun testOperatorPlus() {
+        val cid1 = ColumnId.create<Int>("c1")
+        val cid2 = ColumnId.create<String>("c2")
+
+        val ds1 = DataSet.build {
+            addColumn(cid1, listOf(1, 2, 3, 4, 5), MaybeMissingMetaData(false))
+            addColumn(cid2, listOf("a", "b", "c", "d", "e"), MaybeMissingMetaData(true))
+        }
+
+        val cid3 = ColumnId.create<Int>("c3")
+        val ds2 = DataSet.build {
+            addColumn(cid3, listOf(2, 4, 6, 8, 10), MaybeMissingMetaData(false))
+        }
+
+        val combinedDs = ds1 + ds2
+
+        assertThat(combinedDs.numRows).isEqualTo(ds1.numRows)
+        assertThat(combinedDs.numColumns).isEqualTo(ds1.numColumns + ds2.numColumns)
+        assertThat(combinedDs.column(cid1)).containsExactlyElementsOf(ds1.column(cid1))
+        assertThat(combinedDs.column(cid2)).containsExactlyElementsOf(ds1.column(cid2))
+        assertThat(combinedDs.column(cid3)).containsExactlyElementsOf(ds2.column(cid3))
+    }
+
+    @Test
     fun testRandomSubsets() {
         val cid1 = ColumnId.create<Int>("c1")
         val cid2 = ColumnId.create<String>("c2")
