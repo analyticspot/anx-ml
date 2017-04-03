@@ -13,8 +13,6 @@ import java.util.Random
  * Various utilities for working with DeepLearning4j.
  */
 object Utils {
-    val log = LoggerFactory.getLogger(Utils::class.java)
-
     /**
      * Creates a `MultiDataSet` from a [DataSet] and some information specifying which columns map to which feature
      * subsets, which map to which target groups, etc.
@@ -24,9 +22,12 @@ object Utils {
      *     the i^th group of feature inputs.
      * @param targetCols a list of columns that hold the targets. Each target must be an integer in the range
      *     `[0, numTargets]`. These will be 1-hot encoded.
+     * @param targetSizes `targetSizes[i]` is the number of distinct values in the data corresponding to
+     *     `targetCols[i]`.
      */
     fun toMultiDataSet(srcDs: DataSet, featureSubsets: List<List<ColumnId<*>>>,
-            targetCols: List<ColumnId<Int>>): MultiDataSet {
+            targetCols: List<ColumnId<Int>>, targetSizes: List<Int>): MultiDataSet {
+        require(targetSizes.size == targetCols.size)
         val featureArrays = Array<INDArray>(featureSubsets.size) { idx ->
             val indArrayData = Nd4j.zeros(srcDs.numRows, featureSubsets[idx].size)
 
@@ -41,12 +42,13 @@ object Utils {
 
         val targetArrays = Array<INDArray>(targetCols.size) { idx ->
             val targetCol = targetCols[idx]
-            val targetSize = srcDs.column(targetCol).maxBy { it!! }!! + 1
+            val targetSize = targetSizes[idx]
 
             val indTargetMatrix = Nd4j.zeros(srcDs.numRows, targetSize)
 
             srcDs.column(targetCol).forEachIndexed { rowIdx, targetValue ->
-                indTargetMatrix.put(rowIdx, targetValue!!, 1)
+                check(targetValue!! < targetSize)
+                indTargetMatrix.put(rowIdx, targetValue, 1)
             }
 
             indTargetMatrix
@@ -60,7 +62,8 @@ object Utils {
      * Like the other [toMultiDataSet] overload but the subsets are defined by a list of [DataSet] instances and the
      * targets are defined by all the columns in another data set.
      */
-    fun toMultiDataSet(featureSubsets: List<DataSet>, targets: DataSet): MultiDataSet {
+    fun toMultiDataSet(featureSubsets: List<DataSet>, targets: DataSet, targetSizes: List<Int>): MultiDataSet {
+        require(targetSizes.size == targets.numColumns)
         val combinedDs = featureSubsets.reduce { ds1, ds2 -> ds1.combineAndSkipDuplicates(ds2) }
                 .combineAndSkipDuplicates(targets)
 
@@ -70,7 +73,7 @@ object Utils {
         @Suppress("UNCHECKED_CAST")
         val targetCols = targets.columnIds.toList() as List<ColumnId<Int>>
 
-        return toMultiDataSet(combinedDs, featureCols, targetCols)
+        return toMultiDataSet(combinedDs, featureCols, targetCols, targetSizes)
     }
 
     /**

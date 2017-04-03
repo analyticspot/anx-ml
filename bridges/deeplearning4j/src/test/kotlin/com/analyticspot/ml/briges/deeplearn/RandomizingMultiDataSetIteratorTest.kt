@@ -67,7 +67,8 @@ class RandomizingMultiDataSetIteratorTest {
 
         check(ds1.numRows == numRows)
 
-        val ourIter = RandomizingMultiDataSetIterator(batchSize, listOf(ds1, ds2), dsTargets)
+        val ourIter = RandomizingMultiDataSetIterator(batchSize, listOf(ds1, ds2), dsTargets,
+                listOf(4, 4))
 
         val dl4jReader = CSVRecordReader(0, ",")
         dl4jReader.initialize(FileSplit(ClassPathResource(SAMPLE_DATA_RESOURCE).file))
@@ -136,7 +137,7 @@ class RandomizingMultiDataSetIteratorTest {
             addColumn(ColumnId.create<Int>("t"), (0 until numRows).map { rng.nextInt(maxTargetVal) })
         }
 
-        val iter = RandomizingMultiDataSetIterator(10, listOf(ds1), targs, rng)
+        val iter = RandomizingMultiDataSetIterator(10, listOf(ds1), targs, listOf(maxTargetVal), rng)
 
         val beforeReset = iterToList(iter)
 
@@ -163,7 +164,7 @@ class RandomizingMultiDataSetIteratorTest {
             addColumn(ColumnId.create<Int>("target"), listOf(1))
         }
 
-        val iter = RandomizingMultiDataSetIterator(10, listOf(ds), targetDs)
+        val iter = RandomizingMultiDataSetIterator(10, listOf(ds), targetDs, listOf(2))
         assertThat(iter.hasNext()).isTrue()
 
         val mds = iter.next()
@@ -183,30 +184,30 @@ class RandomizingMultiDataSetIteratorTest {
     @Test
     fun testIteratorReturnsFinalElement() {
         var ds = buildDataSetWithRows(1)
-        var iter = RandomizingMultiDataSetIterator(10, listOf(ds), ds)
+        var iter = RandomizingMultiDataSetIterator(10, listOf(ds), ds, listOf(1))
         assertThat(iterToList(iter)).hasSize(1)
 
-        iter = RandomizingMultiDataSetIterator(1, listOf(ds), ds)
+        iter = RandomizingMultiDataSetIterator(1, listOf(ds), ds, listOf(1))
         assertThat(iterToList(iter)).hasSize(1)
 
         ds = buildDataSetWithRows(8)
-        iter = RandomizingMultiDataSetIterator(8, listOf(ds), ds)
+        iter = RandomizingMultiDataSetIterator(8, listOf(ds), ds, listOf(8))
         assertThat(iterToList(iter)).hasSize(8)
 
-        iter = RandomizingMultiDataSetIterator(9, listOf(ds), ds)
+        iter = RandomizingMultiDataSetIterator(9, listOf(ds), ds, listOf(8))
         assertThat(iterToList(iter)).hasSize(8)
 
-        iter = RandomizingMultiDataSetIterator(7, listOf(ds), ds)
+        iter = RandomizingMultiDataSetIterator(7, listOf(ds), ds, listOf(8))
         assertThat(iterToList(iter)).hasSize(8)
 
         ds = buildDataSetWithRows(16)
-        iter = RandomizingMultiDataSetIterator(8, listOf(ds), ds)
+        iter = RandomizingMultiDataSetIterator(8, listOf(ds), ds, listOf(16))
         assertThat(iterToList(iter)).hasSize(16)
 
-        iter = RandomizingMultiDataSetIterator(7, listOf(ds), ds)
+        iter = RandomizingMultiDataSetIterator(7, listOf(ds), ds, listOf(16))
         assertThat(iterToList(iter)).hasSize(16)
 
-        iter = RandomizingMultiDataSetIterator(9, listOf(ds), ds)
+        iter = RandomizingMultiDataSetIterator(9, listOf(ds), ds, listOf(16))
         assertThat(iterToList(iter)).hasSize(16)
     }
 

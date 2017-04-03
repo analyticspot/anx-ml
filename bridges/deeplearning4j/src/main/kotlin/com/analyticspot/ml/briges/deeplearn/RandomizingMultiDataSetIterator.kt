@@ -29,14 +29,6 @@ import java.util.Random
  * You also pass a single allData set that contains multiple columns to serve as the targets, one target per column. The
  * target allData sets should be integers in the range [0, numTargetValues) and they will be one-hot encoded by this
  * class.
- *
- * @param batchSize the number of items in each mini-batch
- * @param subsets a list of [DataSet] instances. Each [DataSet] will correspond to a single set of inputs to the
- *     network. As the network requires doubles as inputs all columns must be of `java.lang.Number` type (e.g. `String`
- *     columns should be one-hot encoded before being used here.)
- * @param targets a [DataSet] that contains only integer columns. There will be one target for each column here but
- *     the target will be one-hot encoded.
- * @param rng: The random number generator to use to shuffle the rows.
  */
 internal class RandomizingMultiDataSetIterator : MultiDataSetIterator {
     private val allData: MultiDataSet
@@ -49,13 +41,39 @@ internal class RandomizingMultiDataSetIterator : MultiDataSetIterator {
     // truncate because the final batch doesn't contain enough rows).
     private var nextBatchStartIdx = 0
 
-    constructor(batchSize: Int, subsets: List<DataSet>, targets: DataSet, rng: Random = Random())
-            : this(batchSize, Utils.toMultiDataSet(subsets, targets), rng) {
+    /**
+     * Constructor.
+     *
+     * @param batchSize the number of items in each mini-batch
+     * @param subsets a list of [DataSet] instances. Each [DataSet] will correspond to a single set of inputs to the
+     *     network. As the network requires doubles as inputs all columns must be of `java.lang.Number` type (e.g. `String`
+     *     columns should be one-hot encoded before being used here.)
+     * @param targets a [DataSet] that contains only integer columns. There will be one target for each column here but
+     *     the target will be one-hot encoded.
+     * @param targetSizes indicates how many distinct target values are in each column of the targets [DataSet].
+     * @param rng: The random number generator to use to shuffle the rows.
+     */
+    constructor(batchSize: Int, subsets: List<DataSet>, targets: DataSet,
+            targetSizes: List<Int>, rng: Random = Random())
+            : this(batchSize, Utils.toMultiDataSet(subsets, targets, targetSizes), rng) {
     }
 
+    /**
+     * Constructor.
+     *
+     * @param batchSize the number of items in each mini-batch
+     * @param srcData the [DataSet] from which all feature and target values will be drawn.
+     * @param featureSubsets a list of [ColumnId] instances. Each set of [ColumnId]s will correspond to a single set of
+     *     inputs to the network. As the network requires doubles as inputs all columns must be of `java.lang.Number`
+     *     type (e.g. `String` columns should be one-hot encoded before being used here.)
+     * @param targetCols a list of [ColumnId] from which the targets should be extracted. There will be one target for
+     *     each column here but the target will be one-hot encoded.
+     * @param targetSizes indicates how many distinct target values are in each column of the `targets`.
+     * @param rng: The random number generator to use to shuffle the rows.
+     */
     constructor(batchSize: Int, srcData: DataSet, featureSubsets: List<List<ColumnId<*>>>,
-            targetCols: List<ColumnId<Int>>, rng: Random = Random())
-            : this(batchSize, Utils.toMultiDataSet(srcData, featureSubsets, targetCols), rng) {
+            targetCols: List<ColumnId<Int>>, targetSizes: List<Int>, rng: Random = Random())
+            : this(batchSize, Utils.toMultiDataSet(srcData, featureSubsets, targetCols, targetSizes), rng) {
     }
 
     private constructor(batchSize: Int, allData: MultiDataSet, rng: Random) {
