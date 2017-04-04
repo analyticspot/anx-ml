@@ -11,18 +11,18 @@ import java.util.Random
 /**
  * DeepLearning4j requires a `MultiDataSetIterator` in order to work with nets that can have multiple inputs and
  * outputs (see https://deeplearning4j.org/compgraph#multidataset-and-the-multidatasetiterator). Unfortunately, they
- * all the implementations of that interface they provide simply read allData from files or some kind but we have our
- * allData in memory and want to use it from there. We also want to be able to convert one or more [DataSet] instances into
+ * all the implementations of that interface they provide simply read data from files or some kind but we have our
+ * data in memory and want to use it from there. We also want to be able to convert one or more [DataSet] instances into
  * a `MultiDataSetIterator`. This class allows us to do that.
  *
  * Dl4j also relies on the iterator to provide the batches for stochastic gradient descent (SGD) so we want to be able
  * to convert a big [DataSet] into many smaller batches, each of which is a `MultiDataSet`. Furthermore, we'd like to
- * shuffle all the allData into new/different batches when [reset] is called so that it's useful for SGD. This also handles
+ * shuffle all the data into new/different batches when [reset] is called so that it's useful for SGD. This also handles
  * that for us.
  *
- * To use, pass in a list of allData sets. Each allData set will be one set of features that can be used as input to our net.
- * You also pass a single allData set that contains multiple columns to serve as the targets, one target per column. The
- * target allData sets should be integers in the range [0, numTargetValues) and they will be one-hot encoded by this
+ * To use, pass in a list of data sets. Each data set will be one set of features that can be used as input to our net.
+ * You also pass a single data set that contains multiple columns to serve as the targets, one target per column. The
+ * target data sets should be integers in the range [0, numTargetValues) and they will be one-hot encoded by this
  * class.
  */
 internal class RandomizingMultiDataSetIterator : MultiDataSetIterator {
