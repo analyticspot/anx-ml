@@ -33,7 +33,6 @@ class ComputationGraphTransformTest {
 
         val (trainDs, validDs) = ds.randomSubsets(0.75f, Random(222))
         log.info("Training data has {} rows. Validation data has {} rows.", trainDs.numRows, validDs.numRows)
-        log.info("Training targets: {}", trainDs.column(targetColId).joinToString(" "))
 
         val trainFeatures = trainDs.allColumnsExcept("target")
         val (trainTargetsCols, targetMapping) = DataUtils.encodeCategorical(trainDs.column(targetColId))
@@ -45,7 +44,7 @@ class ComputationGraphTransformTest {
         // but that's not what we're testing) that has a single hidden layer with 4 units.
         log.info("Building computation ComputationGraphConfig")
         val compGraphConfig: ComputationGraphConfiguration = NeuralNetConfiguration.Builder()
-                .learningRate(0.1)
+                .learningRate(0.01)
                 .weightInit(WeightInit.XAVIER)
                 .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                 .updater(Updater.RMSPROP)
@@ -97,9 +96,11 @@ class ComputationGraphTransformTest {
         assertThat(predictedTargets).hasSize(validDs.numRows)
 
         val numCorrect = predictedTargets.zip(validDs.column(targetColId)).filter {
-            log.info("Pred: {}, Actual: {}", it.first, it.second)
             it.first == it.second
         }.count()
-        assertThat(numCorrect.toDouble()/validDs.numRows.toDouble()).isGreaterThan(0.95)
+        val accuracy = numCorrect.toDouble()/validDs.numRows.toDouble()
+        log.info("Model accuracy on validation set: {}", accuracy)
+
+        assertThat(accuracy).isGreaterThan(0.7)
     }
 }
