@@ -290,6 +290,28 @@ class DataSet private constructor(idAndColumns: Array<IdAndColumn<*>>) {
     }
 
     /**
+     * Returns a **new** [DataSet] that contains all the columns in this data set **except** those passed to this
+     * function.
+     */
+    fun allColumnsExcept(columnNames: Set<String>): DataSet {
+        return DataSet.build {
+            columnIds.forEach { colId ->
+                if (!columnNames.contains(colId.name)) {
+                    @Suppress("UNCHECKED_CAST")
+                    addColumn(colId as ColumnId<Any>, column(colId), metaData[colId.name])
+                }
+            }
+        }
+    }
+
+    /**
+     * Convenience overload version of [allColumnsExcept].
+     */
+    fun allColumnsExcept(vararg columnNames: String): DataSet {
+        return allColumnsExcept(columnNames.toSet())
+    }
+
+    /**
      * Randomly divides the [DataSet] into 2 smaller [DataSet]s. The first contains a randomly selected set of `n` rows
      * and the 2nd contains all the rows that aren't in the first. Note that rows are sampled but **not** permuted.
      */
