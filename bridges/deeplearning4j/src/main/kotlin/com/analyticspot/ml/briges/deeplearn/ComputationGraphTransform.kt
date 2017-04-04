@@ -57,8 +57,9 @@ class ComputationGraphTransform(val config: Builder)
                 .scoreCalculator(DataSetLossCalculatorCG(validDataIter, true))
                 .build()
 
-        val earlyStoppingTrainer = EarlyStoppingGraphTrainer(earlyStopConfig, config.net, trainDataIter,
-                ReportingTrainListener())
+        val earlyStoppingTrainer = EarlyStoppingGraphTrainer(
+                earlyStopConfig, config.net, trainDataIter, ReportingTrainListener())
+
         log.info("Starting NN training.")
         earlyStoppingTrainer.fit()
         log.info("Training complete.")
@@ -68,22 +69,29 @@ class ComputationGraphTransform(val config: Builder)
 
     override fun transform(dataSet: DataSet, exec: ExecutorService): CompletableFuture<DataSet> {
         val mds = Utils.toMultiDataSet(dataSet, config.inputCols, listOf(), listOf())
-        val predictions = config.net.output(*mds.features)
-        return CompletableFuture.completedFuture(predictionsToDataSet(predictions))
+        check(mds.features[0].rows() == dataSet.numRows)
+        val posteriors = config.net.output(*mds.features)
+        // Predictions should now be an array of matrices. Each matrix has 1 row per row in dataSet and 1 column per
+        // target value. The value at row i, column j for that matrix is the posterior probability that example i has
+        // target value j. There is one such matrix for each output in our computation graph.
+        check(posteriors.size == config.targetSizes.size)
+        check(posteriors[0].shape()[0] == dataSet.numRows)
+        return CompletableFuture.completedFuture(predictionsToDataSet(posteriors))
     }
 
     private fun predictionsToDataSet(predictions: Array<INDArray>): DataSet {
-        val numTotalPredictions = config.targetSizes.sum()
-        require(predictions[0].columns() == numTotalPredictions)
-        var curPredCol = 0
+        // One INDArray for each output
+        require(predictions.size == config.targetSizes.size)
         return DataSet.build {
+            var curPredCol = 0
             for (outIdx in 0.until(config.targetSizes.size)) {
-                for (pIdx in 0.until(config.targetSizes[outIdx])) {
-                    check(curPredCol < numTotalPredictions)
-
-                    val colName = config.outColNameGenerator(outIdx, pIdx)
-                    val colData = ArrayList<Double>(predictions.size)
-                    predictions.forEach { predRow -> colData.add(predRow.getDouble(curPredCol))  }
+                check(predictions[outIdx].columns() == config.targetSizes[outIdx])
+                for (posteriorIdx in 0.until(config.targetSizes[outIdx])) {
+                    val colName = config.outColNameGenerator(outIdx, posteriorIdx)
+                    val colData = ArrayList<Double>(predictions[outIdx].rows())
+                    0.until(predictions[outIdx].rows()).forEach {
+                        colData.add(predictions[outIdx].getDouble(it, posteriorIdx))
+                    }
                     addColumn(ColumnId.create<Double>(colName), colData, MaybeMissingMetaData(false))
                     ++curPredCol
                 }
@@ -97,10 +105,13 @@ class ComputationGraphTransform(val config: Builder)
     }
 
     class Builder() {
+        /**
+         * We will call `init` on the graph so the user need not do that.
+         */
         lateinit var net: ComputationGraph
         lateinit var inputCols: List<List<ColumnId<*>>>
         lateinit var targetSizes: List<Int>
-        var batchSize: Int = 100
+        var batchSize: Int = 32
         var epochValidationFrac: Float = 0.1f
         var maxEpochWithNoImprovement: Int = 4
         /**
@@ -114,6 +125,8 @@ class ComputationGraphTransform(val config: Builder)
         }
     }
 
+    // This doesn't do much but an instance of this is required. Dl4j already does a bunch of logging so there's not
+    // much to add here.
     private class ReportingTrainListener : EarlyStoppingListener<ComputationGraph> {
         override fun onCompletion(esResult: EarlyStoppingResult<ComputationGraph>) {
             log.info("Training complete: {}", esResult)
@@ -121,7 +134,6 @@ class ComputationGraphTransform(val config: Builder)
 
         override fun onEpoch(epochNum: Int, score: Double,
                 esConfig: EarlyStoppingConfiguration<ComputationGraph>, net: ComputationGraph) {
-            log.info("Completed training epoch {}. Score: {}", epochNum, score)
         }
 
         override fun onStart(esConfig: EarlyStoppingConfiguration<ComputationGraph>, net: ComputationGraph) {
