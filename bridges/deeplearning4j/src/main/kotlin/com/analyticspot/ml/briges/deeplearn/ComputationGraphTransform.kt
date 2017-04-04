@@ -58,8 +58,11 @@ class ComputationGraphTransform(val config: Builder)
 
         val earlyStoppingTrainer = EarlyStoppingGraphTrainer(earlyStopConfig, config.net, trainDataIter,
                 ReportingTrainListener())
+        log.info("Starting NN training.")
+        earlyStoppingTrainer.fit()
+        log.info("Training complete.")
 
-        return CompletableFuture.completedFuture(DataSet.build {  })
+        return transform(dataSet, exec)
     }
 
     override fun transform(dataSet: DataSet, exec: ExecutorService): CompletableFuture<DataSet> {
