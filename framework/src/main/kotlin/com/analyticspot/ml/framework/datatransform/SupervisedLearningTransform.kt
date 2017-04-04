@@ -32,5 +32,5 @@ interface SupervisedLearningTransform : SingleDataTransform {
     /**
      * See class comments.
      */
-    fun trainTransform(dataSet: DataSet, trainDs: DataSet, exec: ExecutorService): CompletableFuture<DataSet>
+    fun trainTransform(dataSet: DataSet, targetDs: DataSet, exec: ExecutorService): CompletableFuture<DataSet>
 }

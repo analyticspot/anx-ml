@@ -291,8 +291,7 @@ class DataSet private constructor(idAndColumns: Array<IdAndColumn<*>>) {
 
     /**
      * Randomly divides the [DataSet] into 2 smaller [DataSet]s. The first contains a randomly selected set of `n` rows
-     * and the 2nd contains all the rows that aren't in the first. Note that rows are sample **and** permuted and so are
-     * not in the same order as the original data.
+     * and the 2nd contains all the rows that aren't in the first. Note that rows are sampled but **not** permuted.
      */
     fun randomSubsets(n: Int, rng: Random = Random()): Pair<DataSet, DataSet> {
         val indices = 0.until(numRows).toList()
@@ -325,6 +324,47 @@ class DataSet private constructor(idAndColumns: Array<IdAndColumn<*>>) {
                 val colData = column(it).filterIndexed { idx, item -> idx in indices }
                 @Suppress("UNCHECKED_CAST")
                 addColumn(it as ColumnId<Any>, colData, md)
+            }
+        }
+    }
+
+    /**
+     * Returns a new [DataSet] that contains all the columns in this data set plus all the columns in `other`. For this
+     * to work `other` must have the same number of rows as this and the column names must all be differentt. Note
+     * that in Kotlin this will also be available via the `+` operator.
+     */
+    operator fun plus(other: DataSet): DataSet {
+        require(other.numRows == numRows)
+        return build {
+            addAll(this@DataSet)
+            addAll(other)
+        }
+    }
+
+    /**
+     * Returns a new [DataSet] that contains all the columns in this data set plus all the columns in `other` like
+     * [plus]. However, unlike [plus] this will not throw an exception if `other` contains some columns that have the
+     * same name as the columns here. Instead we will assume the columns are identical and just keep one of them. We
+     * do some minimal checks to try and ensure the columns are identical but, in the interest of speed, we don't
+     * do any deep checks (unless asserts are enabled).
+     */
+    fun combineAndSkipDuplicates(other: DataSet): DataSet {
+        require(other.numRows == numRows)
+        return build {
+            columnIds.forEach {
+                @Suppress("UNCHECKED_CAST")
+                addColumn(it as ColumnId<Any>, column(it), metaData[it.name])
+            }
+
+            other.columnIds.forEach { colId ->
+                if (columnIds.binarySearch(colId) < 0) {
+                    @Suppress("UNCHECKED_CAST")
+                    addColumn(colId as ColumnId<Any>, other.column(colId), other.metaData[colId.name])
+                } else {
+                    check(colId.clazz == columnIdWithNameUntyped(colId.name).clazz)
+                    assert(other.column(colId).zip(column(colId)).all { it.first == it.second })
+                    log.info("Skipping duplicate column {}", colId)
+                }
             }
         }
     }
