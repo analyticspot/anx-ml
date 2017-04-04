@@ -3,6 +3,7 @@ package com.analyticspot.ml.briges.deeplearn
 import com.analyticspot.ml.framework.dataset.DataSet
 import com.analyticspot.ml.framework.datatransform.SupervisedLearningTransform
 import com.analyticspot.ml.framework.description.ColumnId
+import com.analyticspot.ml.framework.metadata.MaybeMissingMetaData
 import com.analyticspot.ml.framework.serialization.MultiFileMixedTransform
 import org.deeplearning4j.earlystopping.EarlyStoppingConfiguration
 import org.deeplearning4j.earlystopping.EarlyStoppingResult
@@ -83,6 +84,7 @@ class ComputationGraphTransform(val config: Builder)
                     val colName = config.outColNameGenerator(outIdx, pIdx)
                     val colData = ArrayList<Double>(predictions.size)
                     predictions.forEach { predRow -> colData.add(predRow.getDouble(curPredCol))  }
+                    addColumn(ColumnId.create<Double>(colName), colData, MaybeMissingMetaData(false))
                     ++curPredCol
                 }
             }
