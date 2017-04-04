@@ -99,7 +99,7 @@ object Utils {
     /**
      * An extension method that allows us to shuffle the rows of a `MultiDataSet`.
      *
-     * TODO(NOW): What happens to other views???
+     * NOTE: If there are other views of the INDArrays that make up the MultiDataSet they too will be shuffled.
      */
     fun shuffle(data: MultiDataSet, rng: Random = Random()) {
         if (data.features[0].rows() == 1) {
