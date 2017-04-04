@@ -2,15 +2,10 @@ package com.analyticspot.ml.briges.deeplearn
 
 import com.analyticspot.ml.framework.dataset.DataSet
 import com.analyticspot.ml.framework.description.ColumnId
-import com.analyticspot.ml.utils.isAssignableFrom
 import org.nd4j.linalg.dataset.api.MultiDataSet
 import org.nd4j.linalg.dataset.api.MultiDataSetPreProcessor
 import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator
-import org.nd4j.linalg.factory.Nd4j
-import org.nd4j.linalg.indexing.NDArrayIndex
 import org.slf4j.LoggerFactory
-import java.util.ArrayList
-import java.util.Collections
 import java.util.Random
 
 /**

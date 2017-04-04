@@ -6,7 +6,6 @@ import org.nd4j.linalg.api.ndarray.INDArray
 import org.nd4j.linalg.dataset.api.MultiDataSet
 import org.nd4j.linalg.factory.Nd4j
 import org.nd4j.linalg.indexing.NDArrayIndex
-import org.slf4j.LoggerFactory
 import java.util.Random
 
 /**
@@ -91,7 +90,6 @@ object Utils {
         val batchTargets: Array<INDArray> = src.labels.map {
             it.get(NDArrayIndex.interval(start, end), NDArrayIndex.all())
         }.toTypedArray()
-
 
         return org.nd4j.linalg.dataset.MultiDataSet(batchFeatures, batchTargets)
     }
