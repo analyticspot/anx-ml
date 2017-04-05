@@ -7,7 +7,6 @@ import com.google.common.util.concurrent.MoreExecutors
 import org.assertj.core.api.Assertions.assertThat
 import org.deeplearning4j.nn.api.OptimizationAlgorithm
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration
-import org.deeplearning4j.nn.conf.LearningRatePolicy
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration
 import org.deeplearning4j.nn.conf.Updater
 import org.deeplearning4j.nn.conf.layers.DenseLayer
@@ -44,7 +43,7 @@ class ComputationGraphTransformTest {
         // but that's not what we're testing) that has a single hidden layer with 4 units.
         log.info("Building computation ComputationGraphConfig")
         val compGraphConfig: ComputationGraphConfiguration = NeuralNetConfiguration.Builder()
-                .learningRate(0.01)
+                .learningRate(0.1)
                 .weightInit(WeightInit.XAVIER)
                 .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                 .updater(Updater.RMSPROP)
@@ -96,7 +95,7 @@ class ComputationGraphTransformTest {
         val numCorrect = predictedTargets.zip(validDs.column(targetColId)).filter {
             it.first == it.second
         }.count()
-        val accuracy = numCorrect.toDouble()/validDs.numRows.toDouble()
+        val accuracy = numCorrect.toDouble() / validDs.numRows.toDouble()
         log.info("Model accuracy on validation set: {}", accuracy)
 
         assertThat(accuracy).isGreaterThan(0.7)

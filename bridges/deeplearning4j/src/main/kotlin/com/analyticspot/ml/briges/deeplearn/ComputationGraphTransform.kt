@@ -15,7 +15,6 @@ import org.deeplearning4j.earlystopping.termination.ScoreImprovementEpochTermina
 import org.deeplearning4j.earlystopping.trainer.EarlyStoppingGraphTrainer
 import org.deeplearning4j.nn.graph.ComputationGraph
 import org.nd4j.linalg.api.ndarray.INDArray
-import org.nd4j.linalg.dataset.MultiDataSet
 import org.slf4j.LoggerFactory
 import java.io.OutputStream
 import java.util.ArrayList
@@ -57,8 +56,6 @@ class ComputationGraphTransform : SupervisedLearningTransform, MultiFileMixedTra
         outColPosteriorGroups = config.outColPosteriorGroups
         outColPredictions = config.outColPredictions
     }
-
-
 
     companion object {
         val log = LoggerFactory.getLogger(ComputationGraphTransform::class.java)
@@ -143,7 +140,6 @@ class ComputationGraphTransform : SupervisedLearningTransform, MultiFileMixedTra
         }
     }
 
-
     override fun serializeBinaryData(output: OutputStream) {
         TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
     }
@@ -155,7 +151,7 @@ class ComputationGraphTransform : SupervisedLearningTransform, MultiFileMixedTra
         lateinit var net: ComputationGraph
         lateinit var inputCols: List<List<ColumnId<*>>>
         lateinit var targetSizes: List<Int>
-        var batchSize: Int = 32
+        var batchSize: Int = 128
         var epochValidationFrac: Float = 0.1f
         var maxEpochWithNoImprovement: Int = 4
 
