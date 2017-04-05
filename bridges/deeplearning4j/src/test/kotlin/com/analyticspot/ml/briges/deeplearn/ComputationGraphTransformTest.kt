@@ -67,32 +67,30 @@ class ComputationGraphTransformTest {
         log.info("Constructing ComputationGraph from the configuration.")
         val nn = ComputationGraph(compGraphConfig)
 
-        val colNamer = { output: Int, targetVal: Int ->
-            assertThat(output).isEqualTo(0)
-            "Posterior-${targetVal}"
-
-        }
-
         val transform = ComputationGraphTransform.build {
             net = nn
             inputCols = listOf(trainFeatures.columnIds.toList())
             targetSizes = listOf(3)
-            outColNameGenerator = colNamer
         }
 
         log.info("Starting to train network")
         transform.trainTransform(trainFeatures, trainTargets, MoreExecutors.newDirectExecutorService()).get()
 
         // Now assess accuracy. If things are working we should have a very high accuracy rate on the validation data
-        val posteriors = transform.transform(validDs, MoreExecutors.newDirectExecutorService()).get()
-        assertThat(posteriors.numRows).isEqualTo(validDs.numRows)
+        val resultDs = transform.transform(validDs, MoreExecutors.newDirectExecutorService()).get()
+        assertThat(resultDs.numRows).isEqualTo(validDs.numRows)
 
-        // For each row, find the column with the max posterior. Then map that back to the string version of the target
-        val predictedTargets: List<String> = 0.until(posteriors.numRows).map { rowIdx ->
-            0.until(posteriors.numColumns).maxBy { colIdx ->
-                posteriors.value(rowIdx, ColumnId.create<Double>(colNamer (0, colIdx)))!! }
-        }.map { targetMapping[it]!! }
+        // For each row, find the column with the max posterior. This should be equal to the prediction for that row.
+        0.until(resultDs.numRows).forEach { rowIdx ->
+            val maxPosteriorIdx = 0.until(targetMapping.size).maxBy { colIdx ->
+                val colId = transform.outColPosteriorGroups[0].generateId(colIdx.toString())
+                resultDs.value(rowIdx, colId)!!
+            }
+            assertThat(maxPosteriorIdx).isEqualTo(resultDs.value(rowIdx, transform.outColPredictions[0]))
+        }
 
+        // Map the targets to their string values
+        val predictedTargets = resultDs.column(transform.outColPredictions[0]).map { targetMapping[it]!! }
         assertThat(predictedTargets).hasSize(validDs.numRows)
 
         val numCorrect = predictedTargets.zip(validDs.column(targetColId)).filter {
