@@ -21,11 +21,10 @@ object Utils {
      *     the i^th group of feature inputs.
      * @param targetCols a list of columns that hold the targets. Each target must be an integer in the range
      *     `[0, numTargets]`. These will be 1-hot encoded.
-     * @param targetSizes `targetSizes[i]` is the number of distinct values in the data corresponding to
-     *     `targetCols[i]`.
+     * @param targetSizes `targetSizes[i]` is the number of distinct values in the data whose column name is `i`.
      */
     fun toMultiDataSet(srcDs: DataSet, featureSubsets: List<List<ColumnId<*>>>,
-            targetCols: List<ColumnId<Int>>, targetSizes: List<Int>): MultiDataSet {
+            targetCols: List<ColumnId<Int>>, targetSizes: Map<String, Int>): MultiDataSet {
         require(targetSizes.size == targetCols.size)
         val featureArrays = Array<INDArray>(featureSubsets.size) { idx ->
             val indArrayData = Nd4j.zeros(srcDs.numRows, featureSubsets[idx].size)
@@ -41,12 +40,15 @@ object Utils {
 
         val targetArrays = Array<INDArray>(targetCols.size) { idx ->
             val targetCol = targetCols[idx]
-            val targetSize = targetSizes[idx]
+            val targetSize = targetSizes[targetCol.name]!!
 
             val indTargetMatrix = Nd4j.zeros(srcDs.numRows, targetSize)
 
             srcDs.column(targetCol).forEachIndexed { rowIdx, targetValue ->
-                check(targetValue!! < targetSize)
+                check(targetValue!! < targetSize) {
+                    "Found a value of $targetValue in column $targetCol but expected only $targetSize different " +
+                            "targets for that column."
+                }
                 indTargetMatrix.put(rowIdx, targetValue, 1)
             }
 
@@ -58,10 +60,21 @@ object Utils {
     }
 
     /**
+     * Like the other [toMultiDataSet] overload but instead of specifying the target columns and the number of target
+     * values for each column separately you pass a single list mapping the target column to the number of values for
+     * that target. Note that it's a list intead of a map because order matters in a `MultiDataSet`.
+     */
+    fun toMultiDataSet(srcDs: DataSet, featureSubsets: List<List<ColumnId<*>>>,
+            targetCols: List<Pair<ColumnId<Int>, Int>>): MultiDataSet {
+        return toMultiDataSet(srcDs, featureSubsets, targetCols.map { it.first },
+                targetCols.associate { it.first.name to it.second })
+    }
+
+    /**
      * Like the other [toMultiDataSet] overload but the subsets are defined by a list of [DataSet] instances and the
      * targets are defined by all the columns in another data set.
      */
-    fun toMultiDataSet(featureSubsets: List<DataSet>, targets: DataSet, targetSizes: List<Int>): MultiDataSet {
+    fun toMultiDataSet(featureSubsets: List<DataSet>, targets: DataSet, targetSizes: Map<String, Int>): MultiDataSet {
         require(targetSizes.size == targets.numColumns)
         val combinedDs = featureSubsets.reduce { ds1, ds2 -> ds1.combineAndSkipDuplicates(ds2) }
                 .combineAndSkipDuplicates(targets)

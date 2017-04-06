@@ -24,23 +24,23 @@ import java.util.concurrent.ExecutorService
 /**
  * Created by oliver on 3/30/17.
  */
-class ComputationGraphTransform : SupervisedLearningTransform, MultiFileMixedTransform {
+class ComputationGraphTransform(config: Builder) : SupervisedLearningTransform, MultiFileMixedTransform {
 
     @get:JsonIgnore
-    private val net: ComputationGraph
+    private val net: ComputationGraph = config.net
 
-    private val inputCols: List<List<ColumnId<*>>>
+    private val inputCols: List<List<ColumnId<*>>> = config.inputCols
 
-    private val targetSizes: List<Int>
+    private val targetSizes: List<Pair<ColumnId<Int>, Int>> = config.targetSizes
 
-    val outColPosteriorGroups: List<ColumnIdGroup<Double>>
+    val outColPosteriorGroups: List<ColumnIdGroup<Double>> = config.outColPosteriorGroups
 
-    val outColPredictions: List<ColumnId<Int>>
+    val outColPredictions: List<ColumnId<Int>> = config.outColPredictions
 
     // Is null when deserialized after training. We only need the training config to learn
-    var config: Builder? = null
+    var config: Builder? = config
 
-    private constructor(config: Builder) {
+    init {
         require(config.inputCols.size > 0)
         require(config.batchSize > 0)
         require(config.epochValidationFrac >= 0.0 && config.epochValidationFrac < 1.0)
@@ -49,12 +49,10 @@ class ComputationGraphTransform : SupervisedLearningTransform, MultiFileMixedTra
         require(config.outColPosteriorGroups.size == config.targetSizes.size)
         require(config.outColPredictions.size == config.targetSizes.size)
 
-        this.config = config
-        net = config.net
-        inputCols = config.inputCols
-        targetSizes = config.targetSizes
-        outColPosteriorGroups = config.outColPosteriorGroups
-        outColPredictions = config.outColPredictions
+        log.debug("Inputs for this network are:")
+        config.inputCols.forEachIndexed { setNum, inputs ->
+            log.debug("Set {}: {}", setNum, inputs.map { it.name })
+        }
     }
 
     companion object {
@@ -74,11 +72,8 @@ class ComputationGraphTransform : SupervisedLearningTransform, MultiFileMixedTra
         val (validDs, trainDs) = combined.randomSubsets(config!!.epochValidationFrac)
 
         @Suppress("UNCHECKED_CAST")
-        val targetCols = targetDs.columnIds.toList() as List<ColumnId<Int>>
-        val trainDataIter = RandomizingMultiDataSetIterator(
-                config!!.batchSize, trainDs, inputCols, targetCols, targetSizes)
-        val validDataIter = RandomizingMultiDataSetIterator(
-                validDs.numRows, validDs, inputCols, targetCols, targetSizes)
+        val trainDataIter = RandomizingMultiDataSetIterator(config!!.batchSize, trainDs, inputCols, targetSizes)
+        val validDataIter = RandomizingMultiDataSetIterator(validDs.numRows, validDs, inputCols, targetSizes)
 
         net.init()
 
@@ -99,7 +94,7 @@ class ComputationGraphTransform : SupervisedLearningTransform, MultiFileMixedTra
     }
 
     override fun transform(dataSet: DataSet, exec: ExecutorService): CompletableFuture<DataSet> {
-        val mds = Utils.toMultiDataSet(dataSet, inputCols, listOf(), listOf())
+        val mds = Utils.toMultiDataSet(dataSet, inputCols, listOf(), mapOf())
         check(mds.features[0].rows() == dataSet.numRows)
         val posteriors = net.output(*mds.features)
         // Predictions should now be an array of matrices. Each matrix has 1 row per row in dataSet and 1 column per
@@ -115,7 +110,7 @@ class ComputationGraphTransform : SupervisedLearningTransform, MultiFileMixedTra
         require(predictions.size == targetSizes.size)
         return DataSet.build {
             for (outIdx in 0.until(targetSizes.size)) {
-                check(predictions[outIdx].columns() == targetSizes[outIdx])
+                check(predictions[outIdx].columns() == targetSizes[outIdx].second)
                 val numRows = predictions[outIdx].rows()
                 // This will end up being the data that holds the prediction. We're building column-wise so we
                 // have a list of predictions - one for each row. Here we store the largest-to-date posterior plus
@@ -123,7 +118,7 @@ class ComputationGraphTransform : SupervisedLearningTransform, MultiFileMixedTra
                 var mostLikely = ArrayList<Pair<Double, Int>>(numRows)
                 repeat(numRows) { mostLikely.add(Pair(0.0, -1)) }
 
-                for (posteriorIdx in 0.until(targetSizes[outIdx])) {
+                for (posteriorIdx in 0.until(targetSizes[outIdx].second)) {
                     val colId = outColPosteriorGroups[outIdx].generateId(posteriorIdx.toString())
                     val colData = ArrayList<Double>(numRows)
                     0.until(numRows).forEach {
@@ -150,7 +145,14 @@ class ComputationGraphTransform : SupervisedLearningTransform, MultiFileMixedTra
          */
         lateinit var net: ComputationGraph
         lateinit var inputCols: List<List<ColumnId<*>>>
-        lateinit var targetSizes: List<Int>
+        /**
+         * List of `ColumnId`/`Int` pairs indicating the target columns and the number of possible unique values for
+         * that target. This is a list instead of a map because order matters: the first column here will be the
+         * first input to the `ComputationGraph` and will thus correspond to the first call to `addInputs` on the
+         * `ComputationGraph.Builder`, etc. Also, the same column can be listed more than once here as we might re-use
+         * the same column multiple times to build embeddings and such.
+         */
+        lateinit var targetSizes: List<Pair<ColumnId<Int>, Int>>
         var batchSize: Int = 128
         var epochValidationFrac: Float = 0.1f
         var maxEpochWithNoImprovement: Int = 4

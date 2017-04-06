@@ -36,9 +36,9 @@ class UtilsTest {
         val fs3: List<ColumnId<out Number>> = listOf(c2, c4)
         val fs4: List<ColumnId<out Number>> = listOf(c2, c3, c4)
 
-        val targs = listOf(c1, c4)
+        val targs = listOf(c1 to 3, c4 to 3)
 
-        val multiDs = Utils.toMultiDataSet(ds, listOf(fs1, fs2, fs3, fs4), targs, listOf(3, 3))
+        val multiDs = Utils.toMultiDataSet(ds, listOf(fs1, fs2, fs3, fs4), targs)
 
         assertThat(multiDs.features.size).isEqualTo(4)
         assertThat(multiDs.features[0].shape()).isEqualTo(arrayOf(3, 2))
@@ -74,9 +74,9 @@ class UtilsTest {
         val fs1: List<ColumnId<out Number>> = listOf(c1, c2)
         val fs2: List<ColumnId<out Number>> = listOf(c2)
 
-        val targs = listOf(c1, c4)
+        val targs = listOf(c1 to 3, c4 to 3)
 
-        val multiDs = Utils.toMultiDataSet(ds, listOf(fs1, fs2), targs, listOf(3, 3))
+        val multiDs = Utils.toMultiDataSet(ds, listOf(fs1, fs2), targs)
 
         val sub1 = Utils.subsetRows(multiDs, 0, 1)
 

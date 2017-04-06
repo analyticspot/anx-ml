@@ -9,7 +9,7 @@
          including "errors" which aren't really errors. -->
     <logger name="org.reflections.Reflections" level="ERROR" />
 
-    <root level="INFO">
+    <root level="DEBUG">
         <appender-ref ref="STDOUT"/>
     </root>
 </configuration>
