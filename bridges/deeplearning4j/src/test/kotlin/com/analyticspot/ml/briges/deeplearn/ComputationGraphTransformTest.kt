@@ -81,6 +81,10 @@ class ComputationGraphTransformTest {
             net = nn
             inputCols = listOf(trainFeatures.columnIds.toList())
             targetSizes = listOf(encodedTargetColId to 3)
+            trainingParams = ComputationGraphTransform.Builder.TrainingParams.build {
+                // 100 iterations gives really good performance. It can get better but that's slow and we don't care.
+                maxEpochs = 100
+            }
         }
 
         log.info("Starting to train network")
@@ -190,6 +194,11 @@ class ComputationGraphTransformTest {
                     ColumnIdGroup.create<Double>("isVirginicaPosterior"))
 
             outColPredictions = listOf(ColumnId.create<Int>("prediction"), ColumnId.create<Int>("isVirginicaPred"))
+
+            trainingParams = ComputationGraphTransform.Builder.TrainingParams.build {
+                // 100 iterations gives really good performance. It can get better but that's slow and we don't care.
+                maxEpochs = 100
+            }
         }
 
         log.info("Starting to train network")
