@@ -45,11 +45,12 @@ internal class RandomizingMultiDataSetIterator : MultiDataSetIterator {
      *     columns should be one-hot encoded before being used here.)
      * @param targets a [DataSet] that contains only integer columns. There will be one target for each column here but
      *     the target will be one-hot encoded.
-     * @param targetSizes indicates how many distinct target values are in each column of the targets [DataSet].
+     * @param targetSizes indicates how many distinct target values are in each column of the targets [DataSet]. The
+     *    key is the name of a column in `targets` and the value is the number of values that column can take on.
      * @param rng: The random number generator to use to shuffle the rows.
      */
     constructor(batchSize: Int, subsets: List<DataSet>, targets: DataSet,
-            targetSizes: List<Int>, rng: Random = Random())
+            targetSizes: Map<String, Int>, rng: Random = Random())
             : this(batchSize, Utils.toMultiDataSet(subsets, targets, targetSizes), rng) {
     }
 
@@ -62,13 +63,13 @@ internal class RandomizingMultiDataSetIterator : MultiDataSetIterator {
      *     inputs to the network. As the network requires doubles as inputs all columns must be of `java.lang.Number`
      *     type (e.g. `String` columns should be one-hot encoded before being used here.)
      * @param targetCols a list of [ColumnId] from which the targets should be extracted. There will be one target for
-     *     each column here but the target will be one-hot encoded.
-     * @param targetSizes indicates how many distinct target values are in each column of the `targets`.
+     *     each column here but the target will be one-hot encoded. The 2nd part of the `Pair` is the number of unique
+     *     values for the given target column (so we know how many columns to create in our 1-hot encoding).
      * @param rng: The random number generator to use to shuffle the rows.
      */
     constructor(batchSize: Int, srcData: DataSet, featureSubsets: List<List<ColumnId<*>>>,
-            targetCols: List<ColumnId<Int>>, targetSizes: List<Int>, rng: Random = Random())
-            : this(batchSize, Utils.toMultiDataSet(srcData, featureSubsets, targetCols, targetSizes), rng) {
+            targetCols: List<Pair<ColumnId<Int>, Int>>, rng: Random = Random())
+            : this(batchSize, Utils.toMultiDataSet(srcData, featureSubsets, targetCols), rng) {
     }
 
     private constructor(batchSize: Int, allData: MultiDataSet, rng: Random) {

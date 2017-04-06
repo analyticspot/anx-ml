@@ -11,13 +11,13 @@ object DataUtils {
      * integer in the range [0, n] where `n` is the total number of unique values in the column. Returns the new column
      * and a map from integer to string that allows you do reverse the transform.
      */
-    fun encodeCategorical(data: Column<String>): Pair<Column<Int>, Map<Int, String>> {
+    fun encodeCategorical(data: Column<String?>): Pair<Column<Int>, Map<Int, String>> {
         val strToInt = mutableMapOf<String, Int>()
         val newCol: Column<Int> = data.mapToColumn {
             var intEncoding = strToInt[it]
             if (intEncoding == null) {
                 intEncoding = strToInt.size
-                strToInt[it] = intEncoding
+                strToInt[it!!] = intEncoding
             }
             // The null assert really is unnecessary but the compiler complains that it's required if it's missing and
             // that it's unnecessary if it's present...

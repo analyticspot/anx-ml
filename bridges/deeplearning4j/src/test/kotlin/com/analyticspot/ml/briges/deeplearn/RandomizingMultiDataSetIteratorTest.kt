@@ -60,15 +60,17 @@ class RandomizingMultiDataSetIteratorTest {
             addColumn(ColumnId.create<Double>("c22"), allData[3])
         }
 
+        val t1Id = ColumnId.create<Int>("t1")
+        val t2Id = ColumnId.create<Int>("t2")
         val dsTargets = DataSet.build {
-            addColumn(ColumnId.create<Int>("t1"), allData[4].map { it.toInt() })
-            addColumn(ColumnId.create<Int>("t2"), allData[5].map { it.toInt() })
+            addColumn(t1Id, allData[4].map { it.toInt() })
+            addColumn(t2Id, allData[5].map { it.toInt() })
         }
 
         check(ds1.numRows == numRows)
 
         val ourIter = RandomizingMultiDataSetIterator(batchSize, listOf(ds1, ds2), dsTargets,
-                listOf(4, 4))
+                mapOf(t1Id.name to 4, t2Id.name to 4))
 
         val dl4jReader = CSVRecordReader(0, ",")
         dl4jReader.initialize(FileSplit(ClassPathResource(SAMPLE_DATA_RESOURCE).file))
@@ -133,11 +135,12 @@ class RandomizingMultiDataSetIteratorTest {
             addColumn(ColumnId.create<Double>("c"), (0 until numRows).map { rng.nextDouble() })
         }
 
+        val targetCol = ColumnId.create<Int>("t")
         val targs = DataSet.build {
-            addColumn(ColumnId.create<Int>("t"), (0 until numRows).map { rng.nextInt(maxTargetVal) })
+            addColumn(targetCol, (0 until numRows).map { rng.nextInt(maxTargetVal) })
         }
 
-        val iter = RandomizingMultiDataSetIterator(10, listOf(ds1), targs, listOf(maxTargetVal), rng)
+        val iter = RandomizingMultiDataSetIterator(10, listOf(ds1), targs, mapOf(targetCol.name to maxTargetVal), rng)
 
         val beforeReset = iterToList(iter)
 
@@ -160,11 +163,12 @@ class RandomizingMultiDataSetIteratorTest {
             addColumn(ColumnId.create<Int>("intCol"), listOf(11))
         }
 
+        val targetCol = ColumnId.create<Int>("target")
         val targetDs = DataSet.build {
-            addColumn(ColumnId.create<Int>("target"), listOf(1))
+            addColumn(targetCol, listOf(1))
         }
 
-        val iter = RandomizingMultiDataSetIterator(10, listOf(ds), targetDs, listOf(2))
+        val iter = RandomizingMultiDataSetIterator(10, listOf(ds), targetDs, mapOf(targetCol.name to 2))
         assertThat(iter.hasNext()).isTrue()
 
         val mds = iter.next()
@@ -183,31 +187,32 @@ class RandomizingMultiDataSetIteratorTest {
     // This is simply testing various edge cases to ensure that's not the case.
     @Test
     fun testIteratorReturnsFinalElement() {
+        val theCol = ColumnId.create<Int>("col")
         var ds = buildDataSetWithRows(1)
-        var iter = RandomizingMultiDataSetIterator(10, listOf(ds), ds, listOf(1))
+        var iter = RandomizingMultiDataSetIterator(10, listOf(ds), ds, mapOf(theCol.name to 1))
         assertThat(iterToList(iter)).hasSize(1)
 
-        iter = RandomizingMultiDataSetIterator(1, listOf(ds), ds, listOf(1))
+        iter = RandomizingMultiDataSetIterator(1, listOf(ds), ds, mapOf(theCol.name to 1))
         assertThat(iterToList(iter)).hasSize(1)
 
         ds = buildDataSetWithRows(8)
-        iter = RandomizingMultiDataSetIterator(8, listOf(ds), ds, listOf(8))
+        iter = RandomizingMultiDataSetIterator(8, listOf(ds), ds, mapOf(theCol.name to 8))
         assertThat(iterToList(iter)).hasSize(8)
 
-        iter = RandomizingMultiDataSetIterator(9, listOf(ds), ds, listOf(8))
+        iter = RandomizingMultiDataSetIterator(9, listOf(ds), ds, mapOf(theCol.name to 8))
         assertThat(iterToList(iter)).hasSize(8)
 
-        iter = RandomizingMultiDataSetIterator(7, listOf(ds), ds, listOf(8))
+        iter = RandomizingMultiDataSetIterator(7, listOf(ds), ds, mapOf(theCol.name to 8))
         assertThat(iterToList(iter)).hasSize(8)
 
         ds = buildDataSetWithRows(16)
-        iter = RandomizingMultiDataSetIterator(8, listOf(ds), ds, listOf(16))
+        iter = RandomizingMultiDataSetIterator(8, listOf(ds), ds, mapOf(theCol.name to 16))
         assertThat(iterToList(iter)).hasSize(16)
 
-        iter = RandomizingMultiDataSetIterator(7, listOf(ds), ds, listOf(16))
+        iter = RandomizingMultiDataSetIterator(7, listOf(ds), ds, mapOf(theCol.name to 16))
         assertThat(iterToList(iter)).hasSize(16)
 
-        iter = RandomizingMultiDataSetIterator(9, listOf(ds), ds, listOf(16))
+        iter = RandomizingMultiDataSetIterator(9, listOf(ds), ds, mapOf(theCol.name to 16))
         assertThat(iterToList(iter)).hasSize(16)
     }
 
