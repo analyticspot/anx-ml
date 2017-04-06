@@ -9,7 +9,6 @@ import com.analyticspot.ml.framework.serialization.MultiFileMixedFormat.Companio
 import com.analyticspot.ml.framework.serialization.MultiFileMixedTransform
 import com.fasterxml.jackson.annotation.JacksonInject
 import com.fasterxml.jackson.annotation.JsonIgnore
-import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize
 import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder
 import org.deeplearning4j.earlystopping.EarlyStoppingConfiguration
