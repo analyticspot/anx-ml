@@ -22,7 +22,10 @@ import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ExecutorService
 
 /**
- * Created by oliver on 3/30/17.
+ * A [SupervisedLearningTransform] that lets you use any DeepLearning4j `ComputationGraph` as the learning algorithm.
+ * To use, construct a `ComputationGraph` as per https://deeplearning4j.org/compgraph. This can contain as many layers
+ * with any architecture you want. You do not need to call `init` on your `ComputationGraph` - that will be handled
+ * by the `trainTransform` method.
  */
 class ComputationGraphTransform(config: Builder) : SupervisedLearningTransform, MultiFileMixedTransform {
 
@@ -144,7 +147,13 @@ class ComputationGraphTransform(config: Builder) : SupervisedLearningTransform, 
          * We will call `init` on the graph so the user need not do that.
          */
         lateinit var net: ComputationGraph
+
+        /**
+         * The inputs to the `net`. `inputCols[i]` is the set of inputs to be given to the i^th input you declared
+         * in your `ComputationGraph` (e.g. the i^th value passed to `NeuralNetConfiguration.Builder#addInputs`).
+         */
         lateinit var inputCols: List<List<ColumnId<*>>>
+
         /**
          * List of `ColumnId`/`Int` pairs indicating the target columns and the number of possible unique values for
          * that target. This is a list instead of a map because order matters: the first column here will be the
@@ -153,8 +162,23 @@ class ComputationGraphTransform(config: Builder) : SupervisedLearningTransform, 
          * the same column multiple times to build embeddings and such.
          */
         lateinit var targetSizes: List<Pair<ColumnId<Int>, Int>>
+
+        /**
+         * The batch size to use for stochastic gradient descent mini-batch learning.
+         */
         var batchSize: Int = 128
+
+        /**
+         * This will use early stopping. To do so, this fraction of the training data will be set aside during training
+         * to determine the current error rate.
+         */
         var epochValidationFrac: Float = 0.1f
+
+        /**
+         * We do early stopping and stop when we've had this many epochs with no improvement on the "validation" data.
+         * Here validation is in quotes because this is not the overall validation data set but rather the set separated
+         * from the training data via the [epochValidationFrac] parameter.
+         */
         var maxEpochWithNoImprovement: Int = 4
 
         /**

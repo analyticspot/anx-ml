@@ -463,7 +463,7 @@ class DataSet private constructor(idAndColumns: Array<IdAndColumn<*>>) {
      */
     inline fun <reified ColT : Any> columnIdWithName(name: String): ColumnId<ColT> {
         val colId = columnIdWithNameUntyped(name)
-        require(colId.clazz isAssignableFrom  ColT::class) {
+        require(colId.clazz isAssignableFrom ColT::class) {
             "columIdWithName was called specifying a type of ${ColT::class} but actual type was ${colId.clazz}"
         }
         @Suppress("UNCHECKED_CAST")

@@ -49,7 +49,7 @@ class ComputationGraphTransformTest {
         // but that's not what we're testing) that has a single hidden layer with 4 units.
         log.info("Building computation ComputationGraphConfig")
         val compGraphConfig: ComputationGraphConfiguration = NeuralNetConfiguration.Builder()
-                .learningRate(0.1)
+                .learningRate(0.5)
                 .weightInit(WeightInit.XAVIER)
                 .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                 .updater(Updater.RMSPROP)
@@ -136,7 +136,7 @@ class ComputationGraphTransformTest {
         // but that's not what we're testing) that has a single hidden layer with 4 units.
         log.info("Building computation ComputationGraphConfig")
         val compGraphConfig: ComputationGraphConfiguration = NeuralNetConfiguration.Builder()
-                .learningRate(0.1)
+                .learningRate(0.5)
                 .weightInit(WeightInit.XAVIER)
                 .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                 .updater(Updater.RMSPROP)
