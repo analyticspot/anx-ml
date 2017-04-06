@@ -1,8 +1,11 @@
 package com.analyticspot.ml.briges.deeplearn
 
+import com.analyticspot.ml.framework.datagraph.DataGraph
 import com.analyticspot.ml.framework.dataset.DataSet
 import com.analyticspot.ml.framework.description.ColumnId
 import com.analyticspot.ml.framework.description.ColumnIdGroup
+import com.analyticspot.ml.framework.serialization.GraphSerDeser
+import com.analyticspot.ml.framework.serialization.MultiFileMixedFormat
 import com.analyticspot.ml.framework.utils.DataUtils
 import com.google.common.util.concurrent.MoreExecutors
 import org.assertj.core.api.Assertions.assertThat
@@ -19,6 +22,8 @@ import org.nd4j.linalg.activations.Activation
 import org.nd4j.linalg.lossfunctions.LossFunctions
 import org.slf4j.LoggerFactory
 import org.testng.annotations.Test
+import java.io.ByteArrayInputStream
+import java.io.ByteArrayOutputStream
 import java.util.Random
 
 // Some of these tests use the Iris dataset. That's a fairly famous ML example data set. Info can be found here:
@@ -241,5 +246,84 @@ class ComputationGraphTransformTest {
         val isVirginicaAcc = numCorrectVirginica.toDouble() / validDs.numRows.toDouble()
         log.info("Accuracy on isVirginica output: {}", isVirginicaAcc)
         assertThat(isVirginicaAcc).isGreaterThan(0.7)
+    }
+
+    @Test
+    fun testCanSerDeser() {
+        val targetColId = ColumnId.create<String>("target")
+        val encodedTargetColId = ColumnId.create<Int>("target")
+        val ds = DataSet.fromSaved(javaClass.getResourceAsStream("/iris.data.json"))
+
+        val trainFeatures = ds.allColumnsExcept("target")
+        val (trainTargetsCols, targetMapping) = DataUtils.encodeCategorical(ds.column(targetColId))
+        val trainTargets = DataSet.build {
+            addColumn(encodedTargetColId, trainTargetsCols)
+        }
+        val trainDs = trainFeatures + trainTargets
+
+        // Build a simple computation graph (in fact, we could have used the simpler `MultiLayerConfiguration` for this
+        // but that's not what we're testing) that has a single hidden layer with 4 units.
+        log.info("Building computation ComputationGraphConfig")
+        val compGraphConfig: ComputationGraphConfiguration = NeuralNetConfiguration.Builder()
+                .learningRate(0.5)
+                .weightInit(WeightInit.XAVIER)
+                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
+                .updater(Updater.RMSPROP)
+                .graphBuilder()
+                .addInputs("input")
+                .addLayer("l1", DenseLayer.Builder()
+                        .nIn(trainFeatures.numColumns)
+                        .nOut(10)
+                        .activation(Activation.TANH)
+                        .build(), "input")
+                .addLayer("output", OutputLayer.Builder()
+                        .lossFunction(LossFunctions.LossFunction.MCXENT)
+                        .activation(Activation.SOFTMAX)
+                        .nIn(10)
+                        .nOut(targetMapping.size)
+                        .build(), "l1")
+                .setOutputs("output")
+                .build()
+
+        log.info("Constructing ComputationGraph from the configuration.")
+        val nn = ComputationGraph(compGraphConfig)
+
+        val transform = ComputationGraphTransform.build {
+            net = nn
+            inputCols = listOf(trainFeatures.columnIds.toList())
+            targetSizes = listOf(encodedTargetColId to 3)
+            trainingParams = ComputationGraphTransform.Builder.TrainingParams.build {
+                // Make the test fast. We don't care too much about accuracy.
+                maxEpochs = 4
+            }
+        }
+
+        val dg = DataGraph.build {
+            val src = dataSetSource()
+            val targ = keepColumns(src, encodedTargetColId)
+            val features = removeColumns(src, encodedTargetColId)
+            val trans = addTransform(features, targ, transform)
+            result = trans
+        }
+
+        log.info("Starting to train network")
+        dg.trainTransform(trainDs, MoreExecutors.newDirectExecutorService()).get()
+
+        // Now serialize
+        val out = ByteArrayOutputStream()
+        val sds = GraphSerDeser()
+        sds.registerFormat(MultiFileMixedFormat())
+        log.debug("Saving DataGraph")
+        sds.serialize(dg, out)
+
+        log.debug("Loading saved DataGraph")
+        val dgDeser = sds.deserialize(ByteArrayInputStream(out.toByteArray()))
+
+        // We don't care about accuracy here but we do care that it works.
+        val resultDs = dgDeser.transform(trainDs, MoreExecutors.newDirectExecutorService()).get()
+
+        assertThat(resultDs.numRows).isEqualTo(trainDs.numRows)
+        // 1 column for each posterior plus the prediction itself.
+        assertThat(resultDs.numColumns).isEqualTo(4)
     }
 }
