@@ -49,7 +49,8 @@ import java.util.zip.ZipOutputStream
 class GraphSerDeser {
     private val labelToDeserializer = mutableMapOf<String, TransformFactory<*>>()
     private val formatMap = mutableMapOf<Class<out Format<*>>, Format<*>>(
-            StandardJsonFormat::class.java to StandardJsonFormat()
+            StandardJsonFormat::class.java to StandardJsonFormat(),
+            MultiFileMixedFormat::class.java to MultiFileMixedFormat()
     )
 
     companion object {
@@ -232,7 +233,7 @@ class GraphSerDeser {
     internal fun serializeTransform(transform: DataTransform, output: OutputStream) {
         val format = formatMap[transform.formatClass] ?:
                 throw IllegalStateException("${transform.formatClass} is not registered")
-        format.serialize(transform, output)
+        format.serialize(transform, this, output)
     }
 
     // Deserialize a single DataTransform.
@@ -256,7 +257,7 @@ class GraphSerDeser {
                         "${format.metaDataClass} but found meta data of type ${metaData.javaClass}")
             }
         }
-        return factoryToUse.deserialize(metaData, sources, input)
+        return factoryToUse.deserialize(metaData, sources, this, input)
     }
 
     // We really just want to serialize a Map<Int, SerGraphNode> but that doesn't work quite right due to type erasure.

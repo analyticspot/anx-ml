@@ -46,7 +46,6 @@ class MultiFileMixedFormatTest {
         }
 
         val serDeser = GraphSerDeser()
-        serDeser.registerFormat(MultiFileMixedFormat())
         val output = ByteArrayOutputStream()
 
         log.info("Serializing the DataGraph")

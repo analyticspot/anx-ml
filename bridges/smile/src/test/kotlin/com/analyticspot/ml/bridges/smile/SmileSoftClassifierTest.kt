@@ -5,7 +5,6 @@ import com.analyticspot.ml.framework.dataset.DataSet
 import com.analyticspot.ml.framework.description.ColumnId
 import com.analyticspot.ml.framework.metadata.CategoricalFeatureMetaData
 import com.analyticspot.ml.framework.serialization.GraphSerDeser
-import com.analyticspot.ml.framework.serialization.MultiFileMixedFormat
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.within
 import org.testng.annotations.Test
@@ -101,7 +100,6 @@ class SmileSoftClassifierTest {
         // serialize the graph
         val output = ByteArrayOutputStream()
         val serDeser = GraphSerDeser()
-        serDeser.registerFormat(MultiFileMixedFormat())
         serDeser.serialize(dg, output)
 
         // and deserialize it

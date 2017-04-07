@@ -43,7 +43,7 @@ class MultiFileMixedFormat() : Format<MultiFileMixedFormat.MetaData> {
         return MetaData(transform.javaClass)
     }
 
-    override fun serialize(transform: DataTransform, output: OutputStream) {
+    override fun serialize(transform: DataTransform, serDeser: GraphSerDeser, output: OutputStream) {
         if (transform is MultiFileMixedTransform) {
             // Create a nested zip file with 2 parts. Part 1 is the JSON serialization of the data and part2 is the binary
             // blob.
@@ -64,7 +64,8 @@ class MultiFileMixedFormat() : Format<MultiFileMixedFormat.MetaData> {
         }
     }
 
-    override fun deserialize(metaData: MetaData, sources: List<GraphNode>, input: InputStream): DataTransform {
+    override fun deserialize(metaData: MetaData, sources: List<GraphNode>,
+            serDeser: GraphSerDeser, input: InputStream): DataTransform {
         val zipIn = ZipInputStream(input)
 
         // First read the binary data into a Byte array

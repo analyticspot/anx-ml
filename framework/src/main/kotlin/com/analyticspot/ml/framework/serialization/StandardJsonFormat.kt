@@ -40,11 +40,12 @@ class StandardJsonFormat : Format<StandardJsonFormat.MetaData> {
         return MetaData(transform)
     }
 
-    override fun serialize(transform: DataTransform, output: OutputStream) {
+    override fun serialize(transform: DataTransform, serDeser: GraphSerDeser, output: OutputStream) {
         JsonMapper.mapper.writeValue(output, transform)
     }
 
-    override fun deserialize(metaData: MetaData, sources: List<GraphNode>, input: InputStream): DataTransform {
+    override fun deserialize(metaData: MetaData, sources: List<GraphNode>,
+            serDeser: GraphSerDeser, input: InputStream): DataTransform {
         val injectables = InjectableValues.Std()
         if (sources.size == 1) {
             injectables.addValue(GraphNode::class.java, sources[0])

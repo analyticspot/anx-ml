@@ -37,9 +37,17 @@ interface Format<MetaDataT : FormatMetaData> : TransformFactory<MetaDataT> {
     fun getMetaData(transform: DataTransform) : MetaDataT
 
     /**
-     * Saves the transform the provided `OutputStream`.
+     * Saves the transform the provided `OutputStream`. The `serDeser` argument will hold a reference to the
+     * [GraphSerDeser] instance currently serializing the graph. This allows you to delegate serialization back to the
+     * [GraphSerDeser].
      */
-    fun serialize(transform: DataTransform, output: OutputStream)
+    fun serialize(transform: DataTransform, serDeser: GraphSerDeser, output: OutputStream)
 
-    override fun deserialize(metaData: MetaDataT, sources: List<GraphNode>, input: InputStream): DataTransform
+    /**
+     * Deserializes the transform from the provided `InputStream`. The `serDeser` argument will hold a reference to the
+     * [GraphSerDeser] instance currently deserializing the graph. This allows you to delegate deserialization back to
+     * the [GraphSerDeser].
+     */
+    override fun deserialize(metaData: MetaDataT, sources: List<GraphNode>,
+            serDeser: GraphSerDeser, input: InputStream): DataTransform
 }

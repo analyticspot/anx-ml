@@ -30,5 +30,6 @@ interface TransformFactory<MetaDataT : FormatMetaData> {
      * consumed by the [DataTransform] is produced and can be used to convert [ValueId] data into [ValueToken]
      * instances. The `metaData` describes what is found in the `input` and may help with deserialization.
      */
-    fun deserialize(metaData: MetaDataT, sources: List<GraphNode>, input: InputStream): DataTransform
+    fun deserialize(metaData: MetaDataT, sources: List<GraphNode>,
+            serDeser: GraphSerDeser, input: InputStream): DataTransform
 }

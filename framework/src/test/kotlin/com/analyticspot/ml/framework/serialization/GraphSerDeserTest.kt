@@ -400,7 +400,7 @@ class GraphSerDeserTest {
         val factory = object : TransformFactory<StandardJsonFormat.MetaData> {
             override fun deserialize(
                     metaData: StandardJsonFormat.MetaData,
-                    sources: List<GraphNode>, input: InputStream): DataTransform {
+                    sources: List<GraphNode>, serDeser: GraphSerDeser, input: InputStream): DataTransform {
                 assertThat(metaData.transformClass).isEqualTo(AddConstantTransform::class.java)
                 val theData = JsonMapper.mapper.readTree(input)
                 assertThat(theData.isObject).isTrue()
