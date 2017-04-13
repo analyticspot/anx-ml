@@ -5,17 +5,25 @@ import com.analyticspot.ml.framework.datatransform.SupervisedLearningTransform
 import com.analyticspot.ml.framework.description.ColumnId
 import com.analyticspot.ml.framework.description.ColumnIdGroup
 import com.analyticspot.ml.framework.metadata.MaybeMissingMetaData
+import com.analyticspot.ml.framework.serialization.MultiFileMixedFormat.Companion.INJECTED_BINARY_DATA
 import com.analyticspot.ml.framework.serialization.MultiFileMixedTransform
+import com.fasterxml.jackson.annotation.JacksonInject
 import com.fasterxml.jackson.annotation.JsonIgnore
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize
+import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder
 import org.deeplearning4j.earlystopping.EarlyStoppingConfiguration
 import org.deeplearning4j.earlystopping.EarlyStoppingResult
 import org.deeplearning4j.earlystopping.listener.EarlyStoppingListener
 import org.deeplearning4j.earlystopping.scorecalc.DataSetLossCalculatorCG
+import org.deeplearning4j.earlystopping.termination.EpochTerminationCondition
+import org.deeplearning4j.earlystopping.termination.MaxEpochsTerminationCondition
 import org.deeplearning4j.earlystopping.termination.ScoreImprovementEpochTerminationCondition
 import org.deeplearning4j.earlystopping.trainer.EarlyStoppingGraphTrainer
 import org.deeplearning4j.nn.graph.ComputationGraph
+import org.deeplearning4j.util.ModelSerializer
 import org.nd4j.linalg.api.ndarray.INDArray
 import org.slf4j.LoggerFactory
+import java.io.InputStream
 import java.io.OutputStream
 import java.util.ArrayList
 import java.util.concurrent.CompletableFuture
@@ -27,27 +35,28 @@ import java.util.concurrent.ExecutorService
  * with any architecture you want. You do not need to call `init` on your `ComputationGraph` - that will be handled
  * by the `trainTransform` method.
  */
+@JsonDeserialize(builder = ComputationGraphTransform.DeserBuilder::class)
 class ComputationGraphTransform(config: Builder) : SupervisedLearningTransform, MultiFileMixedTransform {
 
     @get:JsonIgnore
     private val net: ComputationGraph = config.net
 
-    private val inputCols: List<List<ColumnId<*>>> = config.inputCols
+    val inputCols: List<List<ColumnId<*>>> = config.inputCols
 
-    private val targetSizes: List<Pair<ColumnId<Int>, Int>> = config.targetSizes
+    val targetSizes: List<Pair<ColumnId<Int>, Int>> = config.targetSizes
 
     val outColPosteriorGroups: List<ColumnIdGroup<Double>> = config.outColPosteriorGroups
 
     val outColPredictions: List<ColumnId<Int>> = config.outColPredictions
 
-    // Is null when deserialized after training. We only need the training config to learn
-    var config: Builder? = config
+    // When we deserialize a trained model this gets intialized to the default values which may not match what the model
+    // was actually trained with. That's OK because these values are never used and they're private so user's of this
+    // class shouldn't ever be confused.
+    @get:JsonIgnore
+    private var trainConfig: Builder.TrainingParams = config.trainingParams
 
     init {
         require(config.inputCols.size > 0)
-        require(config.batchSize > 0)
-        require(config.epochValidationFrac >= 0.0 && config.epochValidationFrac < 1.0)
-        require(config.maxEpochWithNoImprovement > 0)
         require(config.targetSizes.size > 0)
         require(config.outColPosteriorGroups.size == config.targetSizes.size)
         require(config.outColPredictions.size == config.targetSizes.size)
@@ -68,21 +77,30 @@ class ComputationGraphTransform(config: Builder) : SupervisedLearningTransform, 
         }
     }
 
-    override fun trainTransform(dataSet: DataSet, targetDs: DataSet, exec: ExecutorService): CompletableFuture<DataSet> {
+    override fun trainTransform(
+            dataSet: DataSet, targetDs: DataSet, exec: ExecutorService): CompletableFuture<DataSet> {
+        require(trainConfig.batchSize > 0)
+        require(trainConfig.epochValidationFrac >= 0.0 && trainConfig.epochValidationFrac < 1.0)
+        require(trainConfig.maxEpochWithNoImprovement > 0)
         // First combined the data sets so we can randomly sub-sample a validation set for early stopping.
         val combined = dataSet + targetDs
 
-        val (validDs, trainDs) = combined.randomSubsets(config!!.epochValidationFrac)
+        val (validDs, trainDs) = combined.randomSubsets(trainConfig.epochValidationFrac)
 
         @Suppress("UNCHECKED_CAST")
-        val trainDataIter = RandomizingMultiDataSetIterator(config!!.batchSize, trainDs, inputCols, targetSizes)
+        val trainDataIter = RandomizingMultiDataSetIterator(trainConfig.batchSize, trainDs, inputCols, targetSizes)
         val validDataIter = RandomizingMultiDataSetIterator(validDs.numRows, validDs, inputCols, targetSizes)
 
         net.init()
 
+        val terminationConditions = mutableListOf<EpochTerminationCondition>(
+                ScoreImprovementEpochTerminationCondition(trainConfig.maxEpochWithNoImprovement))
+        if (trainConfig.maxEpochs != null) {
+            terminationConditions.add(MaxEpochsTerminationCondition(trainConfig.maxEpochs!!))
+        }
+
         val earlyStopConfig = EarlyStoppingConfiguration.Builder<ComputationGraph>()
-                .epochTerminationConditions(ScoreImprovementEpochTerminationCondition(
-                        config!!.maxEpochWithNoImprovement))
+                .epochTerminationConditions(*(terminationConditions.toTypedArray()))
                 .scoreCalculator(DataSetLossCalculatorCG(validDataIter, true))
                 .build()
 
@@ -139,13 +157,14 @@ class ComputationGraphTransform(config: Builder) : SupervisedLearningTransform, 
     }
 
     override fun serializeBinaryData(output: OutputStream) {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+        ModelSerializer.writeModel(net, output, false)
     }
 
-    class Builder() {
+    open class Builder() {
         /**
          * We will call `init` on the graph so the user need not do that.
          */
+        @set:JsonIgnore
         lateinit var net: ComputationGraph
 
         /**
@@ -164,24 +183,6 @@ class ComputationGraphTransform(config: Builder) : SupervisedLearningTransform, 
         lateinit var targetSizes: List<Pair<ColumnId<Int>, Int>>
 
         /**
-         * The batch size to use for stochastic gradient descent mini-batch learning.
-         */
-        var batchSize: Int = 128
-
-        /**
-         * This will use early stopping. To do so, this fraction of the training data will be set aside during training
-         * to determine the current error rate.
-         */
-        var epochValidationFrac: Float = 0.1f
-
-        /**
-         * We do early stopping and stop when we've had this many epochs with no improvement on the "validation" data.
-         * Here validation is in quotes because this is not the overall validation data set but rather the set separated
-         * from the training data via the [epochValidationFrac] parameter.
-         */
-        var maxEpochWithNoImprovement: Int = 4
-
-        /**
          * The [ColumnIdGroup] to use for the posteriors for each output. So the posteriors probability that output `i`
          * is class `j` will be in column `outColPosteriorGroups[i].generateId(j.toString())`.
          */
@@ -191,6 +192,61 @@ class ComputationGraphTransform(config: Builder) : SupervisedLearningTransform, 
          * The [ColumnId] for the prediction (the value with the max posterior) for each output.
          */
         var outColPredictions: List<ColumnId<Int>> = listOf(ColumnId.create<Int>("prediction"))
+
+        /**
+         * The training hyper-parameters.
+         */
+        @set:JsonIgnore
+        var trainingParams: TrainingParams = TrainingParams()
+
+        /**
+         * Parameters needed only for training. These are not serialized.
+         */
+        class TrainingParams {
+            companion object {
+                fun build(init: TrainingParams.() -> Unit): TrainingParams {
+                    return with(TrainingParams()) {
+                        init()
+                        this
+                    }
+                }
+            }
+
+            /**
+             * The batch size to use for stochastic gradient descent mini-batch learning.
+             */
+            var batchSize: Int = 128
+
+            /**
+             * This will use early stopping. To do so, this fraction of the training data will be set aside during
+             * training to determine the current error rate.
+             */
+            var epochValidationFrac: Float = 0.1f
+
+            /**
+             * We do early stopping and stop when we've had this many epochs with no improvement on the "validation"
+             * data. Here validation is in quotes because this is not the overall validation data set but rather the set
+             * separated from the training data via the [epochValidationFrac] parameter.
+             */
+            var maxEpochWithNoImprovement: Int = 4
+
+            /**
+             * Will perform no more than this many epochs of training. If not given will train until
+             * [maxEpochWithNoImprovement] are reached.
+             */
+            var maxEpochs: Int? = null
+        }
+
+        fun build(): ComputationGraphTransform = ComputationGraphTransform(this)
+    }
+
+    // Subclass used just for deserialization
+    @JsonPOJOBuilder(withPrefix = "set")
+    internal class DeserBuilder(@JacksonInject(INJECTED_BINARY_DATA) input: InputStream) : Builder() {
+        init {
+            log.debug("Restoring ComputationGraph from serialized data")
+            net = ModelSerializer.restoreComputationGraph(input)
+        }
     }
 
     // This doesn't do much but an instance of this is required. Dl4j already does a bunch of logging so there's not
