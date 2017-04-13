@@ -237,8 +237,7 @@ class GraphSerDeser {
     }
 
     // Deserialize a single DataTransform.
-    // Visible for testing
-    internal fun <MetaDataT : FormatMetaData> deserializeTransform(label: String?, metaData: MetaDataT,
+    fun <MetaDataT : FormatMetaData> deserializeTransform(label: String?, metaData: MetaDataT,
             sources: List<GraphNode>, input: InputStream): DataTransform {
         val factoryToUse: TransformFactory<MetaDataT>
         if (label != null && labelToDeserializer.containsKey(label)) {
