@@ -49,9 +49,11 @@ class ComputationGraphTransform(config: Builder) : SupervisedLearningTransform, 
 
     val outColPredictions: List<ColumnId<Int>> = config.outColPredictions
 
-    // Is null when deserialized after training. We only need the training config to learn
+    // When we deserialize a trained model this gets intialized to the default values which may not match what the model
+    // was actually trained with. That's OK because these values are never used and they're private so user's of this
+    // class shouldn't ever be confused.
     @get:JsonIgnore
-    var trainConfig: Builder.TrainingParams = config.trainingParams
+    private var trainConfig: Builder.TrainingParams = config.trainingParams
 
     init {
         require(config.inputCols.size > 0)
