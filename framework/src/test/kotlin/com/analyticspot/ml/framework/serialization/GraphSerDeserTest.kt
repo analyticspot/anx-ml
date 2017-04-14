@@ -397,17 +397,21 @@ class GraphSerDeserTest {
         val amountToAddAfterInjection = 92
 
         // Will create another AddConstantTransform but with a different constant
-        val factory = object : TransformFactory<StandardJsonFormat.MetaData> {
+        val factory = object : TransformFactory {
             override fun deserialize(
-                    metaData: StandardJsonFormat.MetaData,
-                    sources: List<GraphNode>, input: InputStream): DataTransform {
-                assertThat(metaData.transformClass).isEqualTo(AddConstantTransform::class.java)
-                val theData = JsonMapper.mapper.readTree(input)
-                assertThat(theData.isObject).isTrue()
-                assertThat(theData.findValue("toAdd").intValue()).isEqualTo(amountToAdd1)
-                assertThat(sources).hasSize(1)
+                    metaData: FormatMetaData,
+                    sources: List<GraphNode>, serDeser: GraphSerDeser, input: InputStream): DataTransform {
+                if (metaData is StandardJsonFormat.MetaData) {
+                    assertThat(metaData.transformClass).isEqualTo(AddConstantTransform::class.java)
+                    val theData = JsonMapper.mapper.readTree(input)
+                    assertThat(theData.isObject).isTrue()
+                    assertThat(theData.findValue("toAdd").intValue()).isEqualTo(amountToAdd1)
+                    assertThat(sources).hasSize(1)
 
-                return AddConstantTransform(amountToAddAfterInjection)
+                    return AddConstantTransform(amountToAddAfterInjection)
+                } else {
+                    throw IllegalStateException("Unexpected metadata class: ${metaData.javaClass}")
+                }
             }
         }
 

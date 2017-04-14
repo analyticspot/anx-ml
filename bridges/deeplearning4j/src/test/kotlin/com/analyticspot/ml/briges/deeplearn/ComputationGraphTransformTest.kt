@@ -5,7 +5,6 @@ import com.analyticspot.ml.framework.dataset.DataSet
 import com.analyticspot.ml.framework.description.ColumnId
 import com.analyticspot.ml.framework.description.ColumnIdGroup
 import com.analyticspot.ml.framework.serialization.GraphSerDeser
-import com.analyticspot.ml.framework.serialization.MultiFileMixedFormat
 import com.analyticspot.ml.framework.utils.DataUtils
 import com.google.common.util.concurrent.MoreExecutors
 import org.assertj.core.api.Assertions.assertThat
@@ -321,7 +320,6 @@ class ComputationGraphTransformTest {
         // Now serialize
         val out = ByteArrayOutputStream()
         val sds = GraphSerDeser()
-        sds.registerFormat(MultiFileMixedFormat())
         log.debug("Saving DataGraph")
         sds.serialize(dg, out)
 

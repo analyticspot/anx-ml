@@ -28,23 +28,21 @@ import java.io.OutputStream
 /**
  * Our standard serialization format.
  */
-class StandardJsonFormat : Format<StandardJsonFormat.MetaData> {
-    override val metaDataClass: Class<MetaData>
-        get() = MetaData::class.java
-
+class StandardJsonFormat : Format {
     companion object {
         private val log = LoggerFactory.getLogger(StandardJsonFormat::class.java)
     }
 
-    override fun getMetaData(transform: DataTransform): MetaData {
+    override fun getMetaData(transform: DataTransform, serDeser: GraphSerDeser): FormatMetaData {
         return MetaData(transform)
     }
 
-    override fun serialize(transform: DataTransform, output: OutputStream) {
+    override fun serialize(transform: DataTransform, serDeser: GraphSerDeser, output: OutputStream) {
         JsonMapper.mapper.writeValue(output, transform)
     }
 
-    override fun deserialize(metaData: MetaData, sources: List<GraphNode>, input: InputStream): DataTransform {
+    override fun deserialize(metaData: FormatMetaData, sources: List<GraphNode>,
+            serDeser: GraphSerDeser, input: InputStream): DataTransform {
         val injectables = InjectableValues.Std()
         if (sources.size == 1) {
             injectables.addValue(GraphNode::class.java, sources[0])
@@ -52,7 +50,12 @@ class StandardJsonFormat : Format<StandardJsonFormat.MetaData> {
             injectables.addValue(MultiTransform.JSON_SOURCE_INJECTION_ID, sources)
             log.debug("Transform had {} sources so not automatically injecting a single source.", sources.size)
         }
-        return JsonMapper.mapper.setInjectableValues(injectables).readValue(input, metaData.transformClass)
+        if (metaData is MetaData) {
+            return JsonMapper.mapper.setInjectableValues(injectables).readValue(input, metaData.transformClass)
+        } else {
+            throw IllegalStateException("Expected meta data to be of type ${MetaData::class.java} but found " +
+                    "${metaData.javaClass}")
+        }
     }
 
     /**

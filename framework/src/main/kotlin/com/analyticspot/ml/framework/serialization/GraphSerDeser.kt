@@ -47,10 +47,13 @@ import java.util.zip.ZipOutputStream
  * Serializes and deserializes entire [DataGraph] instances. See `SERIALIZATION.README.md` for details.
  */
 class GraphSerDeser {
-    private val labelToDeserializer = mutableMapOf<String, TransformFactory<*>>()
-    private val formatMap = mutableMapOf<Class<out Format<*>>, Format<*>>(
-            StandardJsonFormat::class.java to StandardJsonFormat()
+    private val labelToDeserializer = mutableMapOf<String, TransformFactory>()
+    private val formatMap = mutableMapOf<Class<out Format>, Format>(
+            StandardJsonFormat::class.java to StandardJsonFormat(),
+            MultiFileMixedFormat::class.java to MultiFileMixedFormat()
     )
+
+    val formatClassToFormat: Map<Class<out Format>, Format> = formatMap
 
     companion object {
         private val log = LoggerFactory.getLogger(GraphSerDeser::class.java)
@@ -84,7 +87,7 @@ class GraphSerDeser {
                 is HasTransformGraphNode<*> -> {
                     val format = formatMap[it.transform.formatClass] ?:
                             throw IllegalStateException("Unknown format: ${it.transform.formatClass}")
-                    TransformSerGraphNode.create(it, format.getMetaData(it.transform))
+                    TransformSerGraphNode.create(it, format.getMetaData(it.transform, this))
                 }
                 else -> throw IllegalStateException("Unknown GraphNode type:  ${it.javaClass.canonicalName}")
             }
@@ -208,7 +211,7 @@ class GraphSerDeser {
      * Indicates that the given factory should be used for any [GraphNode] with the given label instead of using the
      * format specified by the [DataTransform].
      */
-    fun registerFactoryForLabel(label: String, factory: TransformFactory<*>) {
+    fun registerFactoryForLabel(label: String, factory: TransformFactory) {
         check(!labelToDeserializer.containsKey(label)) {
             "There is already factory registered for label $label"
         }
@@ -219,7 +222,7 @@ class GraphSerDeser {
      * Register an additional [Format] with the [GraphSerDeser]. Note that [StandardJsonFormat] is always registred and
      * need not be added.
      */
-    fun registerFormat(format: Format<*>) {
+    fun registerFormat(format: Format) {
         val clazz = format.javaClass
         check(!formatMap.containsKey(clazz)) {
             "There is already a format registered with type $clazz"
@@ -232,31 +235,21 @@ class GraphSerDeser {
     internal fun serializeTransform(transform: DataTransform, output: OutputStream) {
         val format = formatMap[transform.formatClass] ?:
                 throw IllegalStateException("${transform.formatClass} is not registered")
-        format.serialize(transform, output)
+        format.serialize(transform, this, output)
     }
 
     // Deserialize a single DataTransform.
-    // Visible for testing
-    internal fun <MetaDataT : FormatMetaData> deserializeTransform(label: String?, metaData: MetaDataT,
+    fun <MetaDataT : FormatMetaData> deserializeTransform(label: String?, metaData: MetaDataT,
             sources: List<GraphNode>, input: InputStream): DataTransform {
-        val factoryToUse: TransformFactory<MetaDataT>
+        val factoryToUse: TransformFactory
         if (label != null && labelToDeserializer.containsKey(label)) {
             log.info("Using custom TransformFactory for label {}", label)
-            val factory = labelToDeserializer[label] ?: throw IllegalStateException("Should be impossible")
-            @Suppress("UNCHECKED_CAST")
-            factoryToUse = factory as TransformFactory<MetaDataT>
+            factoryToUse = labelToDeserializer[label] ?: throw IllegalStateException("Should be impossible")
         } else {
-            val format = formatMap[metaData.formatClass] ?:
+            factoryToUse = formatMap[metaData.formatClass] ?:
                     throw IllegalStateException("Unknown format ${metaData.formatClass}")
-            if (format.metaDataClass == metaData.javaClass) {
-                @Suppress("UNCHECKED_CAST")
-                factoryToUse = format as Format<MetaDataT>
-            } else {
-                throw IllegalStateException("Format ${format.javaClass} expects metadata of type " +
-                        "${format.metaDataClass} but found meta data of type ${metaData.javaClass}")
-            }
         }
-        return factoryToUse.deserialize(metaData, sources, input)
+        return factoryToUse.deserialize(metaData, sources, this, input)
     }
 
     // We really just want to serialize a Map<Int, SerGraphNode> but that doesn't work quite right due to type erasure.

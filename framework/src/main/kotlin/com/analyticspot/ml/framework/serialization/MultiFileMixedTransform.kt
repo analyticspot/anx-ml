@@ -8,7 +8,7 @@ import java.io.OutputStream
  * Interface that must be implemented by classes that use the [MultiFileMixedFormat] for serialization.
  */
 interface MultiFileMixedTransform : DataTransform {
-    override val formatClass: Class<out Format<*>>
+    override val formatClass: Class<out Format>
         @JsonIgnore
         get() = MultiFileMixedFormat::class.java
     /**

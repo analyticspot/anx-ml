@@ -23,23 +23,31 @@ import java.io.InputStream
 import java.io.OutputStream
 
 /**
- * A [Format] defines how a [DataTransform] is serialized and deserialized. It also defined [FormatMetaData] which is
- * used to inform the [Format] about the specifics of the [DataTransform] to be deserialized. The [FormatMetaData] is
- * specific to the [Format] and is serialized in the `graph.json` file in the zip. The data for an individual
- * [DataTransform] is in its own file in the zip. Thus, for example, [deserialize] is called with an `InputStream`
- * containing the file for the [DataTransform] and the [MetaData] that corresponds to the data found therein.
+ * A [Format] defines how a [DataTransform] is serialized and deserialized.
+ *
+ * Each format's [getMetaData] method generally returns a different subclass of [FormatMetaData]. This sublcass contains
+ * format-specific information about how the class is to be deserialized. However, this class is not generic as that
+ * makes some kinds of formats impossible (e.g. because the [DelegatingFormat] can't know the type of the metadata it
+ * will return statically).
  */
-interface Format<MetaDataT : FormatMetaData> : TransformFactory<MetaDataT> {
-    val metaDataClass: Class<MetaDataT>
+interface Format : TransformFactory {
     /**
      * Returns a JSON-serializable object that is the metadata for the format.
      */
-    fun getMetaData(transform: DataTransform) : MetaDataT
+    fun getMetaData(transform: DataTransform, serDeser: GraphSerDeser): FormatMetaData
 
     /**
-     * Saves the transform the provided `OutputStream`.
+     * Saves the transform the provided `OutputStream`. The `serDeser` argument will hold a reference to the
+     * [GraphSerDeser] instance currently serializing the graph. This allows you to delegate serialization back to the
+     * [GraphSerDeser].
      */
-    fun serialize(transform: DataTransform, output: OutputStream)
+    fun serialize(transform: DataTransform, serDeser: GraphSerDeser, output: OutputStream)
 
-    override fun deserialize(metaData: MetaDataT, sources: List<GraphNode>, input: InputStream): DataTransform
+    /**
+     * Deserializes the transform from the provided `InputStream`. The `serDeser` argument will hold a reference to the
+     * [GraphSerDeser] instance currently deserializing the graph. This allows you to delegate deserialization back to
+     * the [GraphSerDeser].
+     */
+    override fun deserialize(metaData: FormatMetaData, sources: List<GraphNode>,
+            serDeser: GraphSerDeser, input: InputStream): DataTransform
 }
