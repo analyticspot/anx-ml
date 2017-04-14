@@ -8,19 +8,18 @@ import java.io.OutputStream
 /**
  * Created by oliver on 4/6/17.
  */
-class DelegatingFormat : Format<DelegatingFormat.DelegatingMetaData> {
-    override val metaDataClass: Class<DelegatingMetaData> = DelegatingMetaData::class.java
+class DelegatingFormat : Format {
 
-    override fun getMetaData(transform: DataTransform): DelegatingMetaData {
+    override fun getMetaData(transform: DataTransform, serDeser: GraphSerDeser): FormatMetaData {
         if (transform is DelegatingTransform) {
-            return DelegatingMetaData(transform.delegate.formatClass)
+            val delegateFormat = serDeser.formatClassToFormat[transform.delegate.formatClass]!!
+            return delegateFormat.getMetaData(transform.delegate, serDeser)
         } else {
             throw IllegalArgumentException("Any class that declares DelegatingFormat must implement the " +
                     "DelegatingTransform interface")
 
         }
     }
-
 
     override fun serialize(transform: DataTransform, serDeser: GraphSerDeser, output: OutputStream) {
         if (transform is DelegatingTransform) {
@@ -31,12 +30,9 @@ class DelegatingFormat : Format<DelegatingFormat.DelegatingMetaData> {
         }
     }
 
-    override fun deserialize(metaData: DelegatingMetaData, sources: List<GraphNode>,
+    override fun deserialize(metaData: FormatMetaData, sources: List<GraphNode>,
             serDeser: GraphSerDeser, input: InputStream): DataTransform {
-        return serDeser.deserializeTransform(null, metaData.wrappedMetaData, sources, input)
+        throw IllegalStateException("DelegatingFormat should never be deserializing: the delegate should handle it.")
     }
 
-    class DelegatingMetaData(val wrappedMetaData: FormatMetaData) : FormatMetaData {
-        override val formatClass = DelegatingFormat::class.java
-    }
 }

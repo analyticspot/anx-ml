@@ -29,5 +29,5 @@ interface FormatMetaData {
     /**
      * The format associated with this metadata.
      */
-    val formatClass: Class<out Format<*>>
+    val formatClass: Class<out Format>
 }

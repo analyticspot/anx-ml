@@ -28,7 +28,7 @@ interface DataTransform {
     /**
      * The format to which this node serializes. By default this is [StandardJsonFormat].
      */
-    val formatClass: Class<out Format<*>>
+    val formatClass: Class<out Format>
         @JsonIgnore
         get() = StandardJsonFormat::class.java
 }

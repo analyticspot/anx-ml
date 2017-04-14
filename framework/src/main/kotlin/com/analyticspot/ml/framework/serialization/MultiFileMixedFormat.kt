@@ -22,9 +22,7 @@ import java.util.zip.ZipOutputStream
  * `InputStream` will be available via `@JacksonInject` using the key [INJECTED_BINARY_DATA] so you can annotate a
  * property or function in the class to be deserialized with `@JacksonInject(INJECTED_BINARY_DATA)`.
  */
-class MultiFileMixedFormat() : Format<MultiFileMixedFormat.MetaData> {
-    override val metaDataClass: Class<MetaData> = MetaData::class.java
-
+class MultiFileMixedFormat() : Format {
     companion object {
         private val log = LoggerFactory.getLogger(MultiFileMixedFormat::class.java)
 
@@ -39,7 +37,7 @@ class MultiFileMixedFormat() : Format<MultiFileMixedFormat.MetaData> {
         const val INJECTED_BINARY_DATA: String = "binaryBlob"
     }
 
-    override fun getMetaData(transform: DataTransform): MetaData {
+    override fun getMetaData(transform: DataTransform, serDeser: GraphSerDeser): FormatMetaData {
         return MetaData(transform.javaClass)
     }
 
@@ -64,7 +62,7 @@ class MultiFileMixedFormat() : Format<MultiFileMixedFormat.MetaData> {
         }
     }
 
-    override fun deserialize(metaData: MetaData, sources: List<GraphNode>,
+    override fun deserialize(metaData: FormatMetaData, sources: List<GraphNode>,
             serDeser: GraphSerDeser, input: InputStream): DataTransform {
         val zipIn = ZipInputStream(input)
 
@@ -79,9 +77,14 @@ class MultiFileMixedFormat() : Format<MultiFileMixedFormat.MetaData> {
         check(jsonEntry.name == JSON_PART_NAME)
         val toInject = InjectableValues.Std()
                 .addValue(INJECTED_BINARY_DATA, ByteArrayInputStream(binaryData.toByteArray()))
-        val result = JsonMapper.mapper.setInjectableValues(toInject).readValue(zipIn, metaData.transformClass)
-        zipIn.closeEntry()
-        return result
+        if (metaData is MetaData) {
+            val result = JsonMapper.mapper.setInjectableValues(toInject).readValue(zipIn, metaData.transformClass)
+            zipIn.closeEntry()
+            return result
+        } else {
+            throw IllegalStateException("Expected meta data to be of type ${MetaData::class.java} but found " +
+                    "${metaData.javaClass}")
+        }
     }
 
     private fun readInputStreamToOutputStream(input: InputStream): ByteArrayOutputStream {
