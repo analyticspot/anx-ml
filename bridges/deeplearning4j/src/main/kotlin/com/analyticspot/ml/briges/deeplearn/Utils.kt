@@ -31,7 +31,11 @@ object Utils {
 
             featureSubsets[idx].forEachIndexed { colIdx, columnId ->
                 srcDs.column(columnId).forEachIndexed { rowIdx, colValueAsAny ->
-                    indArrayData.put(rowIdx, colIdx, colValueAsAny as Number)
+                    val colValueAsNumber: Number = colValueAsAny as Number
+                    check(!colValueAsNumber.toDouble().isNaN()) {
+                        "Column $columnId contained a NaN at row $rowIdx. Was converted from $colValueAsAny"
+                    }
+                    indArrayData.put(rowIdx, colIdx, colValueAsNumber)
                 }
             }
 

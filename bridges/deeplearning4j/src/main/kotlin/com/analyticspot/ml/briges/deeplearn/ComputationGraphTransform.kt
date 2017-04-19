@@ -85,7 +85,15 @@ class ComputationGraphTransform(config: Builder) : SupervisedLearningTransform, 
         // First combined the data sets so we can randomly sub-sample a validation set for early stopping.
         val combined = dataSet + targetDs
 
+        for (cid in combined.columnIds) {
+            check(combined.column(cid).all { it != null }) {
+                throw IllegalArgumentException("Column $cid in input data contained some null values.")
+            }
+        }
+
         val (validDs, trainDs) = combined.randomSubsets(trainConfig.epochValidationFrac)
+        log.debug("Training on {} rows of data; Early stopping using a validation set of size {}",
+                trainDs.numRows, validDs.numRows)
 
         @Suppress("UNCHECKED_CAST")
         val trainDataIter = RandomizingMultiDataSetIterator(trainConfig.batchSize, trainDs, inputCols, targetSizes)
@@ -115,6 +123,11 @@ class ComputationGraphTransform(config: Builder) : SupervisedLearningTransform, 
     }
 
     override fun transform(dataSet: DataSet, exec: ExecutorService): CompletableFuture<DataSet> {
+        for (cid in dataSet.columnIds) {
+            check(dataSet.column(cid).all { it != null }) {
+                throw IllegalArgumentException("Column $cid in input data contained some null values.")
+            }
+        }
         val mds = Utils.toMultiDataSet(dataSet, inputCols, listOf(), mapOf())
         check(mds.features[0].rows() == dataSet.numRows)
         val posteriors = net.output(*mds.features)
@@ -258,6 +271,7 @@ class ComputationGraphTransform(config: Builder) : SupervisedLearningTransform, 
 
         override fun onEpoch(epochNum: Int, score: Double,
                 esConfig: EarlyStoppingConfiguration<ComputationGraph>, net: ComputationGraph) {
+            log.debug("Epoch {} complete. Score: {}", epochNum, score)
         }
 
         override fun onStart(esConfig: EarlyStoppingConfiguration<ComputationGraph>, net: ComputationGraph) {
