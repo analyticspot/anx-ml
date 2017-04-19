@@ -27,9 +27,15 @@ ext.Deps = [
         ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
         // Other ML Tools
         ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
-        'deepLearning4jCore': 'org.deeplearning4j:deeplearning4j-core:0.8.0',
-        'deepLearning4jNlp': 'org.deeplearning4j:deeplearning4j-nlp:0.8.0',
-        'nd4j': 'org.nd4j:nd4j-native-platform:0.8.0',
+        'deepLearning4jCore': dependencies.create('org.deeplearning4j:deeplearning4j-core:0.8.0') {
+                exclude group: 'org.projectlombok'
+        },
+        'deepLearning4jNlp': dependencies.create('org.deeplearning4j:deeplearning4j-nlp:0.8.0') {
+            exclude group: 'org.projectlombok'
+        },
+        'nd4j': dependencies.create('org.nd4j:nd4j-native-platform:0.8.0') {
+            exclude group: 'org.projectlombok'
+        },
         'smile': [
                 'com.github.haifengl:smile-core:1.2.2',
                 'com.github.haifengl:smile-data:1.2.2',
