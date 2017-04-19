@@ -2,7 +2,7 @@ package com.analyticspot.ml.briges.deeplearn
 
 import com.analyticspot.ml.framework.dataset.DataSet
 import com.analyticspot.ml.framework.description.ColumnId
-import org.nd4j.linalg.api.buffer.DataBuffer.Type.*
+import org.nd4j.linalg.api.buffer.DataBuffer.Type.FLOAT
 import org.nd4j.linalg.dataset.api.MultiDataSet
 import org.nd4j.linalg.dataset.api.MultiDataSetPreProcessor
 import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator
@@ -10,7 +10,6 @@ import org.nd4j.linalg.indexing.BooleanIndexing
 import org.nd4j.linalg.indexing.conditions.IsNaN
 import org.nd4j.linalg.indexing.conditions.Not
 import org.slf4j.LoggerFactory
-import java.awt.image.DataBuffer
 import java.util.Random
 
 /**
