@@ -2,10 +2,15 @@ package com.analyticspot.ml.briges.deeplearn
 
 import com.analyticspot.ml.framework.dataset.DataSet
 import com.analyticspot.ml.framework.description.ColumnId
+import org.nd4j.linalg.api.buffer.DataBuffer.Type.*
 import org.nd4j.linalg.dataset.api.MultiDataSet
 import org.nd4j.linalg.dataset.api.MultiDataSetPreProcessor
 import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator
+import org.nd4j.linalg.indexing.BooleanIndexing
+import org.nd4j.linalg.indexing.conditions.IsNaN
+import org.nd4j.linalg.indexing.conditions.Not
 import org.slf4j.LoggerFactory
+import java.awt.image.DataBuffer
 import java.util.Random
 
 /**
@@ -76,6 +81,25 @@ internal class RandomizingMultiDataSetIterator : MultiDataSetIterator {
         this.batchSize = batchSize
         this.allData = allData
         this.rng = rng
+
+        allData.features.forEachIndexed { idx, indArray ->
+            check(indArray.data().dataType() == FLOAT) {
+                "Expected input $idx to be an INDArray of float but it was ${indArray.data().dataType()}"
+            }
+            check(BooleanIndexing.and(indArray, Not(IsNaN()))) {
+                "Input $idx contains some NaN values"
+            }
+        }
+
+        allData.labels.forEachIndexed { idx, indArray ->
+            check(indArray.data().dataType() == FLOAT) {
+                "Expected output/targets $idx to be an INDArray of float but it was ${indArray.data().dataType()}"
+            }
+            check(BooleanIndexing.and(indArray, Not(IsNaN()))) {
+                "Output $idx contains some NaN values"
+            }
+        }
+
         reset()
     }
 
