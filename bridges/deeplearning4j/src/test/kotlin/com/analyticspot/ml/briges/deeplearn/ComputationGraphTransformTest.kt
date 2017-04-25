@@ -18,8 +18,11 @@ import org.deeplearning4j.nn.conf.layers.OutputLayer
 import org.deeplearning4j.nn.graph.ComputationGraph
 import org.deeplearning4j.nn.weights.WeightInit
 import org.nd4j.linalg.activations.Activation
+import org.nd4j.linalg.api.buffer.DataBuffer
+import org.nd4j.linalg.api.buffer.util.DataTypeUtil
 import org.nd4j.linalg.lossfunctions.LossFunctions
 import org.slf4j.LoggerFactory
+import org.testng.annotations.BeforeClass
 import org.testng.annotations.Test
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
@@ -32,6 +35,11 @@ import java.util.Random
 class ComputationGraphTransformTest {
     companion object {
         private val log = LoggerFactory.getLogger(ComputationGraphTransformTest::class.java)
+    }
+
+    @BeforeClass
+    fun globalSetup() {
+        DataTypeUtil.setDTypeForContext(DataBuffer.Type.DOUBLE)
     }
 
     @Test

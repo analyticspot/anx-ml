@@ -2,7 +2,7 @@ package com.analyticspot.ml.briges.deeplearn
 
 import com.analyticspot.ml.framework.dataset.DataSet
 import com.analyticspot.ml.framework.description.ColumnId
-import org.nd4j.linalg.api.buffer.DataBuffer.Type.FLOAT
+import org.nd4j.linalg.api.buffer.DataBuffer.Type.DOUBLE
 import org.nd4j.linalg.dataset.api.MultiDataSet
 import org.nd4j.linalg.dataset.api.MultiDataSetPreProcessor
 import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator
@@ -82,8 +82,10 @@ internal class RandomizingMultiDataSetIterator : MultiDataSetIterator {
         this.rng = rng
 
         allData.features.forEachIndexed { idx, indArray ->
-            check(indArray.data().dataType() == FLOAT) {
-                "Expected input $idx to be an INDArray of float but it was ${indArray.data().dataType()}"
+            check(indArray.data().dataType() == DOUBLE) {
+                "Expected input $idx to be an INDArray of float but it was ${indArray.data().dataType()}. " +
+                        "Note that ND4j requires this to be set globally via" +
+                        "DataTypeUtil.setDTypeForContext(DataBuffer.Type.DOUBLE)"
             }
             check(BooleanIndexing.and(indArray, Not(IsNaN()))) {
                 "Input $idx contains some NaN values"
@@ -91,8 +93,10 @@ internal class RandomizingMultiDataSetIterator : MultiDataSetIterator {
         }
 
         allData.labels.forEachIndexed { idx, indArray ->
-            check(indArray.data().dataType() == FLOAT) {
-                "Expected output/targets $idx to be an INDArray of float but it was ${indArray.data().dataType()}"
+            check(indArray.data().dataType() == DOUBLE) {
+                "Expected output/targets $idx to be an INDArray of float but it was ${indArray.data().dataType()}. " +
+                "Note that ND4j requires this to be set globally via" +
+                        "DataTypeUtil.setDTypeForContext(DataBuffer.Type.DOUBLE)"
             }
             check(BooleanIndexing.and(indArray, Not(IsNaN()))) {
                 "Output $idx contains some NaN values"

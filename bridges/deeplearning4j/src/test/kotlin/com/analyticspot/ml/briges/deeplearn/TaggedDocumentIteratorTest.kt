@@ -3,9 +3,18 @@ package com.analyticspot.ml.briges.deeplearn
 import com.analyticspot.ml.framework.dataset.DataSet
 import com.analyticspot.ml.framework.description.ColumnId
 import org.assertj.core.api.Assertions.assertThat
+import org.nd4j.linalg.api.buffer.DataBuffer
+import org.nd4j.linalg.api.buffer.util.DataTypeUtil
+import org.testng.annotations.BeforeClass
 import org.testng.annotations.Test
 
 class TaggedDocumentIteratorTest {
+
+    @BeforeClass
+    fun globalSetup() {
+        DataTypeUtil.setDTypeForContext(DataBuffer.Type.DOUBLE)
+    }
+
     @Test
     fun testNoLabels() {
         val docs = listOf(
