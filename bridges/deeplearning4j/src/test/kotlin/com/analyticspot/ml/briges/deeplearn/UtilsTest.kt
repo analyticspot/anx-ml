@@ -10,7 +10,7 @@ import org.slf4j.LoggerFactory
 import org.testng.annotations.Test
 import java.util.Random
 
-class UtilsTest {
+class UtilsTest : Dl4jTestBase() {
     companion object {
         private val log = LoggerFactory.getLogger(UtilsTest::class.java)
     }

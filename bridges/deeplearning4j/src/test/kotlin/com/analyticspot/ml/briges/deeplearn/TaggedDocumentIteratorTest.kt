@@ -5,7 +5,8 @@ import com.analyticspot.ml.framework.description.ColumnId
 import org.assertj.core.api.Assertions.assertThat
 import org.testng.annotations.Test
 
-class TaggedDocumentIteratorTest {
+class TaggedDocumentIteratorTest : Dl4jTestBase() {
+
     @Test
     fun testNoLabels() {
         val docs = listOf(

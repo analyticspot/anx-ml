@@ -14,12 +14,13 @@ import org.slf4j.LoggerFactory
 import org.testng.annotations.Test
 import java.util.Random
 
-class RandomizingMultiDataSetIteratorTest {
+class RandomizingMultiDataSetIteratorTest : Dl4jTestBase() {
     companion object {
         private val log = LoggerFactory.getLogger(RandomizingMultiDataSetIteratorTest::class.java)
 
         val SAMPLE_DATA_RESOURCE = "/DataSetIteratorData.csv"
     }
+
     // DeepLearning4j supplies several MultiDataSetIterator implementations (that all read from files and don't work
     // with in-memory data and don't work with our DataSet instances). We want to test that we produce the same exact
     // results as they do on the same data. So we have a CSV file we can use with DL4j and we then manually read that

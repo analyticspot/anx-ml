@@ -29,7 +29,7 @@ import java.util.Random
 // https://archive.ics.uci.edu/ml/datasets/Iris
 // I downloaded that and with some command line junk converted it to our DataSet format. I also scaled all the inputs
 // to 0 mean and unit variance.
-class ComputationGraphTransformTest {
+class ComputationGraphTransformTest : Dl4jTestBase() {
     companion object {
         private val log = LoggerFactory.getLogger(ComputationGraphTransformTest::class.java)
     }
