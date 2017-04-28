@@ -83,7 +83,7 @@ internal class RandomizingMultiDataSetIterator : MultiDataSetIterator {
 
         allData.features.forEachIndexed { idx, indArray ->
             check(indArray.data().dataType() == DOUBLE) {
-                "Expected input $idx to be an INDArray of float but it was ${indArray.data().dataType()}. " +
+                "Expected input $idx to be an INDArray of double but it was ${indArray.data().dataType()}. " +
                         "Note that ND4j requires this to be set globally via" +
                         "DataTypeUtil.setDTypeForContext(DataBuffer.Type.DOUBLE)"
             }
@@ -94,7 +94,7 @@ internal class RandomizingMultiDataSetIterator : MultiDataSetIterator {
 
         allData.labels.forEachIndexed { idx, indArray ->
             check(indArray.data().dataType() == DOUBLE) {
-                "Expected output/targets $idx to be an INDArray of float but it was ${indArray.data().dataType()}. " +
+                "Expected output/targets $idx to be an INDArray of double but it was ${indArray.data().dataType()}. " +
                 "Note that ND4j requires this to be set globally via" +
                         "DataTypeUtil.setDTypeForContext(DataBuffer.Type.DOUBLE)"
             }

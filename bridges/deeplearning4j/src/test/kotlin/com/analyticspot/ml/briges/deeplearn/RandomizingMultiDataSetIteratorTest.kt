@@ -8,25 +8,17 @@ import org.datavec.api.records.reader.impl.csv.CSVRecordReader
 import org.datavec.api.split.FileSplit
 import org.datavec.api.util.ClassPathResource
 import org.deeplearning4j.datasets.datavec.RecordReaderMultiDataSetIterator
-import org.nd4j.linalg.api.buffer.DataBuffer
-import org.nd4j.linalg.api.buffer.util.DataTypeUtil
 import org.nd4j.linalg.dataset.api.MultiDataSet
 import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator
 import org.slf4j.LoggerFactory
-import org.testng.annotations.BeforeClass
 import org.testng.annotations.Test
 import java.util.Random
 
-class RandomizingMultiDataSetIteratorTest {
+class RandomizingMultiDataSetIteratorTest : Dl4jTestBase() {
     companion object {
         private val log = LoggerFactory.getLogger(RandomizingMultiDataSetIteratorTest::class.java)
 
         val SAMPLE_DATA_RESOURCE = "/DataSetIteratorData.csv"
-    }
-
-    @BeforeClass
-    fun globalSetup() {
-        DataTypeUtil.setDTypeForContext(DataBuffer.Type.DOUBLE)
     }
 
     // DeepLearning4j supplies several MultiDataSetIterator implementations (that all read from files and don't work

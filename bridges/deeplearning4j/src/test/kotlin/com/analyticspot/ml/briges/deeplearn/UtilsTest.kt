@@ -3,24 +3,16 @@ package com.analyticspot.ml.briges.deeplearn
 import com.analyticspot.ml.framework.dataset.DataSet
 import com.analyticspot.ml.framework.description.ColumnId
 import org.assertj.core.api.Assertions.assertThat
-import org.nd4j.linalg.api.buffer.DataBuffer
-import org.nd4j.linalg.api.buffer.util.DataTypeUtil
 import org.nd4j.linalg.api.ndarray.INDArray
 import org.nd4j.linalg.dataset.MultiDataSet
 import org.nd4j.linalg.factory.Nd4j
 import org.slf4j.LoggerFactory
-import org.testng.annotations.BeforeClass
 import org.testng.annotations.Test
 import java.util.Random
 
-class UtilsTest {
+class UtilsTest : Dl4jTestBase() {
     companion object {
         private val log = LoggerFactory.getLogger(UtilsTest::class.java)
-    }
-
-    @BeforeClass
-    fun globalSetup() {
-        DataTypeUtil.setDTypeForContext(DataBuffer.Type.DOUBLE)
     }
 
     @Test
