@@ -37,7 +37,7 @@ class LearningGraphNode(builder: Builder) : HasTransformGraphNode<LearningTransf
         }
     }
 
-    override fun getExecutionManager(parent: GraphExecution, execType: ExecutionType): NodeExecutionManager =
+    override fun getExecutionManager(parent: GraphExecutionProtocol, execType: ExecutionType): NodeExecutionManager =
             ExecutionManager(this, execType, parent)
 
     class Builder(id: Int) : GraphNode.Builder(id) {
@@ -51,7 +51,7 @@ class LearningGraphNode(builder: Builder) : HasTransformGraphNode<LearningTransf
     private class ExecutionManager(
             override val graphNode: LearningGraphNode,
             private val execType: ExecutionType,
-            parent: GraphExecution) : SingleInputExecutionManager(parent) {
+            parent: GraphExecutionProtocol) : SingleInputExecutionManager(parent) {
 
         override fun doRun(dataSet: DataSet, exec: ExecutorService): CompletableFuture<DataSet> {
             if (execType == ExecutionType.TRANSFORM) {

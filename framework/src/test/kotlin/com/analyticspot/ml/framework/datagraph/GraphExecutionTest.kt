@@ -360,6 +360,105 @@ class GraphExecutionTest {
         assertThatThrownBy { transformF.get() }.hasMessageContaining(CompletesWithExceptionTransform.ERROR_MESSAGE)
     }
 
+    @Test
+    fun testTransformInterceptionWorks() {
+        val c1Add = 9
+        val c2Add = 11
+
+        val inputColId = ColumnId.create<Int>("input")
+        val c1OutColId = ColumnId.create<Int>("c1")
+        val c2OutColId = ColumnId.create<Int>("c2")
+
+        val c1Label = "c1"
+        val c2Label = "c2"
+        val outLabel = "out"
+        val identLabel = "ident"
+
+        val dg = DataGraph.build {
+            val src = setSource {
+                columnIds += inputColId
+            }
+
+            // Adding 0 doesn't change the inputs in any way
+            val ident = addTransform(src, AddConstantTransform(0))
+            ident.label = identLabel
+
+            val addC1 = addTransform(ident, AddConstantTransform(c1Add))
+            addC1.label = c1Label
+
+            val addC2 = addTransform(ident, AddConstantTransform(c2Add))
+            addC2.label = c2Label
+
+            val renameC1 = subsetColumns(addC1) {
+                keepAndRename(inputColId, c1OutColId)
+            }
+
+            val renameC2 = subsetColumns(addC2) {
+                keepAndRename(inputColId, c2OutColId)
+            }
+
+            val merge = merge(renameC1, renameC2)
+            merge.label = outLabel
+
+            result = merge
+        }
+
+        val srcDs = DataSet.build {
+            addColumn(inputColId, listOf(1, 2, 3, 4))
+        }
+
+        // Add several interceptors and make sure they see the expected values can modify the output, etc.
+        val identIntercept = object : OutputInterceptor {
+            override fun intercept(subIdToData: Map<Int, DataSet>,
+                    execType: ExecutionType, output: DataSet): CompletableFuture<DataSet> {
+                assertThat(output.column(inputColId)).containsExactlyElementsOf(srcDs.column(inputColId))
+                val res = DataSet.build {
+                    addColumn(inputColId, output.column(inputColId).mapToColumn { it!! * 2 })
+                }
+                return CompletableFuture.completedFuture(res)
+            }
+        }
+
+        val c2InterceptReturnValues = listOf(8, 7, 6, 5)
+
+        val c2Intercept = object : OutputInterceptor {
+            override fun intercept(subIdToData: Map<Int, DataSet>, execType: ExecutionType,
+                    output: DataSet): CompletableFuture<DataSet> {
+                // identIntercept modified our original inputs and we should see that here
+                assertThat(subIdToData).hasSize(1)
+                log.info("subIdToData is {}", subIdToData)
+                assertThat(subIdToData).containsOnlyKeys(0)
+                assertThat(subIdToData[0]!!.column(inputColId))
+                        .containsExactlyElementsOf(srcDs.column(inputColId).map { it!! * 2 })
+
+                // Make sure we got the expected C2 output as well
+                assertThat(output.columnIds).containsExactly(inputColId)
+                // The first interceptor multiplied by 2 and then C2 added c2Add
+                assertThat(output.column(inputColId))
+                        .containsExactlyElementsOf(srcDs.column(inputColId).map { it!! * 2 + c2Add })
+
+                val res = DataSet.build {
+                    addColumn(inputColId, c2InterceptReturnValues)
+                }
+
+                return CompletableFuture.completedFuture(res)
+            }
+        }
+
+        val exec = Executors.newSingleThreadExecutor()
+
+        val ge = GraphExecution(dg, ExecutionType.TRANSFORM, exec,
+                mapOf(identLabel to identIntercept, c2Label to c2Intercept))
+
+        val res = ge.execute(srcDs).get()
+
+        assertThat(res.columnIds).containsExactly(c1OutColId, c2OutColId)
+        assertThat(res.column(c2OutColId)).containsExactlyElementsOf(c2InterceptReturnValues)
+        // first interceptor multiplied by 2 and then c2 added c1Add
+        assertThat(res.column(c1OutColId))
+                .containsExactlyElementsOf(srcDs.column(inputColId).map { it!! * 2 + c1Add })
+    }
+
     class ThrowsExceptionTransform(private val resultId: ColumnId<String>) : SingleDataTransform {
         companion object {
             const val ERROR_MESSAGE = "Pretending bad things happened."

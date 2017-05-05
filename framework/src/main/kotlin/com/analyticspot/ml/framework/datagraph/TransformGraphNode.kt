@@ -44,7 +44,7 @@ internal open class TransformGraphNode protected constructor(builder: Builder)
         }
     }
 
-    override fun getExecutionManager(parent: GraphExecution, execType: ExecutionType): NodeExecutionManager =
+    override fun getExecutionManager(parent: GraphExecutionProtocol, execType: ExecutionType): NodeExecutionManager =
             ExecutionManager(this, parent)
 
     open class Builder(id: Int) : GraphNode.Builder(id) {
@@ -58,7 +58,7 @@ internal open class TransformGraphNode protected constructor(builder: Builder)
 
     // The execution manager for this node. Since this expects only a single input it signals onReadyToRun as soon as
     // onDataAvailable is called.
-    private class ExecutionManager(override val graphNode: TransformGraphNode, parent: GraphExecution)
+    private class ExecutionManager(override val graphNode: TransformGraphNode, parent: GraphExecutionProtocol)
         : SingleInputExecutionManager(parent) {
 
         override fun doRun(dataSet: DataSet, exec: ExecutorService) = graphNode.transform.transform(dataSet, exec)

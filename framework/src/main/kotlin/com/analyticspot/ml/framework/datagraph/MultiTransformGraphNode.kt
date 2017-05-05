@@ -43,7 +43,7 @@ internal class MultiTransformGraphNode protected constructor(builder: Builder)
         }
     }
 
-    override fun getExecutionManager(parent: GraphExecution, execType: ExecutionType): NodeExecutionManager {
+    override fun getExecutionManager(parent: GraphExecutionProtocol, execType: ExecutionType): NodeExecutionManager {
         return ExecutionManager(this, parent)
     }
 
@@ -53,8 +53,8 @@ internal class MultiTransformGraphNode protected constructor(builder: Builder)
         fun build(): MultiTransformGraphNode = MultiTransformGraphNode(this)
     }
 
-    private class ExecutionManager(override val graphNode: MultiTransformGraphNode, private val parent: GraphExecution)
-        : NodeExecutionManager {
+    private class ExecutionManager(override val graphNode: MultiTransformGraphNode,
+            private val parent: GraphExecutionProtocol) : NodeExecutionManager {
 
         private val dataSets = AtomicReferenceArray<DataSet?>(graphNode.sources.size)
         private val numReceived = AtomicInteger(0)

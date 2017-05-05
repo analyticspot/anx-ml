@@ -42,17 +42,41 @@ import java.util.concurrent.ExecutorService
  *   underlying [DataTransform] to generate the data.
  * * Once the run is complete and the data is available the future returned by [NodeExecutionManager.run] will complete
  *   causing any subscribing nodes to be notified.
+ *
+ *   @param dataGraph the graph to be executed.
+ *   @param execType the type of execution (training or transform).
+ *   @param exec the `ExecutorService` to be used for scheduling the node executions.
+ *   @param interceptors a map from node label to [OutputInterceptor]. Each node in the map will have its output
+ *       intercepted by the given interceptor before it is made available to any other nodes.
  */
 class GraphExecution (
-        private val dataGraph: DataGraph, private val execType: ExecutionType, private val exec: ExecutorService) {
+        private val dataGraph: DataGraph, private val execType: ExecutionType,
+        private val exec: ExecutorService,
+        private val interceptors: Map<String, OutputInterceptor>? = null) : GraphExecutionProtocol {
     // Can be null as there may be missing nodes if we deserialize a graph that had train-only nodes.
     private val executionManagers: Array<NodeExecutionManager?>
     private val executionResult: CompletableFuture<DataSet> = CompletableFuture()
 
     init {
+        if (dataGraph.source.label != null && interceptors != null) {
+            require(!interceptors.containsKey(dataGraph.source.label!!)) {
+                "Interceptors are not supported for the DataGraph's source. You can simply modify the data directly " +
+                        "if necessary."
+            }
+        }
+
         val graphNodes = dataGraph.allNodes
         executionManagers = Array<NodeExecutionManager?>(graphNodes.size) { idx ->
-            graphNodes[idx]?.getExecutionManager(this, execType)
+            val node = graphNodes[idx]
+            if (interceptors != null && node?.label in interceptors) {
+                val factory = { proto: GraphExecutionProtocol, et: ExecutionType ->
+                    graphNodes[idx]!!.getExecutionManager(proto, et)
+                }
+
+                OutputInterceptorExecManager(factory, this, interceptors[node!!.label]!!, execType)
+            } else {
+                graphNodes[idx]?.getExecutionManager(this, execType)
+            }
         }
     }
 
@@ -96,7 +120,7 @@ class GraphExecution (
 
     }
 
-    fun onReadyToRun(manager: NodeExecutionManager) {
+    override fun onReadyToRun(manager: NodeExecutionManager) {
         log.debug("Node {} reports that is is ready to run.", manager.graphNode.id)
         // By default ExecutorService will "swallow" an exceptions thrown and not log them or anything making debugging
         // very difficult. So we wrap the call to the manager with our own Runnable so we can catch exceptions and log.
@@ -119,61 +143,3 @@ class GraphExecution (
     }
 }
 
-enum class ExecutionType {
-    TRAIN_TRANSFORM, TRANSFORM
-}
-
-/**
- * Manages the execution of a single node in a graph for a single run on `execute`, `fit`, or `fitTransform`. See
- * the comments on [GraphExecution] for details.
- *
- * Note that when [onDataAvailable] is called the execution manager is in charge of maintaining a reference to the data
- * it will need in order to [run]. Once the run is complete that data is no longer needed by this node so it is a best
- * practice to remove the reference to the data so it can be GC'd.
- */
-interface NodeExecutionManager {
-    val graphNode: GraphNode
-    /**
-     * Called when data is available that this nodes requires.
-     *
-     * @param subId the value of the `subId` in the [Subscription] that produced this data.
-     * @param data the data that was produced.
-     */
-    fun onDataAvailable(subId: Int, data: DataSet)
-
-    /**
-     * When called the node should compute it's result. When the result has been computed the returned future should
-     * complete with its value.
-     *
-     * Note that any exceptions thrown by this method will be handled by the framework.
-     */
-    fun run(exec: ExecutorService): CompletableFuture<DataSet>
-}
-
-/**
- * Convenience base class for [NodeExecutionManager]s that are ready when a single [DataSet] is available. Subclasses
- * need only override [doRun] to perform the actual computation.
- */
-abstract class SingleInputExecutionManager(protected val parent: GraphExecution) : NodeExecutionManager {
-    @Volatile
-    private var data: DataSet? = null
-
-    companion object {
-        private val log = LoggerFactory.getLogger(SingleInputExecutionManager::class.java)
-    }
-
-    override fun onDataAvailable(subId: Int, data: DataSet) {
-        this.data = data
-        parent.onReadyToRun(this)
-    }
-
-    final override fun run(exec: ExecutorService): CompletableFuture<DataSet> {
-        return doRun(data!!, exec).whenComplete { dataSet, throwable ->
-            // Get rid of our reference to the observaton so it can be GC'd if nothing else is using it.
-            data = null
-        }
-    }
-
-    abstract fun doRun(dataSet: DataSet, exec: ExecutorService): CompletableFuture<DataSet>
-
-}
