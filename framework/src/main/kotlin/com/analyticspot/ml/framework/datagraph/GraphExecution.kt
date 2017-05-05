@@ -44,7 +44,9 @@ import java.util.concurrent.ExecutorService
  *   causing any subscribing nodes to be notified.
  */
 class GraphExecution (
-        private val dataGraph: DataGraph, private val execType: ExecutionType, private val exec: ExecutorService) {
+        private val dataGraph: DataGraph, private val execType: ExecutionType,
+        private val exec: ExecutorService,
+        private val interceptors: Map<String, OutputInterceptor>? = null) {
     // Can be null as there may be missing nodes if we deserialize a graph that had train-only nodes.
     private val executionManagers: Array<NodeExecutionManager?>
     private val executionResult: CompletableFuture<DataSet> = CompletableFuture()
@@ -52,7 +54,13 @@ class GraphExecution (
     init {
         val graphNodes = dataGraph.allNodes
         executionManagers = Array<NodeExecutionManager?>(graphNodes.size) { idx ->
-            graphNodes[idx]?.getExecutionManager(this, execType)
+            val node = graphNodes[idx]
+            val manager = graphNodes[idx]?.getExecutionManager(this, execType)
+            if (manager != null && interceptors != null && node?.label in interceptors) {
+                OutputInterceptorExecManager(manager, interceptors[node!!.label]!!, execType)
+            } else {
+                manager
+            }
         }
     }
 
@@ -169,11 +177,44 @@ abstract class SingleInputExecutionManager(protected val parent: GraphExecution)
 
     final override fun run(exec: ExecutorService): CompletableFuture<DataSet> {
         return doRun(data!!, exec).whenComplete { dataSet, throwable ->
-            // Get rid of our reference to the observaton so it can be GC'd if nothing else is using it.
+            // Get rid of our reference to the observation so it can be GC'd if nothing else is using it.
             data = null
         }
     }
 
     abstract fun doRun(dataSet: DataSet, exec: ExecutorService): CompletableFuture<DataSet>
+}
 
+interface OutputInterceptor {
+    fun intercept(subIdToData: Map<Int, DataSet>, execType: ExecutionType, output: DataSet): CompletableFuture<DataSet>
+}
+
+class OutputInterceptorExecManager(private val wrappedManager: NodeExecutionManager,
+        private val interceptor: OutputInterceptor,
+        private val execType: ExecutionType) : NodeExecutionManager {
+    companion object {
+        private val log = LoggerFactory.getLogger(OutputInterceptorExecManager::class.java)
+    }
+
+    override val graphNode: GraphNode
+        get() = wrappedManager.graphNode
+
+    private var subIdToData = mutableMapOf<Int, DataSet>()
+
+    override fun onDataAvailable(subId: Int, data: DataSet) {
+        subIdToData[subId] = data
+        wrappedManager.onDataAvailable(subId, data)
+    }
+
+    override fun run(exec: ExecutorService): CompletableFuture<DataSet> {
+        return wrappedManager.run(exec).thenCompose {
+            interceptor.intercept(subIdToData, execType, it).whenComplete { dataSet, exception ->
+                if (exception != null) {
+                    log.error("Execution of NodeInterceptor failed with:", exception)
+                    // Drop references to the data so it can be GC'd
+                    subIdToData.clear()
+                }
+            }
+        }
+    }
 }
