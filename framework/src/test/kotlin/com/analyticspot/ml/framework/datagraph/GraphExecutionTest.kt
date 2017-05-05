@@ -419,25 +419,26 @@ class GraphExecutionTest {
             }
         }
 
+        val c2InterceptReturnValues = listOf(8, 7, 6, 5)
+
         val c2Intercept = object : OutputInterceptor {
             override fun intercept(subIdToData: Map<Int, DataSet>, execType: ExecutionType,
                     output: DataSet): CompletableFuture<DataSet> {
-                // srcIntercept modified our original inputs and we should see that here
+                // identIntercept modified our original inputs and we should see that here
                 assertThat(subIdToData).hasSize(1)
                 log.info("subIdToData is {}", subIdToData)
                 assertThat(subIdToData).containsOnlyKeys(0)
                 assertThat(subIdToData[0]!!.column(inputColId))
                         .containsExactlyElementsOf(srcDs.column(inputColId).map { it!! * 2 })
 
-
                 // Make sure we got the expected C2 output as well
                 assertThat(output.columnIds).containsExactly(inputColId)
                 // The first interceptor multiplied by 2 and then C2 added c2Add
                 assertThat(output.column(inputColId))
-                        .containsExactlyElementsOf(srcDs.column(inputColId).map { it!! * 2 + c2Add } )
+                        .containsExactlyElementsOf(srcDs.column(inputColId).map { it!! * 2 + c2Add })
 
                 val res = DataSet.build {
-                    addColumn(inputColId, listOf(1, 1, 1, 1))
+                    addColumn(inputColId, c2InterceptReturnValues)
                 }
 
                 return CompletableFuture.completedFuture(res)
@@ -452,7 +453,7 @@ class GraphExecutionTest {
         val res = ge.execute(srcDs).get()
 
         assertThat(res.columnIds).containsExactly(c1OutColId, c2OutColId)
-        assertThat(res.column(c2OutColId)).containsExactlyElementsOf(listOf(1, 1, 1, 1))
+        assertThat(res.column(c2OutColId)).containsExactlyElementsOf(c2InterceptReturnValues)
         // first interceptor multiplied by 2 and then c2 added c1Add
         assertThat(res.column(c1OutColId))
                 .containsExactlyElementsOf(srcDs.column(inputColId).map { it!! * 2 + c1Add })
