@@ -57,7 +57,7 @@ class SupervisedLearningGraphNode(builder: Builder) : HasTransformGraphNode<Supe
         }
     }
 
-    override fun getExecutionManager(parent: GraphExecution, execType: ExecutionType): NodeExecutionManager {
+    override fun getExecutionManager(parent: GraphExecutionProtocol, execType: ExecutionType): NodeExecutionManager {
         return when (execType) {
             ExecutionType.TRANSFORM -> TransformExecutionManager(this, parent)
             ExecutionType.TRAIN_TRANSFORM -> {
@@ -79,7 +79,7 @@ class SupervisedLearningGraphNode(builder: Builder) : HasTransformGraphNode<Supe
     // An execution manager for the training phase when the training and target data are different (so that we need to
     // receive two calls to onDataAvailable before we can run).
     private class DifferentDataTrainingExecutionManager(override val graphNode: SupervisedLearningGraphNode,
-            private val parent: GraphExecution) : NodeExecutionManager {
+            private val parent: GraphExecutionProtocol) : NodeExecutionManager {
         private val numReceived = AtomicInteger(0)
         @Volatile
         private var mainData: DataSet? = null
@@ -118,7 +118,7 @@ class SupervisedLearningGraphNode(builder: Builder) : HasTransformGraphNode<Supe
     // An execution manager for the training phase when the training and target data the same. For example, the source
     // data set might contain the data and the target in which case there's only 1 data set needed before we can run.
     private class SameDataTrainingExecutionManager(override val graphNode: SupervisedLearningGraphNode,
-            private val parent: GraphExecution) : NodeExecutionManager {
+            private val parent: GraphExecutionProtocol) : NodeExecutionManager {
         private val numReceived = AtomicInteger(0)
         @Volatile
         private var data: DataSet? = null
@@ -141,7 +141,7 @@ class SupervisedLearningGraphNode(builder: Builder) : HasTransformGraphNode<Supe
 
     // An execution manager for performing a transform. This is just a regular single input data set.
     private class TransformExecutionManager(override val graphNode: SupervisedLearningGraphNode,
-            parent: GraphExecution) : SingleInputExecutionManager(parent) {
+            parent: GraphExecutionProtocol) : SingleInputExecutionManager(parent) {
         override fun doRun(dataSet: DataSet, exec: ExecutorService): CompletableFuture<DataSet> {
             return graphNode.transform.transform(dataSet, exec)
         }

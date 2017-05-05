@@ -37,7 +37,7 @@ import java.util.concurrent.ExecutorService
  *   [DataGraph.buildSourceObservation].
  */
 abstract class SourceGraphNodeBase protected constructor(builder: GraphNode.Builder) : GraphNode(builder) {
-    override fun getExecutionManager(parent: GraphExecution, execType: ExecutionType): NodeExecutionManager {
+    override fun getExecutionManager(parent: GraphExecutionProtocol, execType: ExecutionType): NodeExecutionManager {
         return ExecutionManager(this)
     }
 

@@ -43,7 +43,7 @@ abstract class GraphNode internal constructor(builder: Builder) {
     /**
      * Return a [NodeExecutionManager] for the given operation (`train`, `trainTransform`, or `execute`).
      */
-    abstract fun getExecutionManager(parent: GraphExecution, execType: ExecutionType): NodeExecutionManager
+    abstract fun getExecutionManager(parent: GraphExecutionProtocol, execType: ExecutionType): NodeExecutionManager
 
     open class Builder(internal val id: Int) {
         val sources: MutableList<SubscribedTo> = mutableListOf()
