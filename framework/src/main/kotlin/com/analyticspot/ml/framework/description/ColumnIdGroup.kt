@@ -49,6 +49,13 @@ open class ColumnIdGroup<T : Any>(val prefix: String, val clazz: KClass<T>) : Co
         return prefix.compareTo(other.prefix)
     }
 
+    /**
+     * Returns true iff the passed `columnId` belongs to this group.
+     */
+    fun isInGroup(columnId: ColumnId<T>): Boolean {
+        return columnId.name.startsWith(prefix + ColumnId.GROUP_SEPARATOR)
+    }
+
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other?.javaClass != javaClass) return false
