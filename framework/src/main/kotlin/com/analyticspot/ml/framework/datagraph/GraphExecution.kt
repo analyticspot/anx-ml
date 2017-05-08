@@ -66,17 +66,25 @@ class GraphExecution (
         }
 
         val graphNodes = dataGraph.allNodes
+        val matchedInterceptors = mutableSetOf<String>()
         executionManagers = Array<NodeExecutionManager?>(graphNodes.size) { idx ->
             val node = graphNodes[idx]
             if (interceptors != null && node?.label in interceptors) {
+                log.info("Adding OutputInterceptor for node with label {}", node!!.label)
+                matchedInterceptors.add(node.label!!)
                 val factory = { proto: GraphExecutionProtocol, et: ExecutionType ->
                     graphNodes[idx]!!.getExecutionManager(proto, et)
                 }
 
-                OutputInterceptorExecManager(factory, this, interceptors[node!!.label]!!, execType)
+                OutputInterceptorExecManager(factory, this, interceptors[node.label!!]!!, execType)
             } else {
                 graphNodes[idx]?.getExecutionManager(this, execType)
             }
+        }
+
+        check(interceptors == null || matchedInterceptors.size == interceptors.size) {
+            "Some of the specified interceptors did not match any nodes. The following did not match: " +
+                    interceptors!!.keys.subtract(matchedInterceptors).toString()
         }
     }
 

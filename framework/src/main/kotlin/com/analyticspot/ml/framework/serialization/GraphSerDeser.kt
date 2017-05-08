@@ -198,7 +198,8 @@ class GraphSerDeser {
                 }
             }
 
-            deserializedNodeMap[newNode!!.id] = newNode
+            newNode!!.label = graphDataNode.label
+            deserializedNodeMap[newNode.id] = newNode
         }
         graphBuilder.result = deserializedNodeMap[graphData.resultId] ?:
                 throw IllegalStateException("Result node not found.")

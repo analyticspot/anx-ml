@@ -307,6 +307,50 @@ class GraphSerDeserTest {
     }
 
     @Test
+    fun testDeserializationPreservesLabels() {
+        val srcId = ColumnId.create<List<String>>("words")
+        val wordGroupId = ColumnIdGroup.create<Int>("wordCounts")
+        val wcLabel = "wc"
+        val addCLabel = "addC"
+        val dg = DataGraph.build {
+            val src = setSource {
+                columnIds += srcId
+            }
+
+            // This is the transform that uses a ColumnIdGroup
+            val wordCount = addTransform(src, WordCounts(srcId, wordGroupId))
+            wordCount.label = wcLabel
+
+            val addC = addTransform(wordCount, AddConstantTransform(1))
+            addC.label = addCLabel
+
+            result = addC
+        }
+
+        // Now serialize it.
+        val serDeser = GraphSerDeser()
+        val output = ByteArrayOutputStream()
+        serDeser.serialize(dg, output)
+
+        // And deserilize it
+        val deserDg = serDeser.deserialize(ByteArrayInputStream(output.toByteArray()))
+
+        // We now check the labels of the nodes. We ensure the right label is on the right node by checking the node
+        // that provides the input data to the labeled node.
+        val wcNodes = deserDg.allNodes.filter { it!!.label == wcLabel }
+        assertThat(wcNodes).hasSize(1)
+        val wcNode = wcNodes[0]!!
+        assertThat(wcNode.sources).hasSize(1)
+        assertThat(wcNode.sources[0].source).isSameAs(deserDg.source)
+
+        val addCNodes = deserDg.allNodes.filter { it!!.label == addCLabel }
+        assertThat(addCNodes).hasSize(1)
+        val addCNode = addCNodes[0]!!
+        assertThat(addCNode.sources).hasSize(1)
+        assertThat(addCNode.sources[0].source).isSameAs(wcNode)
+    }
+
+    @Test
     fun testCanSerDeserSingleItemDataTransform() {
         val sourceCol = ColumnId.create<String>("foo")
         val source = SourceGraphNode.build(0) {
