@@ -196,8 +196,17 @@ class DataGraph(builder: GraphBuilder) : LearningTransform {
      * Run the data through the entire graph. The result type is a future of `DataSet` because the graph
      * might contain an asynchronous [DataTransform] or it might contain an [OnDemandValue].
      */
-    override fun transform(dataSet: DataSet, exec: ExecutorService): CompletableFuture<DataSet> {
-        val graphExec = GraphExecution(this, ExecutionType.TRANSFORM, exec)
+    override fun transform(dataSet: DataSet, exec: ExecutorService): CompletableFuture<DataSet> =
+            transform(dataSet, exec, null)
+
+    /**
+     * Overload of [transform] that allows you to specify some [OutputInterceptor]s to run. The `interceptors` argument
+     * is a map from a node's label to the [OutputInterceptor] that should intercept and, optionally, modify the output
+     * of that node.
+     */
+    fun transform(dataSet: DataSet, exec: ExecutorService,
+            interceptors: Map<String, OutputInterceptor>?): CompletableFuture<DataSet> {
+        val graphExec = GraphExecution(this, ExecutionType.TRANSFORM, exec, interceptors)
         return graphExec.execute(dataSet)
     }
 
@@ -205,8 +214,16 @@ class DataGraph(builder: GraphBuilder) : LearningTransform {
      * Train the graph on the given inputs and return the result of transforming the source data set via the trained
      * transformers.
      */
-    override fun trainTransform(dataSet: DataSet, exec: ExecutorService): CompletableFuture<DataSet> {
-        val graphExec = GraphExecution(this, ExecutionType.TRAIN_TRANSFORM, exec)
+    override fun trainTransform(dataSet: DataSet, exec: ExecutorService): CompletableFuture<DataSet> =
+            trainTransform(dataSet, exec, null)
+
+    /**
+     * Override of [trainTransform] that allows you to specify some [OutputInterceptor] instances. See [transform] for
+     * details.
+     */
+    fun trainTransform(dataSet: DataSet, exec: ExecutorService,
+            interceptors: Map<String, OutputInterceptor>?): CompletableFuture<DataSet> {
+        val graphExec = GraphExecution(this, ExecutionType.TRAIN_TRANSFORM, exec, interceptors)
         return graphExec.execute(dataSet)
     }
 
