@@ -6,11 +6,17 @@ external services to augment the data. Thus, feature generation is really a dire
 raw data, generate new data from that, etc.
 
 Additionally, some "features" aren't really features, but just intermediate bits of data. These data types often aren't
-numerical, categorical, or ordinal and thus don't conform to standard machine learning data type. For example, for text
-processing we might parse sentences and generate a parse tree indicating parts of speech tags for each word and the
-relationships between the words (e.g. "this adjective modifies that verb").
+numerical, categorical, or ordinal and thus don't conform to standard machine learning data types. For example, for text
+processing we might parse sentences and generate a "parse tree" indicating parts of speech tags for each word and the
+relationships between the words (e.g. "this adjective modifies that verb"). Other nodes in the graph would then extract
+features from the parse tree like the number of verbs in the text or the number of unique nouns.
 
-There are several machine learning systems for Java, but they all lack some properties we want for our system. Our
+Of course, we want to be able to both train models and deploy them. That means we need a mechanism to serialize the
+entire DAG after training and then deserialize it in production. We would like to be able to use the deserialized graph
+to make predictions on data from a variety of sources: files in various formats, in-memory data (e.g. data received by a
+web server), Spark RDDs, etc.
+
+While there are several machine learning systems for Java,they all lack some properties we want for our system. Our
 desired capabilities are:
 
 * We want to compute each piece of information exactly once even if multiple data transforms use the same data as input.
@@ -28,7 +34,7 @@ desired capabilities are:
   until it has seen the training data).
 * We want to be able to run independent parts of the DAG in parallel utilizing all the CPUs on the machine.
 
-The DataGraph framework described here is intended to solve these issues.
+The DataGraph framework described here is intended provides all of these features.
 
 # Quick Example
 
@@ -126,12 +132,16 @@ DataGraph dg = serDeser.deserialize("path/to/trained");
 
 // Now we can make predictions.
 Observation toPredict = dg.createSource("the text of a movie review");
-DataSet result = dg.transform(toPredict, Executors.newFixedThreadPool(4));
+CompletableFuture<DataSet> resultFuture = dg.transform(toPredict, Executors.newFixedThreadPool(4));
 ```
 
-Note that `DataGraph` implements `LearningTransform` and so can be used just like a single transform in another
+Note that calls to the `DataGraph` are asynchronous. This is because each node in the DAG can, if it wants, compute its
+result asynchronously. This allows nodes that do things like call external APIs to augment the data to do so without
+blocking a thread.
+
+`DataGraph` implements the `LearningTransform` interface and so can be used just like a single transform in another
 `DataGraph`. This allows you to decompose a large graph into several smaller ones. It also allows you to use the
-deserialization injection on entire subgraphs. See the `SERIALIZATION.README.md` file for details.
+deserialization injection on entire sub-graphs. See the `SERIALIZATION.README.md` file for details.
 
 # Overview
 

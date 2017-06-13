@@ -5,22 +5,18 @@ is probably to serialized a trained model for deployment. Our requirements for t
 
 * Simple: it should be easy to deserialize an entire `DataGraph` and start using it to make predictions.
 * Format independent: while most of our own code serialized to JSON we would like to be able to use existing code that
-  might serialize in a different formatClass. For example, the Weka project contains a huge number of algorithms that we
-  might want to use but they serialize in a binary formatClass (Java serialization formatClass).
+  might serialize in a different formatClass. For example, the Smile project contains a large number of algorithms that
+  we might want to use but they serialize in a binary format (Java serialization format).
 * Injectable: we'd like to be able to use one implementation for a node when training an a different implementation when
   running in production. For example, we might make an API call to obtain a zip code for an address in production, but
   when training we'd use values stored in database. In addition, this injection needs to be flexible:
   * Synchronous vs. asynchronous: a graph node might produce it's data synchronously when training and asynchronously
     in production. Returning to our zip code resolution example, the data is immediately available when training but
     becomes asynchronous when we need to make an API call to obtain it in production.
-  * Immediate vs. on demand: as noted in the main `README` we can have values in an `Observation` which are only
-    computed when necessary. Such values are called *on demand values*. During training all values are immediately
-    available but may become *on demand* in production.
   * Not class based: It is quite common to use the same algorithm multiple times in the same graph, but we might not
     want to inject all instances in the graph in the same way. Thus we need some way to tag the individual nodes so we
-    can specify the implementation for individual node **instances** at deserialization time. While not a requirement,
-    it would be nice if this tagging could be re-used to obtain information like training results from these nodes.
-    
+    can specify the implementation for individual node **instances** at deserialization time.
+
 # Format Summary and Example
 
 A `DataGraph` is serialized as a zip file. There is a file in the zip called `graph.json` that defines the graph. Each
@@ -74,7 +70,7 @@ Node 2 is a (theoretical) wrapper class that wraps any Weka classifier as a `Dat
 to deserialize we'd have to look at the file named "2" in the zip file and the `Weka` `FormatModule` (see below) would
 know how to deserialize that properly.
 
-Note that in the JSON `graph` is a list in toplological order. Thus, for any node `X`, all of `X`'s sources appear in
+Note that in the JSON, `graph` is a list in toplological order. Thus, for any node `X`, all of `X`'s sources appear in
 the file before `X` does.
 
 # Deserialization
@@ -90,25 +86,6 @@ specifies some `metaData` which corresponds to a `Format`. The `metaData` block 
 deserialization so that the correct subclass of `FormatMetaData` is returned. The `FormatMetaData` then tells the
 `GraphSerDeser` what `Format` to use to deserialize the data.
 
-## ValueToken
-
-Note that often a node contains the `ValueToken`s of the inputs it will process. However, it should not serialize the
-full token as that may not be valid if the producing node's implementation changes. Instead it should serialize just
-the `ValueId`. The `sources` array passed to `createNode` can be used to convert `ValueId`s into `ValueToken`s.
-
-Happily, the `GraphSerDeser` takes care of this for you. Specifically, upon serialization there is a filter that
-ensures that only the `ValueId` part of a `ValueToken` is saved. If the `DataTransform` has only a single input then,
-the `GraphSerDeser` is capabile of transparently converting the `ValueIds` in the file into `ValueToken`s. What this
-means in practice is the for most `DataTransform` classes you don't need to think about the `ValueToken` issue at all:
-simply serialize your `ValueToken` instances as you'd like and the corresponding `ValueId` will be saved. Similarly,
-your setters and `@JsonCreator` methods that expect a `ValueToken` will be given one that is created for you by calling
-`GraphNode.token(valueId)` on the data source for your node.
-
-This is one of the reasons we suggest that virtually all `DataTransform` should read from a single `DataSet`. If you
-need the data from multiple `DataSet`s use the `DataGraph.merge` functionality.
-
-NOTE: This means we have to be sure to serialize (or all least construct things) in topological order.
-
 # Injection
 
 `GraphSerDeser` has a `registerFactoryForLabel` method that lets you register a custom `TransformFactory` to be used
@@ -118,7 +95,6 @@ Since all `DataTransform` instances have an asynchronous API, even if they're sy
 synchronous `DataTransform` into an asynchronous one and vice versa. Furthermore, your `TransformFactory` can be
 constructed using the injection library of your choice so that things like database connections and API srcTokens can
 be injected into your deserialized `DataTransform` instances.
-
 
 ## Injection Notes
  
