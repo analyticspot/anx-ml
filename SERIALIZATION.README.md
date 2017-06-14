@@ -1,16 +1,16 @@
 # Overview
 
 After constructing and training a `DataGraph` we'd like to be able to serialize it. The most common use case for this
-is probably to serialized a trained model for deployment. Our requirements for this are:
+is probably to serialize a trained model for deployment. Our requirements for this are:
 
 * Simple: it should be easy to deserialize an entire `DataGraph` and start using it to make predictions.
-* Format independent: while most of our own code serialized to JSON we would like to be able to use existing code that
+* Format independent: while most of our own code serializes to JSON we would like to be able to use existing code that
   might serialize in a different formatClass. For example, the Smile project contains a large number of algorithms that
   we might want to use but they serialize in a binary format (Java serialization format).
-* Injectable: we'd like to be able to use one implementation for a node when training an a different implementation when
-  running in production. For example, we might make an API call to obtain a zip code for an address in production, but
-  when training we'd use values stored in database. In addition, this injection needs to be flexible:
-  * Synchronous vs. asynchronous: a graph node might produce it's data synchronously when training and asynchronously
+* Injectable: we'd like to be able to use one implementation for a node when training and a different implementation
+  when running in production. For example, we might make an API call to obtain a zip code for an address in production,
+  but when training we'd use values stored in a database. In addition, this injection needs to be flexible:
+  * Synchronous vs. asynchronous: a graph node might produce its data synchronously when training and asynchronously
     in production. Returning to our zip code resolution example, the data is immediately available when training but
     becomes asynchronous when we need to make an API call to obtain it in production.
   * Not class based: It is quite common to use the same algorithm multiple times in the same graph, but we might not

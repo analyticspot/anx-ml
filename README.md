@@ -16,25 +16,25 @@ entire DAG after training and then deserialize it in production. We would like t
 to make predictions on data from a variety of sources: files in various formats, in-memory data (e.g. data received by a
 web server), Spark RDDs, etc.
 
-While there are several machine learning systems for Java,they all lack some properties we want for our system. Our
+While there are several machine learning systems for Java, they all lack some properties we want for our system. Our
 desired capabilities are:
 
 * We want to compute each piece of information exactly once even if multiple data transforms use the same data as input.
 * Some data generators are slow and may be asynchronous (e.g. API calls). We don't want to have to worry about when
-  then inputs to a computation are available; the framework should manage that for us.
+  inputs to a computation are available; the framework should manage that for us.
 * We want to be able to serialize the entire trained DAG to a single file and then deserialize it in a different
   executable and apply it.
 * We want to be able to inject alternative implementations of some transforms when we deserialize. For example, we might
   obtain some data from a database during training but need to obtain that same data via an API call in production so we
   need to be able to swap out the implementation when we deserialize our trained DAG.
 * We want everything to be strongly typed: `DataTransform` instances should be able to declare the types they can
-  consume and produce and `DataSet` instances should have method to retrieve some of their columns in a type safe way.
+  consume and produce and `DataSet` instances should have methods to retrieve some of their columns in a type safe way.
 * We want to allow `DataTransform` types that can produce multiple outputs even if the number of outputs can't be known
   until the transform has been trained (e.g. a bag of words transform can't know how many words are in the vocabulary
   until it has seen the training data).
 * We want to be able to run independent parts of the DAG in parallel utilizing all the CPUs on the machine.
 
-The DataGraph framework described here is intended provides all of these features.
+The DataGraph framework described here provides all of these features.
 
 # Quick Example
 
@@ -48,7 +48,7 @@ Specifically, we want to:
    unique word, and the value at the row/column intersection is the number of times that word appeared in that review.
    For memory efficiency we want to use a `SparseMatrix` class rather than a `double[][]` since most values in the
    matrix will be 0.
-2. We want to convert the bag of words into a lower-dimensional vector via LSA.
+2. We want to convert the bag of words into a lower-dimensional vector via Latent Semantic Analysis (LSA).
 3. For each of the 4 possible ratings we want to compute a centroid for the vectors computed in (2) indicating a
    "typical" review for that rating.
 4. We then want to generate the following features
@@ -168,12 +168,12 @@ The library consists of several components:
 ## DataSet
 
 A [`DataSet`](./framework/src/main/kotlin/com/analyticspot/ml/framework/dataset/DataSet.kt) is simply a collection of
-data. Individual data items can be access via calls like `dataSet.value(rowIndex, columnId)` where `rowIndex` is a
-0-based row index and `columnId` is a `ColumnId` instance. The `value` method is generic and will return a whose type
-matches the type of the `ColumnId` instance. Thus, for example, if `columnId` is a `ColumnId<ComplexDataType>` then
+data. Individual data items can be accessed via calls like `dataSet.value(rowIndex, columnId)` where `rowIndex` is a
+0-based row index and `columnId` is a `ColumnId` instance. The `value` method is generic and will return an object whose
+type matches the type of the `ColumnId` instance. Thus, for example, if `columnId` is a `ColumnId<ComplexDataType>` then
 `dataSet.value(0, columnId)` will return the an instance of `ComplexDataType` from the first row of data.
 
-Note that `DataSet` is "column oriented" a immutable so that operations which select a subset of columns or merge the
+Note that `DataSet` is "column oriented" and immutable so that operations which select a subset of columns or merge the
 columns from multiple data sets are extremely efficient. Similarly, it is easy and efficient to obtain an entire column
 of data. This allows us to write very concise and efficient data transforms that operate on a few columns. For example,
 the following Kotlin code is a valid `DataTransform` that extracts a single `String` column (`columnToConvert`) from a
@@ -219,16 +219,19 @@ have any dependencies on that framework. The existing Maven artifacts can be fou
 
 # ExecutorService
 
-The `DataGraph` methods like `transform`, `trainTransform` that execute the DAG an argument of type `ExecutorService`.
-All `DataTransform` methods that are called by the graph execution and guaranteed to be run on a thread managed by this
-`ExecutorService`. In addition, the `ExecutorService` is passed to the `transform` and `trainTransform` methods of each
-`DataTransform` in the DAG. Thus, if the transform is going to some computationally expensive work in a single thread
-they can simply run their computation directly in the method and ignore the `ExecutorService`. However, computations
-that can be parallelized are free to submit work to the `ExecutorService`. Since this is the same `ExecutorService` that
-manages the execution of the `DataGraph` the submitted work will be interleaved with the work of other `DataTransform`
-instance in the same `DataGraph`. This allows us to do things like create one thread per CPU and use that thread pool
-for all computationally expensive work parallelizing not only the execution of individual transforms but also the work
-done by all transforms that can execute concurrently (those transforms that have had their inputs computed).
+The `DataGraph` methods like `transform`, `trainTransform` that execute the DAG accept an argument of type
+`ExecutorService`. All `DataTransform` methods that are called by the graph execution are guaranteed to be run on a
+thread managed by this `ExecutorService`. In addition, the `ExecutorService` is passed to the `transform` and
+`trainTransform` methods of each `DataTransform` in the DAG. Thus, if the transform is going to perform some
+computationally expensive work in a single thread they can simply run their computation directly in the method and
+ignore the `ExecutorService`. However, computations that can be parallelized are free to submit work to the
+`ExecutorService`.
+
+Since this is the same `ExecutorService` that manages the execution of the `DataGraph` the submitted
+work will be interleaved with the work of other `DataTransform` instances in the same `DataGraph`. This allows us to do
+things like create one thread per CPU and use that thread pool for all computationally expensive work parallelizing not
+only the execution of individual transforms but also the work done by all transforms that can execute concurrently
+(those transforms that have had their inputs computed).
 
 # Output Interceptors
 
