@@ -49,7 +49,7 @@ Specifically, we want to:
    For memory efficiency we want to use a `SparseMatrix` class rather than a `double[][]` since most values in the
    matrix will be 0.
 2. We want to convert the bag of words into a lower-dimensional vector via Latent Semantic Analysis (LSA).
-3. For each of the 4 possible ratings we want to compute a centroid for the vectors computed in (2) indicating a
+3. For each of the 5 possible ratings we want to compute a centroid for the vectors computed in (2) indicating a
    "typical" review for that rating.
 4. We then want to generate the following features
     1. For each review we want to compute its distance from each of those centroids thus generating 5 features.
@@ -66,7 +66,7 @@ DataGraph.GraphBuilder builder = DataGraph.builder();
 
 // ColumnId instances let you obtain data in a type-safe way. 
 ColumnId<String> reviewColId = new ColmnId<>("review", String.class);
-ColumnId<Integer> numStartsColId = new ColumnId<>("numStart", Integer.class);
+ColumnId<Integer> numStarsColId = new ColumnId<>("numStars", Integer.class);
 
 // Describes the source. Unlike other nodes the source is just a description so we can later pass any values that
 // conform to the description. numStarsId is a "train-only" value because it is not required to make predictions.
