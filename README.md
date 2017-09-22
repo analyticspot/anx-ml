@@ -250,3 +250,7 @@ pre-built jar files from jcenter. The maven coordinates for the main framework a
 * version: the `VERSION` file in this directory contains the latest version number.
 
 For gradle, this means a dependency like `compile 'com.analyticspot.ml:framework:0.1.1'` will pull the correct jar.
+
+# Author
+
+Oliver Dain
